@@ -1,0 +1,8 @@
+Place the default Roman donors from Artifex urw-base35-fonts here:
+
+  NimbusRoman-Regular.otf
+  NimbusRoman-Bold.otf
+
+Only upright Regular and Bold are used; Italic and Bold Italic are not needed.
+To use another pair, pass --roman-regular and --roman-bold to build.sh as
+described in ../readme.txt.

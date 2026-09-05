@@ -1,0 +1,14 @@
+Place files from your licensed MTPro2 installation directly in this directory:
+
+  PFB and TFM files for the selected edition
+  mtpro2.sty
+
+Full also requires:
+
+  umt2ms.fd
+  umt2mf.fd
+  umt2bb.fd
+  umt2hrb.fd
+
+Keep the original filenames. The build checks that required inputs are present.
+See ../readme.txt for build instructions.

@@ -1,0 +1,214 @@
+% Run lualatex from doc/ after building the Full edition.
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=20mm]{geometry}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\setmainfont{NimbusRoman-Regular.otf}[BoldFont=NimbusRoman-Bold.otf,
+    ItalicFont=NimbusRoman-Italic.otf,BoldItalicFont=NimbusRoman-BoldItalic.otf]
+\setmathfont{MTPro2Math.otf}[Path=../out/full/]
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\abovedisplayskip}{4pt}
+\setlength{\belowdisplayskip}{4pt}
+\setlength{\abovedisplayshortskip}{4pt}
+\setlength{\belowdisplayshortskip}{4pt}
+\newcommand{\sample}[2]{\par\addvspace{7pt}{\small\textbf{#1\quad #2}}\par\nopagebreak}
+\begin{document}
+{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
+\medskip{\large Letters and scripts}\par
+\smallskip{\small Each expression appears at normal size, in a superscript and in a nested superscript.}\par
+\sample{01}{Latin letters and digits}
+\[
+A,B,C,\ldots,X,Y,Z\qquad a,b,c,\ldots,x,y,z\qquad 0,1,2,\ldots,9
+\]
+\[
+2^{A,B,C,\ldots,X,Y,Z\qquad a,b,c,\ldots,x,y,z\qquad 0,1,2,\ldots,9}
+\]
+\[
+2^{2^{A,B,C,\ldots,X,Y,Z\qquad a,b,c,\ldots,x,y,z\qquad 0,1,2,\ldots,9}}
+\]
+\sample{02}{Greek letters}
+\[
+\Gamma,\Delta,\Theta,\Lambda,\Xi,\Pi,\Sigma,\Phi,\Psi,\Omega\qquad\alpha,\beta,\gamma,\delta,\varepsilon,\theta,\varphi,\omega
+\]
+\[
+2^{\Gamma,\Delta,\Theta,\Lambda,\Xi,\Pi,\Sigma,\Phi,\Psi,\Omega\qquad\alpha,\beta,\gamma,\delta,\varepsilon,\theta,\varphi,\omega}
+\]
+\[
+2^{2^{\Gamma,\Delta,\Theta,\Lambda,\Xi,\Pi,\Sigma,\Phi,\Psi,\Omega\qquad\alpha,\beta,\gamma,\delta,\varepsilon,\theta,\varphi,\omega}}
+\]
+\sample{03}{Cardinals and relations}
+\[
+\aleph_\alpha\times\aleph_\beta=\aleph_\beta\quad\Longleftrightarrow\quad\alpha\leq\beta
+\]
+\[
+2^{\aleph_\alpha\times\aleph_\beta=\aleph_\beta\quad\Longleftrightarrow\quad\alpha\leq\beta}
+\]
+\[
+2^{2^{\aleph_\alpha\times\aleph_\beta=\aleph_\beta\quad\Longleftrightarrow\quad\alpha\leq\beta}}
+\]
+\sample{04}{Limits and implications}
+\[
+|x-a|<\delta\quad\Longrightarrow\quad|f(x)-L|<\varepsilon
+\]
+\[
+2^{|x-a|<\delta\quad\Longrightarrow\quad|f(x)-L|<\varepsilon}
+\]
+\[
+2^{2^{|x-a|<\delta\quad\Longrightarrow\quad|f(x)-L|<\varepsilon}}
+\]
+\sample{05}{Sets and topology}
+\[
+\{x\mid x\ne x\}=\varnothing\qquad(A\cap B)^\circ\subseteq A^\circ\cap B^\circ
+\]
+\[
+2^{\{x\mid x\ne x\}=\varnothing\qquad(A\cap B)^\circ\subseteq A^\circ\cap B^\circ}
+\]
+\[
+2^{2^{\{x\mid x\ne x\}=\varnothing\qquad(A\cap B)^\circ\subseteq A^\circ\cap B^\circ}}
+\]
+\sample{06}{Tensor indices}
+\[
+R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}
+\]
+\[
+2^{R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}}
+\]
+\[
+2^{2^{R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}}}
+\]
+\newpage
+{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
+\medskip{\large Calculus and compound expressions}\par
+\smallskip{\small Each expression appears at normal size, in a superscript and in a nested superscript.}\par
+\sample{07}{Composition and derivatives}
+\[
+(f\circ g)'(x)=f'(g(x))\,g'(x)
+\]
+\[
+2^{(f\circ g)'(x)=f'(g(x))\,g'(x)}
+\]
+\[
+2^{2^{(f\circ g)'(x)=f'(g(x))\,g'(x)}}
+\]
+\sample{08}{Differential forms}
+\[
+d\omega=\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)\,dx\wedge dy
+\]
+\[
+2^{d\omega=\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)\,dx\wedge dy}
+\]
+\[
+2^{2^{d\omega=\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)\,dx\wedge dy}}
+\]
+\sample{09}{Vector fields}
+\[
+X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j\eta^j\frac{\partial}{\partial\dot{x}^j}
+\]
+\[
+2^{X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j\eta^j\frac{\partial}{\partial\dot{x}^j}}
+\]
+\[
+2^{2^{X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j\eta^j\frac{\partial}{\partial\dot{x}^j}}}
+\]
+\sample{10}{Gaussian integral}
+\[
+\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}
+\]
+\[
+2^{\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}}
+\]
+\[
+2^{2^{\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}}}
+\]
+\sample{11}{Piecewise expressions}
+\[
+f(x)=\begin{cases}x^2,&x\geq0,\\-x^2,&x<0.\end{cases}
+\]
+\[
+2^{f(x)=\begin{cases}x^2,&x\geq0,\\-x^2,&x<0.\end{cases}}
+\]
+\[
+2^{2^{f(x)=\begin{cases}x^2,&x\geq0,\\-x^2,&x<0.\end{cases}}}
+\]
+\sample{12}{Products and annotations}
+\[
+\underbrace{V\times\cdots\times V}_{k}\times\underbrace{V\times\cdots\times V}_{l}=V^{k+l}
+\]
+\[
+2^{\underbrace{V\times\cdots\times V}_{k}\times\underbrace{V\times\cdots\times V}_{l}=V^{k+l}}
+\]
+\[
+2^{2^{\underbrace{V\times\cdots\times V}_{k}\times\underbrace{V\times\cdots\times V}_{l}=V^{k+l}}}
+\]
+\newpage
+{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
+\medskip{\large Styles, spacing and accents}\par
+\sample{13}{Math alphabets}
+\[
+\symit{ABCxyz}\qquad\symbfup{ABCxyz}\qquad\mathcal{ABCXYZ}\qquad\mathbb{CHNRZ}
+\]
+\sample{14}{Primes}
+\[
+f'\quad f^{\prime}\qquad f''\quad f^{\prime\prime}\qquad f'''\quad f^{\prime\prime\prime}
+\]
+\[
+x_i'\quad x_i^{\prime}\qquad f'(x)+g''(x)+h'''(x)
+\]
+\sample{15}{Ordinary spacing and scripts}
+\[
+f1\quad f0\quad fA\quad f\alpha\quad V1\quad W1\quad j1\quad ff\quad fi
+\]
+\[
+f_i\quad f^2\quad f_i^2\qquad X_f+X_j+X_p+X_y+X_A+X_M
+\]
+\sample{16}{Single-character accents}
+\[
+\hat{x}\quad\tilde{y}\quad\check{z}\quad\bar{M}\quad\vec{A}\quad\dot{\Gamma}\quad\ddot{\Gamma}
+\]
+\sample{17}{Wide accents}
+\[
+\widehat{xy}\quad\widehat{xyz}\quad\widehat{x+y+z+w}
+\]
+\[
+\widetilde{xy}\quad\widetilde{xyz}\quad\widetilde{x+y+z+w}
+\]
+\sample{18}{Bars and overlines}
+\[
+\bar{M}\qquad\overline{xy}\qquad\overline{x+y+z+w}
+\]
+\sample{19}{Radicals}
+\[
+\sqrt{x}\qquad\sqrt{x^2+y^2}\qquad\sqrt[n]{\frac{a}{b}}\qquad\sqrt{\frac{1+\sqrt{1+x^2}}{2}}
+\]
+\newpage
+{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
+\medskip{\large Braces, delimiters and operators}\par
+\sample{20}{Overbraces}
+\[
+\overbrace{A}\qquad\overbrace{ABCDEF}\qquad\overbrace{ABCDEFGHIJKLMN}
+\]
+\sample{21}{Underbraces}
+\[
+\underbrace{A}\qquad\underbrace{ABCDEF}\qquad\underbrace{ABCDEFGHIJKLMN}
+\]
+\sample{22}{Brace annotations}
+\[
+\overbrace{a_1+a_2+\cdots+a_n}^{n\ \mathrm{terms}}\qquad\underbrace{x_1x_2\cdots x_m}_{m\ \mathrm{factors}}
+\]
+\sample{23}{Tall delimiters}
+\[
+\left(\begin{matrix}a_{11}&a_{12}&a_{13}\\a_{21}&a_{22}&a_{23}\\a_{31}&a_{32}&a_{33}\end{matrix}\right)\qquad\left[\begin{matrix}1&0&0&0\\0&1&0&0\\0&0&1&0\\0&0&0&1\end{matrix}\right]
+\]
+\sample{24}{Nested fractions and delimiters}
+\[
+\left\{\frac{1}{1+\frac{1}{1+x}}\right\}\qquad\left\langle\frac{u+v}{\sqrt{1+\lVert u\rVert^2}},w\right\rangle
+\]
+\sample{25}{Limits and large operators}
+\[
+\sum_{k=0}^{n}\binom{n}{k}x^k y^{n-k}=(x+y)^n
+\]
+\[
+\int_0^1\frac{dx}{\sqrt{1-x^2}}=\frac{\pi}{2}\qquad\prod_{k=1}^{n}\frac{k+1}{k}=n+1
+\]
+\end{document}
