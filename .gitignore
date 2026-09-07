@@ -1,0 +1,33 @@
+/out/
+/build/
+__pycache__/
+*.py[cod]
+
+# Licensed/local font inputs and generated fonts
+*.pfb
+*.pfm
+*.tfm
+*.otf
+*.ttf
+*.woff
+*.woff2
+/mtpro2/
+/donors/
+
+# TeX/runtime artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.pdf
+!/doc/word.pdf
+!/doc/lualatex.pdf
+!/doc/mtp2otf.pdf
+
+# Local archives/editor files
+*.zip
+*.tar
+*.tar.gz
+*~
+.DS_Store

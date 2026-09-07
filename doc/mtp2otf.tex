@@ -1,0 +1,427 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=26mm]{geometry}
+\usepackage{amsmath}
+\usepackage{fontspec}
+\setmainfont{Nimbus Roman}
+\setsansfont{Nimbus Sans}
+\setmonofont{Nimbus Mono PS}
+\usepackage{mtpro2}
+\usepackage{booktabs,tabularx,longtable,enumitem}
+\usepackage[hidelinks,pdftitle={mtp2otf: Conversion and validation specification},pdfauthor={}]{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist{nosep,leftmargin=*}
+\clubpenalty=10000
+\widowpenalty=10000
+\newcommand{\file}[1]{\nolinkurl{#1}}
+\title{mtp2otf\\\large Conversion and validation specification}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+\vspace{-2em}
+
+\section{Scope}
+mtp2otf converts locally supplied MathTime\texttrademark{} Professional 2 (MTPro2) Type~1
+fonts and TeX metrics into a single-face OpenType MATH font. The Full and
+Lite editions have distinct installation identities. CFF-based OTF is the
+canonical generated font; TrueType-based TTF is derived from it for Word.
+Both formats retain the OpenType math layout data.
+
+The interface to TeX engines is \file{unicode-math}. There is no companion
+package, Lua callback, or runtime-generated TeX sidecar. The converter does
+not resolve TeX trees, download inputs, install dependencies, or install
+generated fonts. Full is the default. Missing Full inputs never select
+Lite automatically.
+
+\section{Inputs and build interface}
+\subsection{Source staging}
+Place the source files directly in \file{mtpro2/}. Each active source font
+requires its PFB and TFM pair; \file{mtpro2.sty} supplies package policy.
+Full additionally requires \file{umt2ms.fd}, \file{umt2mf.fd},
+\file{umt2bb.fd}, and \file{umt2hrb.fd}. Lite does not require these
+Full-only declarations. The source registry and required-file calculation
+are defined in \file{tools/source_policy.py}. Empty inputs receive setup
+guidance; partially supplied inputs receive a missing-file list.
+
+The Lite source set contains the text, script, and scriptscript sizes of
+\file{mt2mi}, \file{mt2sy}, and \file{mt2mb}, plus
+\file{mt2exa}, \file{mt2exe}, \file{mt2exf}, \file{mt2exg},
+\file{mt2xl}, and \file{mt2xxxl}. The three optical-size suffixes are
+\file{t}, \file{s}, and \file{f}. Full includes the additional math
+alphabets and symbol sources in the registry.
+
+\subsection{Roman donors}
+The default inputs in \file{donors/} are
+\file{NimbusRoman-Regular.otf} and \file{NimbusRoman-Bold.otf}
+from Artifex urw-base35. Another static CFF OTF or TrueType TTF pair can
+be selected explicitly. Both faces must be upright, proportional, from
+the same family, and have the required Latin and digit coverage and
+appropriate weights. Coordinates and advances are normalized to the
+output units per em.
+
+Regular supplies upright Latin and permitted additional text characters;
+Bold supplies mathematical bold Latin and digits. Mathematical italic,
+bold italic, and non-Latin-shaped Greek come from MTPro2. Optional donor
+text coverage can vary. A donor must not fill missing Full-only math
+semantics in Lite.
+
+\subsection{Commands and configuration}
+\begin{verbatim}
+mkdir -p mtpro2 donors
+# Copy the source fonts, declarations, and donors.
+./build.sh
+./build.sh --edition=lite
+./build.sh --roman-regular=/path/to/Regular.otf \
+           --roman-bold=/path/to/Bold.otf
+\end{verbatim}
+The public options are \file{--edition}, \file{--roman-regular}, and
+\file{--roman-bold}; help is available with \file{--help}.
+Unknown options and abbreviated option names are rejected.
+Relative donor paths are resolved from the caller's working directory.
+All project directories are resolved from the location of \file{build.sh}.
+
+Python~3.10 or later with fontTools, FontForge with Python~3.10 or later
+support, and \file{tftopl} are required. Dependency and input failures stop
+the build early. Users create and populate the input directories; the build
+creates only its working and output directories.
+
+\section{Working state and final outputs}
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+Location & Purpose \\
+\midrule
+\file{mtpro2/} & Local Type~1 fonts, TeX metrics, and declarations. \\
+\file{donors/} & Local Regular and Bold Roman donors. \\
+\file{build/full/}, \file{build/lite/} & Edition-specific intermediate
+fonts, converted PL files, calculated values, and one diagnostic log. \\
+\file{out/} & Validated OTF and TTF deliverables only. \\
+\bottomrule
+\end{tabularx}
+
+Full produces \file{MTPro2Math.otf} and \file{MTPro2Math.ttf}.
+Lite produces \file{MTPro2MathLite.otf} and \file{MTPro2MathLite.ttf}.
+Both editions coexist in \file{out/}.
+No font is built directly into this directory.
+
+After every required check succeeds, each validated candidate is copied
+to a temporary file beside its destination and renamed into place.
+This avoids exposing a partially copied individual font. It is not a
+two-file filesystem transaction: an interruption during final promotion
+can leave a previously validated OTF/TTF pair from different builds.
+Run the build again to replace the pair together in the normal sequence.
+
+Input, construction, conversion, or validation failure leaves previous
+outputs intact. Their presence does not establish that the latest build
+succeeded: use the command's exit status. Full and Lite may be built in
+sequence; simultaneous builds of the same edition are not supported.
+The entire \file{build/} directory is disposable and can be regenerated
+from the local inputs.
+
+\subsection{Progress and diagnostics}
+Normal stdout contains one line: \texttt{building MTPro2 Math}, or
+\texttt{building MTPro2 Math Lite}. Successful audits are silent. An unsuccessful
+subprocess reports its captured diagnostics on stderr. FontForge output
+and warnings remain available in \file{build/<edition>/build.log} even
+when the subprocess succeeds. The log is replaced for each new build
+that reaches this stage, rather than accumulated across runs.
+
+Exit status is zero on success, two for command usage and preflight
+failures handled by the frontend, and one for build or validation failure.
+There is no automatic installation, clean command, verification bypass,
+or verbose-mode configuration.
+
+\section{Conversion contracts}
+\subsection{Source metrics and ordinary spacing}
+An untransformed MTPro2 glyph retains TFM \file{CHARWD} as its horizontal
+advance and \file{CHARIC} as its MATH italic correction. The ordinary
+adjacency adjustment is
+\[
+  \operatorname{CHARIC}(\text{left})
+  + \operatorname{TFMkern}(\text{left},\text{right}).
+\]
+It is encoded in cumulative GPOS layers. A missing TFM pair contributes
+zero, not a reason to discard italic correction. Skewchar-right pairs
+are excluded from ordinary kerning according to the local declarations.
+Script, prime, and accent placement are separate layout paths.
+
+For source math alphabets, top-accent attachment is based on
+\[
+  \frac{\operatorname{CHARWD}+\operatorname{CHARIC}}{2}
+  + \operatorname{skewkern}.
+\]
+Combining accents and synthesized forms follow their own coordinate
+transformations. Widths and attachment coordinates are not interchangeable.
+
+\subsection{Optical sizes, aliases, and variants}
+Text, script, and scriptscript source outlines are exposed through
+OpenType math substitutions. Full-only option alphabets preserve their
+optical-size reachability in both supported feature application orders.
+Latin-shaped Greek aliases share glyph IDs with their canonical donors;
+the aliases do not duplicate outlines or acquire separate metrics.
+
+TFM larger-size chains, extensible recipes, and local outline geometry
+determine variant and assembly construction. Repeatable parts retain
+both connector endpoints. Brace cusp geometry follows the source halves;
+the cusp inside a part is distinct from an overlap between assembly parts.
+
+\subsection{Primes and compatibility forms}
+The public prime forms and contextual substitutions provide the retained
+raw-prime and superscript behavior. Their padding is derived from local
+outline geometry. Scriptscript prime alternates use the native optical
+source forms, with their corresponding source widths. Backprime follows
+its own source identity. These are conversion policies, not a claim that
+every prime transformation is a direct TFM assignment.
+
+Public vector and bar accents are fixed. Private wide forms are distinct:
+U+E286 supplies finite variants, while U+E287 supplies an assembly.
+Standard commands do not automatically select these private paths.
+Swash z remains available through \file{cv01} or U+E000 where supported;
+there is no default swash or Word command registration.
+
+\subsection{MATH constants and provenance}
+\file{tools/math_constants.py} calculates the MATH constants from local
+source metrics and explicitly retained conversion policies.
+\file{tools/source_policy.py} extracts package and font-definition policy
+and the geometry needed by synthesized forms. The calculation covers
+the 56 MathConstants fields and the separate common connector overlap.
+
+Not every field has a direct TFM counterpart. Reference-derived
+thresholds and engine-compatibility choices are documented as such;
+they are not relabelled as original-source metrics. In particular,
+upper-limit placement retains a compatibility policy rather than a
+universal one-to-one TeX parameter mapping. Next-style baseline-drop
+values are converted into the parent font's coordinate scale.
+
+The appendix gives every scalar assignment and its source classification.
+It describes formulas and explicit conversion policy, not evaluated local
+MTPro2 measurements. The same assignments apply to Full and Lite.
+
+The symbol TFM supplies axis height and script/fraction shifts; the
+extension TFM supplies rule thickness and large-operator spacing. The
+package supplies script ratios. TeX-style gap formulas combine those
+inputs. OpenType-only thresholds and skewed-fraction gaps are retained
+migration policies rather than recovered TFM parameters. Rendered
+comparisons support their retention in tested engines, not universal
+identity with every original TeX expression.
+
+Ordinary superscripts select the source sup2 branch and subscripts select
+sub2; OpenType's common fields do not encode every TeX style branch.
+Upper-limit and stretch-stack upper-side assignments preserve the reviewed
+Word placement policy. Lower stretch-stack controls reuse the lower-limit
+inputs and are not claimed to be independently optimized. Baseline drops
+use script-size symbol parameters converted to the first-level parent's
+em; nested engine scaling can differ. The flattened-accent threshold does
+not imply a dedicated flattened-accent substitution.
+
+\section{Validation methodology}
+Validation is mandatory. Reuse of parsing and identity definitions does
+not replace comparisons of serialized output with local source metrics.
+OTF establishes source semantics. Cross-format invariants transfer those
+guarantees to TTF; structural and naming checks run on both formats.
+
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+Check & Responsibility \\
+\midrule
+Source declarations & Required source set, unique usable policy,
+accent semantics, and Full optical-family ordering. \\
+Roman donors & Input type, family, weight, required coverage; output
+bounding boxes and advances, plus an extra-import heuristic. \\
+Structural validator & Tables, cmap, aliases, clipping bounds,
+assemblies, features, prime contexts, and serialization. \\
+Edition naming & Installation names, technical version metadata,
+and CFF naming constraints for both formats. \\
+Source contract & Advances, italic correction, top accents, and
+ordinary IC plus TFM pair adjustments in the OTF; converted accent
+centers are checked against TTF outlines. \\
+Edition capabilities & Full option-alphabet optical sizes or
+Lite's required and forbidden features and code points. \\
+Cross-format check & Glyph-ID mapping, advances and sidebearings,
+MATH/GSUB/GPOS/GDEF table bytes, and outline origins. \\
+MATH values & Each calculated scalar against the serialized OTF,
+including the common connector overlap. \\
+\bottomrule
+\end{tabularx}
+
+The Roman output check compares normalized bounding boxes and advances;
+it is not a proof of contour identity. The OTF/TTF check permits the
+intended cubic-to-quadratic approximation and checks origin shifts
+separately. Engine rendering is not proven solely by table validation.
+
+\subsection{Local evidence}
+\file{build/<edition>/source-policy.json} contains parsed policy,
+geometry, and input hashes. \file{mtpro2-source-contract.json} contains
+the glyph relationships and source-derived records used by output
+audits. \file{math-constants.json} contains evaluated scalars and their
+provenance descriptions. These snapshots are working data, not extra
+deliverables. Repeated PASS summaries and copies of the same snapshots
+are not written beside the final fonts.
+
+When changing the converter, build both editions from the same inputs
+before and after the change. Compare corresponding OTFs and TTFs with
+build timestamps and dependent checksums normalized; retain all other
+table differences for investigation. A layout change additionally
+requires focused engine tests. Identical nonvolatile output can reuse
+the earlier rendering evidence for that exact font content.
+
+\section{Specimens and engine limits}
+\file{word.docx} and \file{lualatex.tex} are editable specimens. The
+included PDFs show the Full edition with Nimbus donors. Word uses the
+TTF as its math font and Times New Roman for body text; LuaLaTeX uses
+the OTF and Nimbus Roman for body text. Close Word before replacing
+an installed font.
+
+To rebuild the LuaLaTeX specimen, first build Full, then run
+\texttt{lualatex lualatex.tex} from \file{doc/}. The specimen needs
+\file{amsmath}, \file{fontspec}, \file{unicode-math}, and all four Nimbus
+Roman body styles discoverable by TeX. These specimen dependencies are
+not additional converter dependencies. This specification itself can
+be compiled with \texttt{pdflatex mtp2otf.tex}, without MTPro2 fonts.
+
+Word can segment mathematical runs before GPOS processing. LuaHBTeX
+may not reproduce the complete Type~1 ordinary italic-correction plus
+pair-kern combination. A correct font table therefore does not imply
+identical spacing in every engine. No Lua option or callback is added
+to hide these differences. Compare the included specimens with the original
+Type~1 output in the same layout context when distinguishing source
+behavior, conversion behavior, and engine behavior.
+
+\section{Publication and references}
+The public tree contains the shell entry point, Python tools, README,
+LICENSE, and documentation. Local input and working directories are
+not part of the archive. Publication inspection is available as
+\texttt{python3 tools/audit\_public\_source.py .} on a clean source-only
+tree. It checks prohibited paths and selected metric patterns; it is
+not a general legal or confidentiality audit of arbitrary PDF contents.
+
+Mappings are interoperability metadata created for this project by
+comparing TeX and Unicode semantics, local-source behavior, and rendered
+results. Type~1 names alone do not determine the required mappings.
+They are not mechanical copies of MTPro2 files.
+
+Project-authored code and documentation use 0BSD. MTPro2, donor fonts,
+and external tools retain their own terms. MathTime is a trademark of
+Publish or Perish, Inc. This is an independent project, not affiliated
+with or endorsed by Publish or Perish, Inc., Personal TeX, Inc., or
+Artifex Software.
+
+\begin{itemize}
+\item Repository and implementation:
+\url{https://github.com/satom-zk/mtp2otf}
+\item Bug reports:
+\url{https://github.com/satom-zk/mtp2otf/issues}
+\end{itemize}
+
+\appendix
+\section{Scalar assignments}
+The following expressions follow \file{tools/math_constants.py} in its
+actual evaluation order. \texttt{round} is Python nearest-integer rounding
+(ties to even); \texttt{//} is floor division. \texttt{Fraction(a,b)} is an
+exact rational. Intermediate rounding is intentional and must not be
+algebraically reordered.
+
+\texttt{upm} is the output units per em. \texttt{s(i)} means
+\texttt{round(sy[i] * upm)}, with \texttt{sy} from \file{mt2syt.tfm};
+\texttt{e(i)} uses \file{mt2exa.tfm} in the same way.
+\texttt{theta = e(8)} and \texttt{xh = s(5)}.
+\texttt{script\_sy} comes from \file{mt2sys.tfm}.
+The two ratios are the local \file{mtpro2.sty} defaults;
+\texttt{\_pct(r)} evaluates
+\texttt{round(r.numerator * 100 / r.denominator)}.
+
+\texttt{display\_operator\_min\_height} is the floor of the average of
+the separately rounded height-plus-depth values of extension TFM slots
+\texttt{0x50} and \texttt{0x58}, in output units. The source provides the
+sizes; choosing their midpoint is a conversion policy. The delimited
+subformula threshold reuses this value and is not TeX's \texttt{delim1}.
+
+Source classes distinguish inputs from assignment choices:
+MT-TFM denotes local TFM parameters; MT-STY denotes package declarations;
+MT-PFB denotes local outlines; OT-SUG denotes an OpenType suggested
+formula; TeX denotes the script-space convention. OT-MIG and MT-MIG denote
+explicit migration policy. Combined labels mean that source data and an
+assignment policy both contribute. A source label does not establish
+exact layout equivalence in every engine.
+
+Values are in font units except the two script percentages and the
+radical-degree percentage. Numeric literals in migration rows are project
+policy, not a table of measurements copied from MTPro2. The initial
+connector-overlap value is reduced to the nonnegative integer minimum
+joining run when local geometry requires a smaller overlap. Both ends of
+repeatable parts participate; fixed outside ends do not.
+
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}p{0.46\linewidth}p{0.48\linewidth}@{}}
+\toprule
+Field & Expression and source class \\
+\midrule
+\endfirsthead
+\toprule
+Field & Expression and source class \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{Axis\allowbreak Height} & \texttt{s(22)}\newline MT-TFM \\
+\texttt{Fraction\allowbreak Numerator\allowbreak Shift\allowbreak Up} & \texttt{s(9)}\newline MT-TFM \\
+\texttt{Fraction\allowbreak Numerator\allowbreak Display\allowbreak Style\allowbreak Shift\allowbreak Up} & \texttt{s(8)}\newline MT-TFM \\
+\texttt{Fraction\allowbreak Denominator\allowbreak Shift\allowbreak Down} & \texttt{s(12)}\newline MT-TFM \\
+\texttt{Fraction\allowbreak Denominator\allowbreak Display\allowbreak Style\allowbreak Shift\allowbreak Down} & \texttt{s(11)}\newline MT-TFM \\
+\texttt{Fraction\allowbreak Numerator\allowbreak Gap\allowbreak Min} & \texttt{theta}\newline OT-SUG+MT \\
+\texttt{Fraction\allowbreak Num\allowbreak Display\allowbreak Style\allowbreak Gap\allowbreak Min} & \texttt{3 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Fraction\allowbreak Denominator\allowbreak Gap\allowbreak Min} & \texttt{theta}\newline OT-SUG+MT \\
+\texttt{Fraction\allowbreak Denom\allowbreak Display\allowbreak Style\allowbreak Gap\allowbreak Min} & \texttt{3 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Fraction\allowbreak Rule\allowbreak Thickness} & \texttt{theta}\newline MT-TFM \\
+\texttt{Stack\allowbreak Top\allowbreak Shift\allowbreak Up} & \texttt{s(10)}\newline MT-TFM \\
+\texttt{Stack\allowbreak Top\allowbreak Display\allowbreak Style\allowbreak Shift\allowbreak Up} & \texttt{s(8)}\newline MT-TFM \\
+\texttt{Stack\allowbreak Bottom\allowbreak Shift\allowbreak Down} & \texttt{s(12)}\newline MT-TFM \\
+\texttt{Stack\allowbreak Bottom\allowbreak Display\allowbreak Style\allowbreak Shift\allowbreak Down} & \texttt{s(11)}\newline MT-TFM \\
+\texttt{Stack\allowbreak Gap\allowbreak Min} & \texttt{3 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Stack\allowbreak Display\allowbreak Style\allowbreak Gap\allowbreak Min} & \texttt{7 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Superscript\allowbreak Shift\allowbreak Up} & \texttt{s(14)}\newline MT-TFM+OT-MIG \\
+\texttt{Superscript\allowbreak Shift\allowbreak Up\allowbreak Cramped} & \texttt{s(15)}\newline MT-TFM \\
+\texttt{Subscript\allowbreak Shift\allowbreak Down} & \texttt{s(17)}\newline MT-TFM+OT-MIG \\
+\texttt{Subscript\allowbreak Top\allowbreak Max} & \texttt{round(Fraction(4,\allowbreak 5) \allowbreak * s(5))}\newline OT-SUG+MT \\
+\texttt{Superscript\allowbreak Bottom\allowbreak Min} & \texttt{round(Fraction(1,\allowbreak 4) \allowbreak * s(5))}\newline OT-SUG+MT \\
+\texttt{Superscript\allowbreak Bottom\allowbreak Max\allowbreak With\allowbreak Subscript} & \texttt{round(Fraction(4,\allowbreak 5) \allowbreak * s(5))}\newline OT-SUG+MT \\
+\texttt{Sub\allowbreak Superscript\allowbreak Gap\allowbreak Min} & \texttt{4 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Upper\allowbreak Limit\allowbreak Baseline\allowbreak Rise\allowbreak Min} & \texttt{e(9)}\newline OT-MIG+MT \\
+\texttt{Upper\allowbreak Limit\allowbreak Gap\allowbreak Min} & \texttt{e(11)}\newline OT-MIG+MT \\
+\texttt{Lower\allowbreak Limit\allowbreak Gap\allowbreak Min} & \texttt{e(10)}\newline MT-TFM \\
+\texttt{Lower\allowbreak Limit\allowbreak Baseline\allowbreak Drop\allowbreak Min} & \texttt{e(12)}\newline MT-TFM \\
+\texttt{Stretch\allowbreak Stack\allowbreak Top\allowbreak Shift\allowbreak Up} & \texttt{e(9)}\newline OT-MIG+MT \\
+\texttt{Stretch\allowbreak Stack\allowbreak Gap\allowbreak Above\allowbreak Min} & \texttt{e(11)}\newline OT-MIG+MT \\
+\texttt{Stretch\allowbreak Stack\allowbreak Gap\allowbreak Below\allowbreak Min} & \texttt{e(10)}\newline OT-MIG+MT \\
+\texttt{Stretch\allowbreak Stack\allowbreak Bottom\allowbreak Shift\allowbreak Down} & \texttt{e(12)}\newline OT-MIG+MT \\
+\texttt{Overbar\allowbreak Rule\allowbreak Thickness} & \texttt{theta}\newline MT-TFM \\
+\texttt{Overbar\allowbreak Vertical\allowbreak Gap} & \texttt{3 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Overbar\allowbreak Extra\allowbreak Ascender} & \texttt{theta}\newline OT-SUG+MT \\
+\texttt{Underbar\allowbreak Rule\allowbreak Thickness} & \texttt{theta}\newline MT-TFM \\
+\texttt{Underbar\allowbreak Vertical\allowbreak Gap} & \texttt{3 \allowbreak * theta}\newline OT-SUG+MT \\
+\texttt{Underbar\allowbreak Extra\allowbreak Descender} & \texttt{theta}\newline OT-SUG+MT \\
+\texttt{Radical\allowbreak Rule\allowbreak Thickness} & \texttt{theta}\newline MT-TFM \\
+\texttt{Radical\allowbreak Extra\allowbreak Ascender} & \texttt{theta}\newline OT-SUG+MT \\
+\texttt{Radical\allowbreak Vertical\allowbreak Gap} & \texttt{theta + theta // 4}\newline OT-SUG+MT \\
+\texttt{Radical\allowbreak Display\allowbreak Style\allowbreak Vertical\allowbreak Gap} & \texttt{theta + xh // 4}\newline OT-SUG+MT \\
+\texttt{Radical\allowbreak Kern\allowbreak Before\allowbreak Degree} & \texttt{round(Fraction(5,\allowbreak 18) \allowbreak * upm)}\newline OT-SUG \\
+\texttt{Radical\allowbreak Kern\allowbreak After\allowbreak Degree} & \texttt{-round(Fraction(10,\allowbreak 18) \allowbreak * upm)}\newline OT-SUG \\
+\texttt{Radical\allowbreak Degree\allowbreak Bottom\allowbreak Raise\allowbreak Percent} & \texttt{60}\newline OT-SUG \\
+\texttt{Script\allowbreak Percent\allowbreak Scale\allowbreak Down} & \texttt{\_pct(script\_ratio)}\newline MT-STY \\
+\texttt{Script\allowbreak Script\allowbreak Percent\allowbreak Scale\allowbreak Down} & \texttt{\_pct(scriptscript\_ratio)}\newline MT-STY \\
+\texttt{Min\allowbreak Connector\allowbreak Overlap} & \texttt{100}\newline OT-MIG+MT-PFB \\
+\texttt{Accent\allowbreak Base\allowbreak Height} & \texttt{477}\newline OT-MIG \\
+\texttt{Flattened\allowbreak Accent\allowbreak Base\allowbreak Height} & \texttt{656}\newline OT-MIG \\
+\texttt{Delimited\allowbreak Sub\allowbreak Formula\allowbreak Min\allowbreak Height} & \texttt{int(display\_operator\_min\_height)}\newline MT-MIG+MT \\
+\texttt{Display\allowbreak Operator\allowbreak Min\allowbreak Height} & \texttt{int(display\_operator\_min\_height)}\newline MT-TFM \\
+\texttt{Math\allowbreak Leading} & \texttt{154}\newline OT-MIG \\
+\texttt{Skewed\allowbreak Fraction\allowbreak Horizontal\allowbreak Gap} & \texttt{350}\newline OT-MIG \\
+\texttt{Skewed\allowbreak Fraction\allowbreak Vertical\allowbreak Gap} & \texttt{102}\newline OT-MIG \\
+\texttt{Space\allowbreak After\allowbreak Script} & \texttt{round(Fraction(1,\allowbreak 20) \allowbreak * upm)}\newline TeX \\
+\texttt{Subscript\allowbreak Baseline\allowbreak Drop\allowbreak Min} & \texttt{round(script\_sy[19] \allowbreak * float(script\_ratio) \allowbreak * upm)}\newline MT-TFM+OT-MIG \\
+\texttt{Superscript\allowbreak Baseline\allowbreak Drop\allowbreak Max} & \texttt{round(script\_sy[18] \allowbreak * float(script\_ratio) \allowbreak * upm)}\newline MT-TFM+OT-MIG \\
+\end{longtable}
+\endgroup
+\end{document}

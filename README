@@ -1,0 +1,74 @@
+mtp2otf
+=======
+Convert MathTime™ Professional 2 (MTPro2) into OpenType MATH fonts for
+Word and unicode-math. Full and Lite have separate installation names.
+
+Requirements
+------------
+A POSIX shell, Python 3.10 or later with fontTools, FontForge with Python
+3.10 or later support, and tftopl (included in TeX Live). The tools must be
+on PATH.
+Dependencies and font inputs are supplied separately; nothing is downloaded
+or installed by the build.
+
+Input files
+-----------
+Create the input directories:
+  mkdir -p mtpro2 donors
+
+Copy the MTPro2 PFB/TFM files and mtpro2.sty into mtpro2/.
+Full also needs umt2ms.fd, umt2mf.fd, umt2bb.fd, and umt2hrb.fd there.
+Files must be directly in mtpro2/; TeX trees are not searched.
+The build reports incomplete inputs for the selected edition.
+
+Place the default Artifex urw-base35 Roman donors in donors/:
+  NimbusRoman-Regular.otf
+  NimbusRoman-Bold.otf
+
+Quick start
+-----------
+  ./build.sh                  # Full
+  ./build.sh --edition=lite   # Lite
+
+Another upright, proportional Regular/Bold pair from the same Roman family
+can be selected with:
+  ./build.sh --roman-regular=/path/to/Regular.otf \
+             --roman-bold=/path/to/Bold.otf
+
+Static CFF OTF and TrueType TTF donors are accepted. Required character
+coverage is checked; optional text coverage varies with the donor.
+
+Output
+------
+  Full: out/MTPro2Math.otf, out/MTPro2Math.ttf
+  Lite: out/MTPro2MathLite.otf, out/MTPro2MathLite.ttf
+
+Only validated fonts are placed in out/. Full and Lite outputs coexist.
+Intermediate files, local source values, and build.log remain under
+build/full/ or build/lite/. A failed build leaves previous outputs intact;
+their presence alone does not mean the latest build succeeded.
+
+Use the TTF in Word and select MTPro2 Math or MTPro2 Math Lite as the math
+font. With LuaLaTeX or XeLaTeX, select the OTF through unicode-math.
+No project-specific TeX package or Lua callback is required.
+
+Documentation
+-------------
+doc/mtp2otf.tex describes the conversion and validation contracts.
+Compile it with pdflatex to produce the technical specification.
+doc/word.docx and doc/lualatex.tex are editable specimens; their PDFs show
+the Full edition with Nimbus donors. See the specification for rebuilding
+the specimens and for engine-specific limitations.
+
+Repository: https://github.com/satom-zk/mtp2otf
+Issues:     https://github.com/satom-zk/mtp2otf/issues
+
+License
+-------
+Project-authored code and documentation use 0BSD (see LICENSE).
+MTPro2 and donor fonts retain their respective terms. Nimbus Roman from
+urw-base35 uses AGPL terms; consult the distribution you obtained.
+
+MathTime is a trademark of Publish or Perish, Inc. This independent project
+is not affiliated with or endorsed by Publish or Perish, Inc., Personal TeX,
+Inc. (PCTeX), or Artifex Software.
