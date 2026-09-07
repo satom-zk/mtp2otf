@@ -62,6 +62,7 @@ doc/word.docx and doc/lualatex.tex are editable specimens; their PDFs show
 the Full edition with Nimbus donors. See the specification for rebuilding
 the specimens and for engine-specific limitations.
 
+Maintainer: Mizuki Sato
 Repository: https://github.com/satom-zk/mtp2otf
 Issues:     https://github.com/satom-zk/mtp2otf/issues
 
