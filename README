@@ -1,5 +1,7 @@
 mtp2otf
 =======
+Version 1.0
+
 Convert MathTime™ Professional 2 (MTPro2) into OpenType MATH fonts for
 Word and unicode-math. Full and Lite have separate installation names.
 
@@ -55,7 +57,7 @@ No project-specific TeX package or Lua callback is required.
 Documentation
 -------------
 doc/mtp2otf.tex describes the conversion and validation contracts.
-Compile it with pdflatex to produce the technical specification.
+Compile it with lualatex to produce the technical specification.
 doc/word.docx and doc/lualatex.tex are editable specimens; their PDFs show
 the Full edition with Nimbus donors. See the specification for rebuilding
 the specimens and for engine-specific limitations.
