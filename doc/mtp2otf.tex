@@ -140,7 +140,8 @@ adjacency adjustment is
   \operatorname{CHARIC}(\text{left})
   + \operatorname{TFMkern}(\text{left},\text{right}).
 \]
-It is encoded in cumulative GPOS layers. A missing TFM pair contributes
+It is encoded in cumulative GPOS layers. TFM pair kerns are represented
+by the OpenType \file{kern} feature in GPOS. A missing TFM pair contributes
 zero, not a reason to discard italic correction. Skewchar-right pairs
 are excluded from ordinary kerning according to the local declarations.
 Script, prime, and accent placement are separate layout paths.
@@ -265,27 +266,28 @@ table differences for investigation. A layout change additionally
 requires focused engine tests. Identical nonvolatile output can reuse
 the earlier rendering evidence for that exact font content.
 
-\section{Specimens and engine limits}
-\file{word.docx} and \file{lualatex.tex} are editable specimens. The
-included PDFs show the Full edition with Nimbus donors. Word uses the
-TTF as its math font and Times New Roman for body text; LuaLaTeX uses
-the OTF and Nimbus Roman for body text. Close Word before replacing
-an installed font.
+\section{Application use}
+\textbf{Word.}
+The reviewed setup uses TTF. Select \file{MTPro2 Math} or
+\file{MTPro2 Math Lite} as the equation font and enable font kerning
+for sizes of 1~pt and above. This is a font-size threshold, not the
+amount of adjustment. Word is the primary application target; its
+GPOS-based output has been checked against source data and rendered
+comparisons. Equation run boundaries can limit pair positioning.
 
-To rebuild the LuaLaTeX specimen, first build Full, then run
-\texttt{lualatex lualatex.tex} from \file{doc/}. The specimen needs
-\file{amsmath}, \file{fontspec}, \file{unicode-math}, and all four Nimbus
-Roman body styles discoverable by TeX. These specimen dependencies are
-not additional converter dependencies. This specification itself can
-be compiled with \texttt{lualatex mtp2otf.tex}, without MTPro2 fonts.
+\textbf{LuaLaTeX.}
+Use the generated OTF with \file{unicode-math}. The font contains the
+source-derived GPOS spacing, but the tested LuaHBTeX math paths do not
+fully apply it. These spacing differences arise from engine processing,
+not missing font data. For the original TeX spacing and optical-size
+selection, we recommend the MTPro2 Type~1 fonts with the \file{mtpro2}
+package.
 
-Word can segment mathematical runs before GPOS processing. LuaHBTeX
-may not reproduce the complete Type~1 ordinary italic-correction plus
-pair-kern combination. A correct font table therefore does not imply
-identical spacing in every engine. No Lua option or callback is added
-to hide these differences. Compare the included specimens with the original
-Type~1 output in the same layout context when distinguishing source
-behavior, conversion behavior, and engine behavior.
+\textbf{Specimens.}
+\file{doc/word.docx} and \file{doc/lualatex.tex} are editable sources for
+\file{doc/word.pdf} and \file{doc/lualatex.pdf}. Both show Full with
+Nimbus donors. Word uses TTF with Times New Roman body text;
+LuaLaTeX uses OTF with Nimbus Roman body text.
 
 \section{Publication and references}
 The public tree contains the shell entry point, Python tools, README,
