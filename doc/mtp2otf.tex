@@ -7,350 +7,700 @@
 \setmonofont{Nimbus Mono PS}
 \usepackage{mtpro2}
 \usepackage{booktabs,tabularx,longtable,enumitem}
-\usepackage[hidelinks,pdftitle={mtp2otf: Conversion and validation specification},pdfauthor={}]{hyperref}
+\usepackage[hidelinks,pdftitle={mtp2otf: User guide and font reference},pdfauthor={}]{hyperref}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{5pt}
+\setlength{\parskip}{4pt}
+\emergencystretch=2em
 \setlist{nosep,leftmargin=*}
 \clubpenalty=10000
 \widowpenalty=10000
-\newcommand{\file}[1]{\nolinkurl{#1}}
-\title{mtp2otf\\\large Conversion and validation specification}
+\newcommand{\file}[1]{{\small\texttt{\detokenize{#1}}}}
+\AddToHook{env/verbatim/begin}{\small}
+\title{mtp2otf\\\large User guide and font reference}
 \author{}
 \date{}
 \begin{document}
 \maketitle
 \vspace{-2em}
 
-\section{Scope}
-mtp2otf converts locally supplied MathTime\texttrademark{} Professional 2 (MTPro2) Type~1
-fonts and TeX metrics into a single-face OpenType MATH font. The Full and
-Lite editions have distinct installation identities. CFF-based OTF is the
-canonical generated font; TrueType-based TTF is derived from it for Word.
-Both formats retain the OpenType math layout data.
+\section{Overview}
+mtp2otf converts MathTime\texttrademark{} Professional 2 (MTPro2) Type~1
+fonts and TeX metrics to OpenType MATH. It preserves the source designs,
+including optical script sizes and large symbols, and supplies the layout
+data used by Unicode math engines. Upright Latin letters and additional
+text characters come from a separate Roman font pair.
 
-The interface to TeX engines is \file{unicode-math}. There is no companion
-package, Lua callback, or runtime-generated TeX sidecar. The converter does
-not resolve TeX trees, download inputs, install dependencies, or install
-generated fonts. Full is the default. Missing Full inputs never select
-Lite automatically.
+The converter produces OTF for LuaLaTeX and TTF for Microsoft Word.
+Full and Lite use separate family names and can be installed together.
+The selected edition requires the corresponding MTPro2 source files.
 
-\section{Inputs and build interface}
-\subsection{Source staging}
-Place the source files directly in \file{mtpro2/}. Each active source font
-requires its PFB and TFM pair; \file{mtpro2.sty} supplies package policy.
-Full additionally requires \file{umt2ms.fd}, \file{umt2mf.fd},
-\file{umt2bb.fd}, and \file{umt2hrb.fd}. Lite does not require these
-Full-only declarations. The source registry and required-file calculation
-are defined in \file{tools/source_policy.py}. Empty inputs receive setup
-guidance; partially supplied inputs receive a missing-file list.
+No additional mtp2otf package is needed to use the generated fonts.
+Unicode characters and OpenType features provide access to the designs.
+The original \file{mtpro2} package's custom commands are not included;
+Section~\ref{sec:macro-equivalents} relates them to the available inputs.
 
-The Lite source set contains the text, script, and scriptscript sizes of
-\file{mt2mi}, \file{mt2sy}, and \file{mt2mb}, plus
-\file{mt2exa}, \file{mt2exe}, \file{mt2exf}, \file{mt2exg},
-\file{mt2xl}, and \file{mt2xxxl}. The three optical-size suffixes are
-\file{t}, \file{s}, and \file{f}. Full includes the additional math
-alphabets and symbol sources in the registry.
+\section{Building the fonts}\label{sec:build}
+\subsection{Requirements}
+The build requires a POSIX shell, Python~3.10 or later with fontTools,
+FontForge with Python~3.10 or later support, and \file{tftopl} from
+TeX Live. These commands must be on PATH.
 
-\subsection{Roman donors}
-The default inputs in \file{donors/} are
-\file{NimbusRoman-Regular.otf} and \file{NimbusRoman-Bold.otf}
-from Artifex urw-base35. Another static CFF OTF or TrueType TTF pair can
-be selected explicitly. Both faces must be upright, proportional, from
-the same family, and have the required Latin and digit coverage and
-appropriate weights. Coordinates and advances are normalized to the
-output units per em.
+Create \file{mtpro2/} and \file{donors/} beside \file{build.sh}.
+Supply the font files separately:
+\begin{itemize}
+\item \file{mtpro2/}: MTPro2 PFB/TFM files and \file{mtpro2.sty}.
+Full also requires \file{umt2ms.fd}, \file{umt2mf.fd},
+\file{umt2bb.fd}, and \file{umt2hrb.fd}.
+\item \file{donors/}: \file{NimbusRoman-Regular.otf} and
+\file{NimbusRoman-Bold.otf} from Artifex urw-base35.
+\end{itemize}
+Place the files directly in these directories. The build reports missing
+inputs for the selected edition.
 
-Regular supplies upright Latin and permitted additional text characters;
-Bold supplies mathematical bold Latin and digits. Mathematical italic,
-bold italic, and non-Latin-shaped Greek come from MTPro2. Optional donor
-text coverage can vary. A donor must not fill missing Full-only math
-semantics in Lite.
+Another Roman pair can be selected with the options below. The faces must
+be static CFF OTF or TrueType TTF, upright and proportional, from the same
+family, and have the required Latin and digit coverage and Regular/Bold
+weights.
 
-\subsection{Commands and configuration}
+\subsection{Build options}
+The default build uses Full and minimal donor coverage:
+\begin{samepage}
 \begin{verbatim}
-mkdir -p mtpro2 donors
-# Copy the source fonts, declarations, and donors.
 ./build.sh
+\end{verbatim}
+\end{samepage}
+Select Lite, extended donor coverage, or a different Roman pair as needed:
+\begin{samepage}
+\begin{verbatim}
 ./build.sh --edition=lite
+./build.sh --donor-coverage=extended
 ./build.sh --roman-regular=/path/to/Regular.otf \
            --roman-bold=/path/to/Bold.otf
+./build.sh --help
 \end{verbatim}
-The public options are \file{--edition}, \file{--roman-regular}, and
-\file{--roman-bold}; help is available with \file{--help}.
-Unknown options and abbreviated option names are rejected.
-Relative donor paths are resolved from the caller's working directory.
-All project directories are resolved from the location of \file{build.sh}.
+\end{samepage}
+The edition and donor options can be combined. Relative donor paths are
+resolved from the current directory; project paths are relative to
+\file{build.sh}.
 
-Python~3.10 or later with fontTools, FontForge with Python~3.10 or later
-support, and \file{tftopl} are required. Dependency and input failures stop
-the build early. Users create and populate the input directories; the build
-creates only its working and output directories.
+Minimal coverage uses a fixed selection of Roman characters. Extended
+coverage adds eligible characters available in the Regular donor, without
+replacing MTPro2's mathematical glyphs. It does not add Full-only features
+to Lite. Appendix~\ref{sec:donors} lists the selection rules.
 
-\section{Working state and final outputs}
+\subsection{Output}
+The generated fonts are placed in \file{out/}:
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Edition & OTF & TTF \\
+\midrule
+Full & \file{MTPro2Math.otf} & \file{MTPro2Math.ttf} \\
+Lite & \file{MTPro2MathLite.otf} & \file{MTPro2MathLite.ttf} \\
+\bottomrule
+\end{tabular}
+\end{center}
+Install the generated fonts manually. Errors are reported on stderr;
+generation diagnostics are recorded in \file{build/<edition>/build.log}.
+Check the command's exit status: a failed build may leave previous output
+files in place. Do not run concurrent builds of the same edition.
+
+\section{Using the fonts}\label{sec:use}
+\subsection{Microsoft Word}
+Install the TTF and select \file{MTPro2 Math} or
+\file{MTPro2 Math Lite} as the equation font. For the equation text,
+enable \emph{Kerning for fonts} at 1~pt and above in the Font dialog.
+
+Use Word's equation editor for mathematical alphabets, accents, delimiters
+and operators. It does not expose the same OpenType feature controls as
+LuaLaTeX. The explicit feature and private-use examples in this manual
+are for LuaLaTeX.
+
+\subsection{LuaLaTeX}
+Load the OTF with \file{unicode-math}:
+\begin{samepage}
+\begin{verbatim}
+\usepackage{unicode-math}
+\setmathfont{MTPro2Math.otf}
+\end{verbatim}
+\end{samepage}
+For Lite, use \file{MTPro2MathLite.otf}. If the font is not installed,
+specify its directory with the \file{Path} option.
+
+Use \file{unicode-math} commands for alphabets and symbols, and the usual
+math structures for scripts, fractions, accents and delimiters.
+OpenType feature selection is described in Section~\ref{sec:selection}.
+
+Ordinary pair spacing uses GPOS data in the font. Lua math does not fully
+apply these adjustments, so spacing can differ from Word and from the
+original Type~1 package.
+
+The font can also be used with \file{lua-unicode-math}.
+
+\subsection{Samples}
+\file{doc/word.pdf} and \file{doc/lualatex.pdf} show matching Full-edition
+examples. Their editable sources are \file{doc/word.docx} and
+\file{doc/lualatex.tex}.
+
+Open the Word source in Word and export its PDF there. To typeset the
+LuaLaTeX source, build Full and run \file{lualatex lualatex.tex} from
+\file{doc/}. The source uses \file{mathtools}, \file{unicode-math},
+and Nimbus Roman Regular, Bold, Italic and BoldItalic.
+
+\section{Alphabets and symbol selection}\label{sec:selection}
+\subsection{Mathematical alphabets}
+Use the mathematical Unicode characters or the corresponding
+\file{unicode-math} commands. The following commands select the principal
+Latin alphabets:
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Alphabet & Command & Edition \\
+\midrule
+Upright & \file{\symup{ABCxyz}} & Full, Lite \\
+Italic & \file{\symit{ABCxyz}} & Full, Lite \\
+Bold upright & \file{\symbfup{ABCxyz}} & Full, Lite \\
+Bold italic & \file{\symbfit{ABCxyz}} & Full \\
+Script & \file{\symscr{ABCxyz}} & Full \\
+Bold Script & \file{\symbfscr{ABCxyz}} & Full \\
+Fraktur & \file{\symfrak{ABCxyz}} & Full \\
+Bold Fraktur & \file{\symbffrak{ABCxyz}} & Full \\
+Blackboard bold & \file{\symbb{ABCxyz}} & Full \\
+\bottomrule
+\end{tabular}
+\end{center}
+Mathematical sans and monospace alphabets are not included.
+Blackboard bold uses the original mtpbb design by default.
+
+Roman donors supply upright Latin and mathematical bold upright Latin
+and digits. Mathematical italic, bold italic and non-Latin-shaped Greek
+come from MTPro2. Character variants provide alternative designs,
+including original MTPro2 bold and other Blackboard styles.
+
+\subsection{Alternative designs}
+Character variants (CVs) select alternatives to the default glyphs.
+Appendix~\ref{sec:alphabets} lists their tags and input characters.
+In LuaLaTeX, select a feature through \file{RawFeature}:
+\begin{samepage}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}[RawFeature={+cv01}]
+\end{verbatim}
+\end{samepage}
+This selects swash z wherever its input character occurs.
+For a local choice, define a named math version in the preamble and
+select it outside the formula:
+\begin{samepage}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}
+\setmathfont{MTPro2Math.otf}[version=swash,
+                          RawFeature={+cv01}]
+\begingroup\mathversion{swash}
+\[ z \]
+\endgroup
+\end{verbatim}
+\end{samepage}
+A group restores the previous version. Numbered \file{RawFeature}
+choices start at 1; for example, \file{cv15=27} selects a particular
+arc design. Enable only one of the competing variants for a given input.
+
+The \file{ssty} feature supplies optical script designs to the math
+engine. In Full, \file{salt} selects Curly alternatives from Script
+inputs: add \file{RawFeature={+salt}} to \file{\setmathfont} and
+use \file{\symscr{ABC}}. A named math version limits the selection
+to a group.
+
+\subsection{Growing and fixed symbols}
+Delimiters, radicals and wide accents select sizes through OpenType MATH.
+For example:
+\begin{samepage}
+\begin{verbatim}
+\[ \left(\frac{a+b}{c+d}\right)
+   \qquad \sqrt{x^2+y^2}
+   \qquad \widehat{ABC} \]
+\end{verbatim}
+\end{samepage}
+The font supplies prebuilt designs and, for some symbols, assemblies
+that extend them with repeated parts. The engine selects a size from the
+formula's dimensions and math style. Large operators use a finite series
+of prebuilt designs.
+
+Fixed CV choices select individual designs for custom constructions.
+Their measurement, centering and spacing are the responsibility of the
+calling macro. Accent glyphs require accent syntax to attach them to a
+nucleus. Appendix~\ref{sec:large} gives the automatic inputs, fixed
+choices and private-use entries.
+
+\section{License and project}
+Project-authored code and documentation use 0BSD (\file{LICENSE}).
+MTPro2, donor fonts and external tools retain their respective terms.
+MathTime is a trademark of Publish or Perish, Inc. This independent project
+is not affiliated with or endorsed by Publish or Perish, Inc., Personal
+TeX, Inc., or Artifex Software.
+
+Repository: \url{https://github.com/satom-zk/mtp2otf}\\
+Issues: \url{https://github.com/satom-zk/mtp2otf/issues}
+
+\appendix
+
+\section{Character variants}\label{sec:alphabets}
+The table lists CV tags, their standard Unicode inputs and edition
+availability. Tags with multiple choices use the numbered values in
+Appendix~\ref{sec:large}. Selection syntax is given in
+Section~\ref{sec:selection}. AMS denotes MTPro2's own AMS symbol sources.
+
+\begingroup\small\setlength\tabcolsep{4pt}\renewcommand\arraystretch{1.12}
+\begin{longtable}{@{}p{0.14\linewidth}p{0.66\linewidth}p{0.13\linewidth}@{}}
+\toprule
+Feature & Meaning and standard Unicode targets & Edition \\ \midrule \endfirsthead
+\toprule
+Feature & Meaning and standard Unicode targets & Edition \\ \midrule \endhead
+\bottomrule\endfoot
+\texttt{cv01} & swash z\newline U+1D467 & both \\
+\texttt{cv02} & Full empty-set alternate\newline U+2205 & Full \\
+\texttt{cv03} & mtpbbd (mt2bb / b / n)\newline Blackboard inputs & Full \\
+\texttt{cv04} & mtpbbi (mt2bb / m / it)\newline Blackboard inputs & Full \\
+\texttt{cv05} & mtphrb (Holey Roman Bold family mt2hrb / m / n)\newline Blackboard inputs & Full \\
+\texttt{cv06} & mtphrd (Holey Roman Bold family mt2hrb / b / n)\newline Blackboard inputs & Full \\
+\texttt{cv07} & mtphbi (Holey Roman Bold family mt2hrb / m / it)\newline Blackboard inputs & Full \\
+\texttt{cv08} & straight braces\newline U+007B, U+007D & both \\
+\texttt{cv09} & MTPro2 AMS negated-relation alternates\newline U+2241, U+2288--2289 & Full \\
+\texttt{cv10} & variant subsetneq/supsetneq\newline U+228A--228B & Full \\
+\texttt{cv11} & hbar alternate\newline U+210F & both \\
+\texttt{cv12} & slanted large operators\newline U+220F--2211 & both \\
+\texttt{cv13} & fixed overbrace designs\newline U+23DE & both \\
+\texttt{cv14} & fixed underbrace designs\newline U+23DF & both \\
+\texttt{cv15} & fixed overparen designs\newline U+23DC & both \\
+\texttt{cv16} & fixed delimiter designs\newline U+0028--0029, U+005C, U+007B, U+007D, U+27E8--27E9 & both \\
+\texttt{cv17} & fixed radical designs\newline U+221A & both \\
+\texttt{cv18} & fixed accent designs\newline U+0302--0303, U+030C & both \\
+\texttt{cv19} & fixed brace designs\newline U+007B, U+007D & both \\
+\texttt{cv20} & plain stretchable brace construction\newline U+23DE--23DF & both \\
+\texttt{cv21} & original curly brace variant/assembly construction\newline U+23DE--23DF & both \\
+\texttt{cv89} & original MTPro2 bold Latin and digits\newline U+1D400--1D433, U+1D7CE--1D7D7 & both \\
+\texttt{cv89} & Latin-shaped Greek aliases of those bold glyphs\newline U+1D6A8--1D6A9, U+1D6AC--1D6AE, U+1D6B0--1D6B1, U+1D6B3--1D6B4, U+1D6B6, U+1D6B8, U+1D6BB, U+1D6BE, U+1D6D0 & Full \\
+\texttt{cv90} & Script/Fraktur source alternates and Fraktur reuse, text design\newline Script/Fraktur inputs & Full \\
+\texttt{cv91} & Script/Fraktur source alternates and Fraktur reuse, script design\newline Script/Fraktur inputs & Full \\
+\texttt{cv92} & Script/Fraktur source alternates and Fraktur reuse, scriptscript design\newline Script/Fraktur inputs & Full \\
+\texttt{cv93} & Curly source alternates, text design\newline U+2133, U+1D4A2, U+1D4A9, U+1D4AC, U+1D4B4 & Full \\
+\texttt{cv94} & Curly source alternates, script design\newline U+2133, U+1D4A2, U+1D4A9, U+1D4AC, U+1D4B4 & Full \\
+\texttt{cv95} & Curly source alternates, scriptscript design\newline U+2133, U+1D4A2, U+1D4A9, U+1D4AC, U+1D4B4 & Full \\
+\texttt{cv96} & original MTPro2 AMS yen/registered alternates\newline U+00A5, U+00AE & Full \\
+\end{longtable}\endgroup
+
+\begingroup\raggedright
+\textbf{Blackboard inputs:} U+2102, U+210D, U+2115, U+2119--211A, U+211D, U+2124, U+1D538--1D539, U+1D53B--1D53E, U+1D540--1D544, U+1D546, U+1D54A--1D550, U+1D552--1D56B, U+1D7D8--1D7E1.\par
+\textbf{Script/Fraktur inputs:} U+2110--2112, U+211C, U+1D49E, U+1D4A2, U+1D4AC, U+1D4AE, U+1D4B4--1D4B5, U+1D4C7, U+1D4CF, U+1D4D2, U+1D4D6, U+1D4D8, U+1D4DB, U+1D4E0, U+1D4E2, U+1D4E8--1D4E9, U+1D4FB, U+1D503, U+1D51C, U+1D535--1D536, U+1D584, U+1D59D--1D59E.\par
+\endgroup
+
+\subsection{Additional source letters and fixed accents}
+The following private-use characters select source letter and
+fixed-accent designs in both editions. Letter inputs use an explicit
+math character; fixed accents use an accent primitive:
+\begin{samepage}
+\begin{verbatim}
+\[ \Umathchar 0 \symoperators "E240\relax \]
+\[ \Umathaccent fixed 0 \symoperators "E24C {x} \]
+\end{verbatim}
+\end{samepage}
+
+\begin{center}
 \begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
 \toprule
-Location & Purpose \\
+Input & Design \\
 \midrule
-\file{mtpro2/} & Local Type~1 fonts, TeX metrics, and declarations. \\
-\file{donors/} & Local Regular and Bold Roman donors. \\
-\file{build/full/}, \file{build/lite/} & Edition-specific intermediate
-fonts, converted PL files, calculated values, and one diagnostic log. \\
-\file{out/} & Validated OTF and TTF deliverables only. \\
+U+E240 & Italic beta variant \\
+U+E241, U+E242 & Italic and upright delta variants \\
+U+E243, U+E244 & Italic and upright barred d \\
+U+E24E, U+E24A & Fixed bar designs: wbar and wwbar \\
+U+E24F, U+E250, U+E251 & Fixed wide hat, tilde and check \\
+U+E24B, U+E24C & Raised dot and double-dot accents \\
+U+E254, U+E255 & Raised triple-dot and quadruple-dot accents \\
 \bottomrule
 \end{tabularx}
+\end{center}
 
-Full produces \file{MTPro2Math.otf} and \file{MTPro2Math.ttf}.
-Lite produces \file{MTPro2MathLite.otf} and \file{MTPro2MathLite.ttf}.
-Both editions coexist in \file{out/}.
-No font is built directly into this directory.
+\section{Large-symbol inputs}\label{sec:large}
+\subsection{Automatic size selection}
+The table lists the input, direction of growth (V: vertical; H:
+horizontal), number of prebuilt variants, and availability of assembly.
+The input examples use LuaLaTeX. Pair \file{\left} and \file{\right}
+around a formula; a dot gives an invisible delimiter. Use \file{\sqrt[n]}
+for a radical with a degree.
 
-After every required check succeeds, each validated candidate is copied
-to a temporary file beside its destination and renamed into place.
-This avoids exposing a partially copied individual font. It is not a
-two-file filesystem transaction: an interruption during final promotion
-can leave a previously validated OTF/TTF pair from different builds.
-Run the build again to replace the pair together in the normal sequence.
+\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
+\begin{longtable}{@{}p{0.18\linewidth}p{0.085\linewidth}p{0.235\linewidth}p{0.035\linewidth}p{0.045\linewidth}p{0.07\linewidth}p{0.12\linewidth}p{0.065\linewidth}@{}}
+\toprule
+Meaning & Unicode & Input & V/H & Var. & Asm. & Control & Edition \\ \midrule \endfirsthead
+\toprule
+Meaning & Unicode & Input & V/H & Var. & Asm. & Control & Edition \\ \midrule \endhead
+\bottomrule\endfoot
+left parenthesis & \texttt{U+\allowbreak{}0028} & \texttt{\textbackslash{}left(} & V & 26 & yes & body height & both \\
+right parenthesis & \texttt{U+\allowbreak{}0029} & \texttt{\textbackslash{}right)} & V & 26 & yes & body height & both \\
+solidus & \texttt{U+\allowbreak{}002F} & \texttt{\textbackslash{}left/\allowbreak{}} & V & 26 & no & body height & both \\
+left square bracket & \texttt{U+\allowbreak{}005B} & \texttt{\textbackslash{}left\textbackslash{}lbrack} & V & 5 & yes & body height & both \\
+reverse solidus & \texttt{U+\allowbreak{}005C} & \texttt{\textbackslash{}left\textbackslash{}backslash} & V & 26 & no & body height & both \\
+right square bracket & \texttt{U+\allowbreak{}005D} & \texttt{\textbackslash{}right\textbackslash{}rbrack} & V & 5 & yes & body height & both \\
+left curly bracket & \texttt{U+\allowbreak{}007B} & \texttt{\textbackslash{}left\textbackslash{}\textbraceleft{}} & V & 26 & yes & body height & both \\
+vertical line & \texttt{U+\allowbreak{}007C} & \texttt{\textbackslash{}left\textbackslash{}vert} & V & 2 & yes & body height & both \\
+right curly bracket & \texttt{U+\allowbreak{}007D} & \texttt{\textbackslash{}right\textbackslash{}\textbraceright{}} & V & 26 & yes & body height & both \\
+combining circumflex accent & \texttt{U+\allowbreak{}0302} & \texttt{\textbackslash{}widehat} & H & 40 & no & body width & both \\
+combining tilde & \texttt{U+\allowbreak{}0303} & \texttt{\textbackslash{}widetilde} & H & 40 & no & body width & both \\
+combining caron & \texttt{U+\allowbreak{}030C} & \texttt{\textbackslash{}widecheck} & H & 40 & no & body width & both \\
+double vertical line & \texttt{U+\allowbreak{}2016} & \texttt{\textbackslash{}left\textbackslash{}Vert} & V & 2 & yes & body height & both \\
+n-ary product & \texttt{U+\allowbreak{}220F} & \texttt{\textbackslash{}prod} & V & 6 & no & operator size & both \\
+n-ary coproduct & \texttt{U+\allowbreak{}2210} & \texttt{\textbackslash{}coprod} & V & 6 & no & operator size & both \\
+n-ary summation & \texttt{U+\allowbreak{}2211} & \texttt{\textbackslash{}sum} & V & 6 & no & operator size & both \\
+square root & \texttt{U+\allowbreak{}221A} & \texttt{\textbackslash{}sqrt} & V & 26 & yes & body height & both \\
+integral & \texttt{U+\allowbreak{}222B} & \texttt{\textbackslash{}int} & V & 6 & no & operator size & both \\
+double integral & \texttt{U+\allowbreak{}222C} & \texttt{\textbackslash{}iint} & V & 6 & no & operator size & both \\
+triple integral & \texttt{U+\allowbreak{}222D} & \texttt{\textbackslash{}iiint} & V & 6 & no & operator size & both \\
+contour integral & \texttt{U+\allowbreak{}222E} & \texttt{\textbackslash{}oint} & V & 6 & no & operator size & both \\
+surface integral & \texttt{U+\allowbreak{}222F} & \texttt{\textbackslash{}oiint} & V & 6 & no & operator size & both \\
+volume integral & \texttt{U+\allowbreak{}2230} & \texttt{\textbackslash{}oiiint} & V & 6 & no & operator size & both \\
+clockwise integral & \texttt{U+\allowbreak{}2231} & \texttt{\textbackslash{}intclockwise} & V & 6 & no & operator size & both \\
+clockwise contour integral & \texttt{U+\allowbreak{}2232} & \texttt{\textbackslash{}varointclockwise} & V & 6 & no & operator size & both \\
+anticlockwise contour integral & \texttt{U+\allowbreak{}2233} & \texttt{\textbackslash{}ointctrclockwise} & V & 6 & no & operator size & both \\
+n-ary logical and & \texttt{U+\allowbreak{}22C0} & \texttt{\textbackslash{}bigwedge} & V & 6 & no & operator size & both \\
+n-ary logical or & \texttt{U+\allowbreak{}22C1} & \texttt{\textbackslash{}bigvee} & V & 6 & no & operator size & both \\
+n-ary intersection & \texttt{U+\allowbreak{}22C2} & \texttt{\textbackslash{}bigcap} & V & 6 & no & operator size & both \\
+n-ary union & \texttt{U+\allowbreak{}22C3} & \texttt{\textbackslash{}bigcup} & V & 6 & no & operator size & both \\
+left ceiling & \texttt{U+\allowbreak{}2308} & \texttt{\textbackslash{}left\textbackslash{}lceil} & V & 5 & yes & body height & both \\
+right ceiling & \texttt{U+\allowbreak{}2309} & \texttt{\textbackslash{}right\textbackslash{}rceil} & V & 5 & yes & body height & both \\
+left floor & \texttt{U+\allowbreak{}230A} & \texttt{\textbackslash{}left\textbackslash{}lfloor} & V & 5 & yes & body height & both \\
+right floor & \texttt{U+\allowbreak{}230B} & \texttt{\textbackslash{}right\textbackslash{}rfloor} & V & 5 & yes & body height & both \\
+top parenthesis & \texttt{U+\allowbreak{}23DC} & \texttt{\textbackslash{}overparen} & H & 26 & yes & body width & both \\
+top curly bracket & \texttt{U+\allowbreak{}23DE} & \texttt{\textbackslash{}overbrace} & H & 0 & yes & body width & both \\
+bottom curly bracket & \texttt{U+\allowbreak{}23DF} & \texttt{\textbackslash{}underbrace} & H & 0 & yes & body width & both \\
+mathematical left angle bracket & \texttt{U+\allowbreak{}27E8} & \texttt{\textbackslash{}left\textbackslash{}langle} & V & 26 & no & body height & both \\
+mathematical right angle bracket & \texttt{U+\allowbreak{}27E9} & \texttt{\textbackslash{}right\textbackslash{}rangle} & V & 26 & no & body height & both \\
+n-ary circled dot operator & \texttt{U+\allowbreak{}2A00} & \texttt{\textbackslash{}bigodot} & V & 6 & no & operator size & both \\
+n-ary circled plus operator & \texttt{U+\allowbreak{}2A01} & \texttt{\textbackslash{}bigoplus} & V & 6 & no & operator size & both \\
+n-ary circled times operator & \texttt{U+\allowbreak{}2A02} & \texttt{\textbackslash{}bigotimes} & V & 6 & no & operator size & both \\
+n-ary union operator with dot & \texttt{U+\allowbreak{}2A03} & \texttt{\textbackslash{}bigcupdot} & V & 6 & no & operator size & both \\
+n-ary union operator with plus & \texttt{U+\allowbreak{}2A04} & \texttt{\textbackslash{}biguplus} & V & 6 & no & operator size & both \\
+n-ary square union operator & \texttt{U+\allowbreak{}2A06} & \texttt{\textbackslash{}bigsqcup} & V & 6 & no & operator size & both \\
+finite part integral & \texttt{U+\allowbreak{}2A0D} & \texttt{\textbackslash{}intbar} & V & 6 & no & operator size & both \\
+integral average with slash & \texttt{U+\allowbreak{}2A0F} & \texttt{\textbackslash{}fint} & V & 6 & no & operator size & both \\
+cap product & \texttt{U+\allowbreak{}E280} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E280} & V & 6 & no & operator size & both \\
+slanted sum & \texttt{U+\allowbreak{}E281} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E281} & V & 6 & no & operator size & both \\
+slanted product & \texttt{U+\allowbreak{}E282} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E282} & V & 6 & no & operator size & both \\
+slanted coproduct & \texttt{U+\allowbreak{}E283} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E283} & V & 6 & no & operator size & both \\
+variant large land & \texttt{U+\allowbreak{}E284} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E284} & V & 6 & no & operator size & both \\
+large asterisk & \texttt{U+\allowbreak{}E285} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E285} & V & 6 & no & operator size & both \\
+finite wide overbar & \texttt{U+\allowbreak{}E286} & accent input; see \ref{sec:pua-accents} & H & 3 & no & body width & both \\
+assembled wide vector & \texttt{U+\allowbreak{}E287} & accent input; see \ref{sec:pua-accents} & H & 0 & yes & body width & both \\
+\end{longtable}\endgroup
 
-Input, construction, conversion, or validation failure leaves previous
-outputs intact. Their presence does not establish that the latest build
-succeeded: use the command's exit status. Full and Lite may be built in
-sequence; simultaneous builds of the same edition are not supported.
-The entire \file{build/} directory is disposable and can be regenerated
-from the local inputs.
+\begin{samepage}
+\subsection{Size requests}
+The engine selects variants using MATH AdvanceMeasurement, formula dimensions,
+style, delimiter factor and shortfall. AdvanceMeasurement is a selection
+dimension, not an ink measurement. Operators have finite size series.
+Lua can request a larger operator with \file{\Umathoperatorsize}:
 
-\subsection{Progress and diagnostics}
-Normal stdout contains one line: \texttt{building MTPro2 Math}, or
-\texttt{building MTPro2 Math Lite}. Successful audits are silent. An unsuccessful
-subprocess reports its captured diagnostics on stderr. FontForge output
-and warnings remain available in \file{build/<edition>/build.log} even
-when the subprocess succeeds. The log is replaced for each new build
-that reaches this stage, rather than accumulated across runs.
+\begin{verbatim}
+\begingroup
+\[ \Umathoperatorsize\displaystyle=72pt
+   \sum_{n=0}^{N} a_n \]
+\endgroup
+\end{verbatim}
+The request selects an available operator design; its ink height may
+differ from 72pt.
 
-Exit status is zero on success, two for command usage and preflight
-failures handled by the frontend, and one for build or validation failure.
-There is no automatic installation, clean command, verification bypass,
-or verbose-mode configuration.
+\end{samepage}
 
-\section{Conversion contracts}
-\subsection{Source metrics and ordinary spacing}
-An untransformed MTPro2 glyph retains TFM \file{CHARWD} as its horizontal
-advance and \file{CHARIC} as its MATH italic correction. The ordinary
-adjacency adjustment is
+\subsection{Fixed character-variant choices}
+The table lists 121 choices in their parameter order. cv15=27 selects the
+alternate arc design. cv13--cv16 and cv18--cv19 select glyphs without growing
+constructions. Each cv17 choice selects a single terminal radical design
+without assembly.
+Use the Input and RawFeature columns to select a design; the last column
+names the stored glyph.
+
+For a fixed design, select the feature and use an explicit math class.
+This example displays the alternate arc as a standalone class-0 symbol:
+\begin{samepage}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}[version=fixedarc,
+                          RawFeature={cv15=27}]
+\begingroup\mathversion{fixedarc}
+\[ \Umathchar 0 \symoperators "23DC \]
+\endgroup
+\end{verbatim}
+\end{samepage}
+Fixed accents require accent syntax; use the ordinary radical for
+automatic \file{\sqrt} growth.
+
+\begingroup\small\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
+\begin{longtable}{@{}p{0.16\linewidth}p{0.20\linewidth}p{0.56\linewidth}@{}}
+\toprule
+Input & RawFeature & Glyph identifier \\ \midrule \endfirsthead
+\toprule
+Input & RawFeature & Glyph identifier \\ \midrule \endhead
+\bottomrule\endfoot
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=1} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe176.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=2} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe177.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=3} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe178.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=4} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe179.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=5} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe180.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=6} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe181.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=7} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe182.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=8} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe183.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=9} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe184.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=10} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe185.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=11} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe186.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=12} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe187.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=13} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe188.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=14} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe189.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=15} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe190.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=16} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe191.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=17} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe192.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=18} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf160.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=19} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf161.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=20} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf162.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=21} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf163.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=22} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf164.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=23} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf165.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=24} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf166.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=25} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf167.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=26} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf168.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=27} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf169.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=28} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf170.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=29} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf171.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=30} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg160.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=31} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg161.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=32} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg162.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=33} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg163.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=34} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg164.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DE} & \texttt{cv13=35} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg165.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=1} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe144.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=2} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe145.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=3} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe146.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=4} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe147.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=5} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe148.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=6} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe149.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=7} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe150.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=8} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe151.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=9} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe152.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=10} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe153.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=11} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe154.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=12} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe155.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=13} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe156.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=14} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe157.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=15} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe158.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=16} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe159.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=17} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe160.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=18} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf144.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=19} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf145.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=20} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf146.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=21} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf147.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=22} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf148.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=23} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf149.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=24} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf150.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=25} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf151.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=26} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf152.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=27} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf153.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=28} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf154.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=29} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf155.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=30} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg144.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=31} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg145.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=32} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg146.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=33} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg147.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=34} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg148.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DF} & \texttt{cv14=35} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg149.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=1} & \texttt{uni23DC.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=2} & \texttt{exa.\allowbreak{}191.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=3} & \texttt{exa.\allowbreak{}192.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=4} & \texttt{exa.\allowbreak{}193.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=5} & \texttt{exa.\allowbreak{}194.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=6} & \texttt{uni23DC.\allowbreak{}exe208.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=7} & \texttt{uni23DC.\allowbreak{}exe209.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=8} & \texttt{uni23DC.\allowbreak{}exe210.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=9} & \texttt{uni23DC.\allowbreak{}exe211.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=10} & \texttt{uni23DC.\allowbreak{}exe212.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=11} & \texttt{uni23DC.\allowbreak{}exe213.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=12} & \texttt{uni23DC.\allowbreak{}exe214.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=13} & \texttt{uni23DC.\allowbreak{}exf177.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=14} & \texttt{uni23DC.\allowbreak{}exf178.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=15} & \texttt{uni23DC.\allowbreak{}exf179.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=16} & \texttt{uni23DC.\allowbreak{}exf180.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=17} & \texttt{uni23DC.\allowbreak{}exf181.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=18} & \texttt{uni23DC.\allowbreak{}exf182.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=19} & \texttt{uni23DC.\allowbreak{}exf183.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=20} & \texttt{uni23DC.\allowbreak{}exg177.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=21} & \texttt{uni23DC.\allowbreak{}exg178.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=22} & \texttt{uni23DC.\allowbreak{}exg179.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=23} & \texttt{uni23DC.\allowbreak{}exg180.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=24} & \texttt{uni23DC.\allowbreak{}exg181.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=25} & \texttt{uni23DC.\allowbreak{}exg182.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=26} & \texttt{uni23DC.\allowbreak{}exg183.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}23DC} & \texttt{cv15=27} & \texttt{exa.\allowbreak{}arc195.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}0028} & \texttt{cv16=1} & \texttt{uni0028.\allowbreak{}exg0.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}0029} & \texttt{cv16=1} & \texttt{uni0029.\allowbreak{}exg1.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007B} & \texttt{cv16=1} & \texttt{uni007B.\allowbreak{}exf8.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007B} & \texttt{cv16=2} & \texttt{uni007B.\allowbreak{}exg8.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007D} & \texttt{cv16=1} & \texttt{uni007D.\allowbreak{}exf9.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007D} & \texttt{cv16=2} & \texttt{uni007D.\allowbreak{}exg9.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}27E8} & \texttt{cv16=1} & \texttt{uni27E8.\allowbreak{}exg10.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}27E9} & \texttt{cv16=1} & \texttt{uni27E9.\allowbreak{}exg11.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}005C} & \texttt{cv16=1} & \texttt{uni005C.\allowbreak{}exg15.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}221A} & \texttt{cv17=1} & \texttt{uni221A.\allowbreak{}exf112.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}221A} & \texttt{cv17=2} & \texttt{uni221A.\allowbreak{}exg112.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}0302} & \texttt{cv18=1} & \texttt{uni0302.\allowbreak{}exe57.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}0302} & \texttt{cv18=2} & \texttt{uni0302.\allowbreak{}exf59.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}0303} & \texttt{cv18=1} & \texttt{exa.\allowbreak{}103.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}030C} & \texttt{cv18=1} & \texttt{uni030C.\allowbreak{}exe89.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}030C} & \texttt{cv18=2} & \texttt{uni030C.\allowbreak{}exf91.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007B} & \texttt{cv19=1} & \texttt{exa.\allowbreak{}morphed182.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007B} & \texttt{cv19=2} & \texttt{exa.\allowbreak{}morphed184.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007B} & \texttt{cv19=3} & \texttt{exa.\allowbreak{}morphed186.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007B} & \texttt{cv19=4} & \texttt{exa.\allowbreak{}morphed188.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007D} & \texttt{cv19=1} & \texttt{exa.\allowbreak{}morphed183.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007D} & \texttt{cv19=2} & \texttt{exa.\allowbreak{}morphed185.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007D} & \texttt{cv19=3} & \texttt{exa.\allowbreak{}morphed187.\allowbreak{}fixed} \\
+\texttt{U+\allowbreak{}007D} & \texttt{cv19=4} & \texttt{exa.\allowbreak{}morphed189.\allowbreak{}fixed} \\
+\end{longtable}\endgroup
+
+
+\subsection{Alternative growing constructions}
+cv08 selects straight vertical braces; cv12 selects slanted large operators.
+For horizontal braces, cv20 selects plain assemblies and cv21 selects Curly
+variants with assembly.
+
+\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
+\begin{longtable}{@{}p{0.13\linewidth}p{0.16\linewidth}p{0.4\linewidth}p{0.1\linewidth}p{0.1\linewidth}@{}}
+\toprule
+Input & RawFeature & Construction root & Variants & Assembly \\ \midrule \endfirsthead
+\toprule
+Input & RawFeature & Construction root & Variants & Assembly \\ \midrule \endhead
+\bottomrule\endfoot
+\texttt{U+\allowbreak{}007B} & \texttt{+\allowbreak{}cv08} & \texttt{braceleft.\allowbreak{}straight} & 5 & yes \\
+\texttt{U+\allowbreak{}007D} & \texttt{+\allowbreak{}cv08} & \texttt{braceright.\allowbreak{}straight} & 5 & yes \\
+\texttt{U+\allowbreak{}2211} & \texttt{+\allowbreak{}cv12} & \texttt{slsum} & 6 & no \\
+\texttt{U+\allowbreak{}220F} & \texttt{+\allowbreak{}cv12} & \texttt{slprod} & 6 & no \\
+\texttt{U+\allowbreak{}2210} & \texttt{+\allowbreak{}cv12} & \texttt{slcoprod} & 6 & no \\
+\texttt{U+\allowbreak{}23DE} & \texttt{+\allowbreak{}cv20} & \texttt{brace.\allowbreak{}plain.\allowbreak{}over} & 0 & yes \\
+\texttt{U+\allowbreak{}23DF} & \texttt{+\allowbreak{}cv20} & \texttt{brace.\allowbreak{}plain.\allowbreak{}under} & 0 & yes \\
+\texttt{U+\allowbreak{}23DE} & \texttt{+\allowbreak{}cv21} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe176} & 35 & yes \\
+\texttt{U+\allowbreak{}23DF} & \texttt{+\allowbreak{}cv21} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe144} & 35 & yes \\
+\end{longtable}\endgroup
+
+For example, select the curly construction in the preamble and use
+ordinary overbrace and underbrace commands:
+\begin{samepage}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}[RawFeature={+cv21}]
+\end{verbatim}
+\end{samepage}
+\begin{samepage}
+\begin{verbatim}
+\[ \overbrace{a+b+c+d}^{n} \qquad \underbrace{a+b+c+d}_{n} \]
+\end{verbatim}
+\end{samepage}
+
+\subsection{Private-use operators and accents}\label{sec:pua-accents}
+These private-use entries provide explicit access to large operators
+and extensible accents. U+E280--\allowbreak{}E285 have class~1 and six vertical
+variants; U+E286 and U+E287 use accent primitives.
+For the operators, choose \texttt{\textbackslash{}limits} or \texttt{\textbackslash{}nolimits} according to the intended macro.
+\begin{samepage}
+\begin{verbatim}
+% A cap-product operator, with an explicit size request:
+\[ \Umathoperatorsize\displaystyle=72pt
+   \Umathchar 1 \symoperators "E280\limits_{i=1}^{n}a_i \]
+\end{verbatim}
+\end{samepage}
+
+\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
+\begin{longtable}{@{}p{0.12\linewidth}p{0.22\linewidth}p{0.15\linewidth}p{0.43\linewidth}@{}}
+\toprule
+Input & Meaning & Class / structure & Concrete input \\ \midrule \endfirsthead
+\toprule
+Input & Meaning & Class / structure & Concrete input \\ \midrule \endhead
+\bottomrule\endfoot
+\texttt{U+\allowbreak{}E280} & cap product & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E280} \\
+\texttt{U+\allowbreak{}E281} & slanted sum & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E281} \\
+\texttt{U+\allowbreak{}E282} & slanted product & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E282} \\
+\texttt{U+\allowbreak{}E283} & slanted coproduct & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E283} \\
+\texttt{U+\allowbreak{}E284} & variant large land & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E284} \\
+\texttt{U+\allowbreak{}E285} & large asterisk & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E285} \\
+\texttt{U+\allowbreak{}E286} & finite wide overbar & accent primitive & \texttt{\textbackslash{}Umathaccent 0 \textbackslash{}symoperators "E286 \textbraceleft{}a+\allowbreak{}b+\allowbreak{}c\textbraceright{}} \\
+\texttt{U+\allowbreak{}E287} & assembled wide vector & accent primitive & \texttt{\textbackslash{}Umathaccent 0 \textbackslash{}symoperators "E287 \textbraceleft{}a+\allowbreak{}b+\allowbreak{}c\textbraceright{}} \\
+\end{longtable}\endgroup
+
+\subsection{Correspondence with Type~1 commands}\label{sec:macro-equivalents}
+The font provides glyphs and MATH data; the original package's custom
+measurements and placement remain macro responsibilities. The following
+table gives the corresponding OpenType inputs.
+
+\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
+\begin{longtable}{@{}p{0.24\linewidth}p{0.24\linewidth}p{0.43\linewidth}@{}}
+\toprule
+Original name & OpenType input & Usage \\ \midrule \endfirsthead
+\toprule
+Original name & OpenType input & Usage \\ \midrule \endhead
+\bottomrule\endfoot
+\texttt{\textbackslash{}PARENS /\allowbreak{} \textbackslash{}LEFTRIGHT} & \texttt{\textbackslash{}left /\allowbreak{} \textbackslash{}right} & Choose delimiter inputs; the engine measures body height and centers using the math axis. Preserve custom side-space policy in a macro. \\
+\texttt{\textbackslash{}SQRT /\allowbreak{} \textbackslash{}ROOT .\allowbreak{}.\allowbreak{}.\allowbreak{} \textbackslash{}OF} & \texttt{\textbackslash{}sqrt /\allowbreak{} \textbackslash{}sqrt[n]} & MATH handles radical growth and ordinary degree placement; original manual offsets remain a macro policy. \\
+\texttt{\textbackslash{}XL /\allowbreak{} \textbackslash{}XXL /\allowbreak{} \textbackslash{}XXXL} & \texttt{\textbackslash{}Umathoperatorsize} & Request size for standard/PUA or cv12 operator families; source names are not exact size presets. Class and limits are explicit. \\
+\texttt{\textbackslash{}overcbrace /\allowbreak{} \textbackslash{}undercbrace} & \texttt{cv21 /\allowbreak{} cv13 /\allowbreak{} cv14} & cv21 grows over/under a nucleus. cv13/cv14 select fixed designs whose placement and width policy are supplied by the macro. \\
+\texttt{\textbackslash{}arc /\allowbreak{} \textbackslash{}Arc /\allowbreak{} \textbackslash{}widearc} & \texttt{\textbackslash{}overparen /\allowbreak{} cv15} & Automatic width selection or fixed parameter. cv15=27 preserves the alternate arc design. \\
+\texttt{\textbackslash{}widehat /\allowbreak{} \textbackslash{}widecheck /\allowbreak{} \textbackslash{}widetilde} & \texttt{automatic /\allowbreak{} cv18} & Automatic width selection or fixed choices; accent syntax supplies nucleus attachment. \\
+\texttt{\textbackslash{}straightbraces /\allowbreak{} \textbackslash{}morphedbraces} & \texttt{cv08 /\allowbreak{} cv19} & cv08 selects growing straight braces; cv19 selects fixed morphed designs. \\
+\end{longtable}\endgroup
+
+
+\section{Metrics and MATH constants}\label{sec:scalars}
+\subsection{Glyph metrics}
+The output uses 1000 units per em. For an untransformed MTPro2 glyph,
+the TFM width supplies its advance and the TFM italic correction supplies
+its MATH italic correction. Ordinary GPOS pair adjustments combine the
+left glyph's italic correction and the TFM pair kern:
 \[
   \operatorname{CHARIC}(\text{left})
   + \operatorname{TFMkern}(\text{left},\text{right}).
 \]
-It is encoded in cumulative GPOS layers. TFM pair kerns are represented
-by the OpenType \file{kern} feature in GPOS. A missing TFM pair contributes
-zero, not a reason to discard italic correction. Skewchar-right pairs
-are excluded from ordinary kerning according to the local declarations.
-Script, prime, and accent placement are separate layout paths.
-
-For source math alphabets, top-accent attachment is based on
+A missing pair kern contributes zero. Skewchar pairs are excluded from
+ordinary kerning; scripts, primes and accents have separate positioning
+data. Top-accent attachment for source math alphabets is based on
 \[
   \frac{\operatorname{CHARWD}+\operatorname{CHARIC}}{2}
   + \operatorname{skewkern}.
 \]
-Combining accents and synthesized forms follow their own coordinate
-transformations. Widths and attachment coordinates are not interchangeable.
+Coordinate transformations are accounted for in combining accents and
+synthesized forms. Text, script and scriptscript designs use the source
+optical sizes.
 
-\subsection{Optical sizes, aliases, and variants}
-Text, script, and scriptscript source outlines are exposed through
-OpenType math substitutions. Full-only option alphabets preserve their
-optical-size reachability in both supported feature application orders.
-Latin-shaped Greek aliases share glyph IDs with their canonical donors;
-the aliases do not duplicate outlines or acquire separate metrics.
+\subsection{Constants}
+The following assignments define the 56 MATH constants and the common
+connector overlap in both editions. They combine source metrics, package
+script ratios and conversion policies.
 
-TFM larger-size chains, extensible recipes, and local outline geometry
-determine variant and assembly construction. Repeatable parts retain
-both connector endpoints. Brace cusp geometry follows the source halves;
-the cusp inside a part is distinct from an overlap between assembly parts.
+The expressions follow \file{tools/math_constants.py} in evaluation order.
+\texttt{round} uses nearest-integer rounding, ties to even; \texttt{//} is
+floor division and \texttt{Fraction(a,b)} is exact rational arithmetic.
+Intermediate rounding is part of each assignment.
 
-\subsection{Primes and compatibility forms}
-The public prime forms and contextual substitutions provide the retained
-raw-prime and superscript behavior. Their padding is derived from local
-outline geometry. Scriptscript prime alternates use the native optical
-source forms, with their corresponding source widths. Backprime follows
-its own source identity. These are conversion policies, not a claim that
-every prime transformation is a direct TFM assignment.
-
-Public vector and bar accents are fixed. Private wide forms are distinct:
-U+E286 supplies finite variants, while U+E287 supplies an assembly.
-Standard commands do not automatically select these private paths.
-Swash z remains available through \file{cv01} or U+E000 where supported;
-there is no default swash or Word command registration.
-
-\subsection{MATH constants and provenance}
-\file{tools/math_constants.py} calculates the MATH constants from local
-source metrics and explicitly retained conversion policies.
-\file{tools/source_policy.py} extracts package and font-definition policy
-and the geometry needed by synthesized forms. The calculation covers
-the 56 MathConstants fields and the separate common connector overlap.
-
-Not every field has a direct TFM counterpart. Reference-derived
-thresholds and engine-compatibility choices are documented as such;
-they are not relabelled as original-source metrics. In particular,
-upper-limit placement retains a compatibility policy rather than a
-universal one-to-one TeX parameter mapping. Next-style baseline-drop
-values are converted into the parent font's coordinate scale.
-
-The appendix gives every scalar assignment and its source classification.
-It describes formulas and explicit conversion policy, not evaluated local
-MTPro2 measurements. The same assignments apply to Full and Lite.
-
-The symbol TFM supplies axis height and script/fraction shifts; the
-extension TFM supplies rule thickness and large-operator spacing. The
-package supplies script ratios. TeX-style gap formulas combine those
-inputs. OpenType-only thresholds and skewed-fraction gaps are retained
-migration policies rather than recovered TFM parameters. Rendered
-comparisons support their retention in tested engines, not universal
-identity with every original TeX expression.
-
-Ordinary superscripts select the source sup2 branch and subscripts select
-sub2; OpenType's common fields do not encode every TeX style branch.
-Upper-limit and stretch-stack upper-side assignments preserve the reviewed
-Word placement policy. Lower stretch-stack controls reuse the lower-limit
-inputs and are not claimed to be independently optimized. Baseline drops
-use script-size symbol parameters converted to the first-level parent's
-em; nested engine scaling can differ. The flattened-accent threshold does
-not imply a dedicated flattened-accent substitution.
-
-\section{Validation methodology}
-Validation is mandatory. Reuse of parsing and identity definitions does
-not replace comparisons of serialized output with local source metrics.
-OTF establishes source semantics. Cross-format invariants transfer those
-guarantees to TTF; structural and naming checks run on both formats.
-
-\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
-\toprule
-Check & Responsibility \\
-\midrule
-Source declarations & Required source set, unique usable policy,
-accent semantics, and Full optical-family ordering. \\
-Roman donors & Input type, family, weight, required coverage; output
-bounding boxes and advances, plus an extra-import heuristic. \\
-Structural validator & Tables, cmap, aliases, clipping bounds,
-assemblies, features, prime contexts, and serialization. \\
-Edition naming & Installation names, technical version metadata,
-and CFF naming constraints for both formats. \\
-Source contract & Advances, italic correction, top accents, and
-ordinary IC plus TFM pair adjustments in the OTF; converted accent
-centers are checked against TTF outlines. \\
-Edition capabilities & Full option-alphabet optical sizes or
-Lite's required and forbidden features and code points. \\
-Cross-format check & Glyph-ID mapping, advances and sidebearings,
-MATH/GSUB/GPOS/GDEF table bytes, and outline origins. \\
-MATH values & Each calculated scalar against the serialized OTF,
-including the common connector overlap. \\
-\bottomrule
-\end{tabularx}
-
-The Roman output check compares normalized bounding boxes and advances;
-it is not a proof of contour identity. The OTF/TTF check permits the
-intended cubic-to-quadratic approximation and checks origin shifts
-separately. Engine rendering is not proven solely by table validation.
-
-\subsection{Local evidence}
-\file{build/<edition>/source-policy.json} contains parsed policy,
-geometry, and input hashes. \file{mtpro2-source-contract.json} contains
-the glyph relationships and source-derived records used by output
-audits. \file{math-constants.json} contains evaluated scalars and their
-provenance descriptions. These snapshots are working data, not extra
-deliverables. Repeated PASS summaries and copies of the same snapshots
-are not written beside the final fonts.
-
-When changing the converter, build both editions from the same inputs
-before and after the change. Compare corresponding OTFs and TTFs with
-build timestamps and dependent checksums normalized; retain all other
-table differences for investigation. A layout change additionally
-requires focused engine tests. Identical nonvolatile output can reuse
-the earlier rendering evidence for that exact font content.
-
-\section{Application use}
-\textbf{Word.}
-The reviewed setup uses TTF. Select \file{MTPro2 Math} or
-\file{MTPro2 Math Lite} as the equation font and enable font kerning
-for sizes of 1~pt and above. This is a font-size threshold, not the
-amount of adjustment. Word is the primary application target; its
-GPOS-based output has been checked against source data and rendered
-comparisons. Equation run boundaries can limit pair positioning.
-
-\textbf{LuaLaTeX.}
-Use the generated OTF with \file{unicode-math}. The font contains the
-source-derived GPOS spacing, but the tested LuaHBTeX math paths do not
-fully apply it. These spacing differences arise from engine processing,
-not missing font data. For the original TeX spacing and optical-size
-selection, we recommend the MTPro2 Type~1 fonts with the \file{mtpro2}
-package.
-
-\textbf{Specimens.}
-\file{doc/word.docx} and \file{doc/lualatex.tex} are editable sources for
-\file{doc/word.pdf} and \file{doc/lualatex.pdf}. Both show Full with
-Nimbus donors. Word uses TTF with Times New Roman body text;
-LuaLaTeX uses OTF with Nimbus Roman body text.
-
-\section{Publication and references}
-The public tree contains the shell entry point, Python tools, README,
-LICENSE, and documentation. Local input and working directories are
-not part of the archive. Publication inspection is available as
-\texttt{python3 tools/audit\_public\_source.py .} on a clean source-only
-tree. It checks prohibited paths and selected metric patterns; it is
-not a general legal or confidentiality audit of arbitrary PDF contents.
-
-Mappings are interoperability metadata created for this project by
-comparing TeX and Unicode semantics, local-source behavior, and rendered
-results. Type~1 names alone do not determine the required mappings.
-They are not mechanical copies of MTPro2 files.
-
-Project-authored code and documentation use 0BSD. MTPro2, donor fonts,
-and external tools retain their own terms. MathTime is a trademark of
-Publish or Perish, Inc. This is an independent project, not affiliated
-with or endorsed by Publish or Perish, Inc., Personal TeX, Inc., or
-Artifex Software.
-
-\begin{itemize}
-\item Repository and implementation:
-\url{https://github.com/satom-zk/mtp2otf}
-\item Bug reports:
-\url{https://github.com/satom-zk/mtp2otf/issues}
-\end{itemize}
-
-\appendix
-\section{Scalar assignments}
-The following expressions follow \file{tools/math_constants.py} in its
-actual evaluation order. \texttt{round} is Python nearest-integer rounding
-(ties to even); \texttt{//} is floor division. \texttt{Fraction(a,b)} is an
-exact rational. Intermediate rounding is intentional and must not be
-algebraically reordered.
-
-\texttt{upm} is the output units per em. \texttt{s(i)} means
+\texttt{upm} is the output units per em. \texttt{s(i)} is
 \texttt{round(sy[i] * upm)}, with \texttt{sy} from \file{mt2syt.tfm};
-\texttt{e(i)} uses \file{mt2exa.tfm} in the same way.
-\texttt{theta = e(8)} and \texttt{xh = s(5)}.
-\texttt{script\_sy} comes from \file{mt2sys.tfm}.
-The two ratios are the local \file{mtpro2.sty} defaults;
-\texttt{\_pct(r)} evaluates
-\texttt{round(r.numerator * 100 / r.denominator)}.
+\texttt{e(i)} uses \file{mt2exa.tfm}. \texttt{theta = e(8)} and
+\texttt{xh = s(5)}. \texttt{script\_sy} comes from \file{mt2sys.tfm}.
+The script ratios are the \file{mtpro2.sty} defaults;
+\texttt{\_pct(r)} is \texttt{round(r.numerator * 100 / r.denominator)}.
 
 \texttt{display\_operator\_min\_height} is the floor of the average of
 the separately rounded height-plus-depth values of extension TFM slots
-\texttt{0x50} and \texttt{0x58}, in output units. The source provides the
-sizes; choosing their midpoint is a conversion policy. The delimited
-subformula threshold reuses this value and is not TeX's \texttt{delim1}.
+\texttt{0x50} and \texttt{0x58}, in output units. The delimited-subformula
+threshold uses the same value.
 
-Source classes distinguish inputs from assignment choices:
-MT-TFM denotes local TFM parameters; MT-STY denotes package declarations;
-MT-PFB denotes local outlines; OT-SUG denotes an OpenType suggested
-formula; TeX denotes the script-space convention. OT-MIG and MT-MIG denote
-explicit migration policy. Combined labels mean that source data and an
-assignment policy both contribute. A source label does not establish
-exact layout equivalence in every engine.
+Source labels: MT-TFM, TFM parameters; MT-STY, package declarations;
+MT-PFB, outlines; OT-SUG, OpenType suggested formulas; TeX, the script-space
+convention; OT-MIG and MT-MIG, conversion policies. Combined labels indicate
+that both source data and an assignment policy contribute.
 
-Values are in font units except the two script percentages and the
-radical-degree percentage. Numeric literals in migration rows are project
-policy, not a table of measurements copied from MTPro2. The initial
-connector-overlap value is reduced to the nonnegative integer minimum
-joining run when local geometry requires a smaller overlap. Both ends of
+Values are in font units except the script and radical-degree percentages.
+The initial connector overlap is reduced to the nonnegative integer minimum
+joining run when required by outline geometry. Both connector ends of
 repeatable parts participate; fixed outside ends do not.
 
 \begingroup
@@ -426,4 +776,80 @@ Field & Expression and source class \\
 \texttt{Superscript\allowbreak Baseline\allowbreak Drop\allowbreak Max} & \texttt{round(script\_sy[18] \allowbreak * float(script\_ratio) \allowbreak * upm)}\newline MT-TFM+OT-MIG \\
 \end{longtable}
 \endgroup
+
+\section{Roman donor coverage}\label{sec:donors}
+Minimal coverage selects 317 encoded inputs: 255 from Regular and 62 from
+Bold. The table gives output and donor Unicode ranges. Each range includes both endpoints.
+The selection is defined in \file{tools/donor_scope.json}.
+
+Mathematical syntax can remap input characters. For a literal Lua math
+input, use \file{\Umathchar 0 \symoperators "00E9\relax}, replacing the
+Unicode value as needed. Upright Latin uses \file{\symup}; bold Latin
+and digits use \file{\symbfup}.
+
+\begingroup\small\setlength\tabcolsep{4pt}\renewcommand\arraystretch{1.12}
+\begin{longtable}{@{}p{0.38\linewidth}p{0.16\linewidth}p{0.38\linewidth}@{}}
+\toprule
+Output Unicode & Donor face & Donor Unicode \\ \midrule \endfirsthead
+\toprule
+Output Unicode & Donor face & Donor Unicode \\ \midrule \endhead
+\bottomrule\endfoot
+\texttt{U+0022--U+0027} & Regular & \texttt{U+0022--U+0027} \\
+\texttt{U+002A} & Regular & \texttt{U+002A} \\
+\texttt{U+002D} & Regular & \texttt{U+002D} \\
+\texttt{U+0040--U+005A} & Regular & \texttt{U+0040--U+005A} \\
+\texttt{U+005E--U+007A} & Regular & \texttt{U+005E--U+007A} \\
+\texttt{U+007E} & Regular & \texttt{U+007E} \\
+\texttt{U+00A3} & Regular & \texttt{U+00A3} \\
+\texttt{U+00A5} & Regular & \texttt{U+00A5} \\
+\texttt{U+00AE} & Regular & \texttt{U+00AE} \\
+\texttt{U+00B0} & Regular & \texttt{U+00B0} \\
+\texttt{U+00B7} & Regular & \texttt{U+00B7} \\
+\texttt{U+00C0--U+00C5} & Regular & \texttt{U+00C0--U+00C5} \\
+\texttt{U+00C7--U+00CF} & Regular & \texttt{U+00C7--U+00CF} \\
+\texttt{U+00D1--U+00D6} & Regular & \texttt{U+00D1--U+00D6} \\
+\texttt{U+00D9--U+00DD} & Regular & \texttt{U+00D9--U+00DD} \\
+\texttt{U+00E0--U+00E5} & Regular & \texttt{U+00E0--U+00E5} \\
+\texttt{U+00E7--U+00EF} & Regular & \texttt{U+00E7--U+00EF} \\
+\texttt{U+00F1--U+00F6} & Regular & \texttt{U+00F1--U+00F6} \\
+\texttt{U+00F9--U+00FD} & Regular & \texttt{U+00F9--U+00FD} \\
+\texttt{U+00FF--U+010F} & Regular & \texttt{U+00FF--U+010F} \\
+\texttt{U+0112--U+0125} & Regular & \texttt{U+0112--U+0125} \\
+\texttt{U+0128--U+0131} & Regular & \texttt{U+0128--U+0131} \\
+\texttt{U+0134--U+0137} & Regular & \texttt{U+0134--U+0137} \\
+\texttt{U+0139--U+013E} & Regular & \texttt{U+0139--U+013E} \\
+\texttt{U+0143--U+0148} & Regular & \texttt{U+0143--U+0148} \\
+\texttt{U+014C--U+0151} & Regular & \texttt{U+014C--U+0151} \\
+\texttt{U+0154--U+0165} & Regular & \texttt{U+0154--U+0165} \\
+\texttt{U+0168--U+017E} & Regular & \texttt{U+0168--U+017E} \\
+\texttt{U+01FA--U+01FF} & Regular & \texttt{U+01FA--U+01FF} \\
+\texttt{U+0218--U+021B} & Regular & \texttt{U+0218--U+021B} \\
+\texttt{U+0237} & Regular & \texttt{U+0237} \\
+\texttt{U+02C6} & Regular & \texttt{U+02C6} \\
+\texttt{U+02DC} & Regular & \texttt{U+02DC} \\
+\texttt{U+1E80--U+1E85} & Regular & \texttt{U+1E80--U+1E85} \\
+\texttt{U+1EF2--U+1EF3} & Regular & \texttt{U+1EF2--U+1EF3} \\
+\texttt{U+2044} & Regular & \texttt{U+2044} \\
+\texttt{U+20AC} & Regular & \texttt{U+20AC} \\
+\texttt{U+1D400--U+1D419} & Bold & \texttt{U+0041--U+005A} \\
+\texttt{U+1D41A--U+1D433} & Bold & \texttt{U+0061--U+007A} \\
+\texttt{U+1D7CE--U+1D7D7} & Bold & \texttt{U+0030--U+0039} \\
+\end{longtable}\endgroup
+
+\subsection{Extended coverage and eligibility}
+Extended retains actually encoded Regular characters in U+0020--036F,
+U+1E00--1EFF, U+2000--218F, U+2500--266F, U+301A--301B and U+FB00--FB06,
+subject to MTPro2 ownership and edition restrictions. The following
+ranges are excluded:
+U+0370--03FF, U+0400--052F, U+2100--214F, U+2190--21FF,
+U+2200--22FF, U+2300--23FF, U+25A0--25FF, U+27C0--27EF,
+U+2980--2AFF and U+1D400--1D7FF. Exceptions U+2105, U+2116,
+U+211E, U+2120, U+2121, U+2122 and U+212E remain subject to the same ownership and edition restrictions.
+Primes U+2032--2037/U+2057, PUA U+E000--F8FF, U+FEFF/U+FFFD and
+existing output names are reserved. Imported glyphs must have usable outlines and metrics.
+Bold coverage remains unchanged.
+
+The additional coverage depends on the donor pair.
+
+
 \end{document}

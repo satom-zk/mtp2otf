@@ -1,0 +1,1834 @@
+{
+  "schema": "mtp2otf7-source-alternates/1",
+  "rows": [
+    {
+      "semantic_id": "alt.script.regular.C",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D49E",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 3,
+            "PFB_name": "ETX",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D49E"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 3,
+            "PFB_name": "ETX",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D49E.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 3,
+            "PFB_name": "ETX",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D49E.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.G",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4A2",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4A2"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4A2.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4A2.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.I",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+2110",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 9,
+            "PFB_name": "TAB",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "uni2110"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 9,
+            "PFB_name": "TAB",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "uni2110.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 9,
+            "PFB_name": "TAB",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "uni2110.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.L",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+2112",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 12,
+            "PFB_name": "caron",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "uni2112"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 12,
+            "PFB_name": "caron",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "uni2112.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 12,
+            "PFB_name": "caron",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "uni2112.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.Q",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4AC",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4AC"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4AC.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4AC.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.S",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4AE",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 19,
+            "PFB_name": "DC3",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4AE"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 19,
+            "PFB_name": "DC3",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4AE.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 19,
+            "PFB_name": "DC3",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4AE.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.Y",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4B4",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4B4"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4B4.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4B4.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.Z",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4B5",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 26,
+            "PFB_name": "SUB",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4B5"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 26,
+            "PFB_name": "SUB",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4B5.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 26,
+            "PFB_name": "SUB",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4B5.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.r",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4C7",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 50,
+            "PFB_name": "two",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4C7"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 50,
+            "PFB_name": "two",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4C7.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 50,
+            "PFB_name": "two",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4C7.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.regular.z",
+      "group": "Script",
+      "weight": "regular",
+      "base_unicode": "U+1D4CF",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "script",
+            "font": "mt2mst",
+            "slot": 58,
+            "PFB_name": "colon",
+            "PFB_SHA256": "7131a996935ccc3b8e8434e2c0a5e34f891d73d2f83987123fc801cc2d8f343a",
+            "TFM_SHA256": "de3f9e38c974aa9afe447e3b20d3674acc437962b419c7f8282559bcddd810a4",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4CF"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "script_s",
+            "font": "mt2mss",
+            "slot": 58,
+            "PFB_name": "colon",
+            "PFB_SHA256": "9b8504beb9aa5b1f8071acd99e7be259201a7ae2e14c7a5371f944397bc536ee",
+            "TFM_SHA256": "41bad4a478060e0784ae5f56ff11df6a4ff4f39db074d912f302302daa8f84e5",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4CF.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "script_ss",
+            "font": "mt2msf",
+            "slot": 58,
+            "PFB_name": "colon",
+            "PFB_SHA256": "fb393bd734eeea04b3cb7bf2bb6edc2ec9360ec0d9e9f5b62ed7505f08e81a2c",
+            "TFM_SHA256": "c541eec830d271a075a51d2a55debd20629124d3b914a829a4ecbff9a4db9b5d",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4CF.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.C",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4D2",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 3,
+            "PFB_name": "ETX",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D2"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 3,
+            "PFB_name": "ETX",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D2.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 3,
+            "PFB_name": "ETX",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D2.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.G",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4D6",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D6"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D6.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D6.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.I",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4D8",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 9,
+            "PFB_name": "TAB",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D8"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 9,
+            "PFB_name": "TAB",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D8.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 9,
+            "PFB_name": "TAB",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4D8.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.L",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4DB",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 12,
+            "PFB_name": "caron",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4DB"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 12,
+            "PFB_name": "caron",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4DB.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 12,
+            "PFB_name": "caron",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4DB.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.Q",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4E0",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E0"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E0.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E0.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.S",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4E2",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 19,
+            "PFB_name": "DC3",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E2"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 19,
+            "PFB_name": "DC3",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E2.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 19,
+            "PFB_name": "DC3",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E2.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.Y",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4E8",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E8"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E8.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E8.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.Z",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4E9",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 26,
+            "PFB_name": "SUB",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E9"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 26,
+            "PFB_name": "SUB",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E9.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 26,
+            "PFB_name": "SUB",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4E9.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.r",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D4FB",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 50,
+            "PFB_name": "two",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4FB"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 50,
+            "PFB_name": "two",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4FB.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 50,
+            "PFB_name": "two",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D4FB.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.script.bold.z",
+      "group": "Script",
+      "weight": "bold",
+      "base_unicode": "U+1D503",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bscript",
+            "font": "mt2bmst",
+            "slot": 58,
+            "PFB_name": "colon",
+            "PFB_SHA256": "79351195dfe38bbe3274ffde61f6bec4fc26f9f8fb1aa40c13664def78764765",
+            "TFM_SHA256": "575b5a252716c2e7f9b895a3100b8c135e70bd88c4823f2a3943897bb4eacb44",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D503"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bscript_s",
+            "font": "mt2bmss",
+            "slot": 58,
+            "PFB_name": "colon",
+            "PFB_SHA256": "05c2843b30a0f1dcec3dd2f4e9bb71b5b77831cbed7c923bb07629f9aa93a984",
+            "TFM_SHA256": "7e79ed8441e1fb0c277b58518fcd1154d16af405f88b99181028b5183f427190",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D503.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bscript_ss",
+            "font": "mt2bmsf",
+            "slot": 58,
+            "PFB_name": "colon",
+            "PFB_SHA256": "0ffafcf3b8280fda2728684abd4f15b90dc57235f2c41d06e0e3f7c82b69b196",
+            "TFM_SHA256": "9841f3c0f356777a08f7c8e948dc2072e2bf2da971b093a5dcc931e66638fa55",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D503.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.frak.regular.Y",
+      "group": "Frak",
+      "weight": "regular",
+      "base_unicode": "U+1D51C",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "frak",
+            "font": "mt2mft",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "e98372d39a7c989568ee6c1504dedee250c4bdf137ae15055ab056d57ecb07e2",
+            "TFM_SHA256": "99fa2dca95c284f6efcb8f15467b941575994efa03737861068dadacfa43d0ef",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D51C"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "frak_s",
+            "font": "mt2mfs",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "85ab19db227440243fad219a0cf6ce16b79838bdb7ed9d5ba362117c261830ce",
+            "TFM_SHA256": "b09f973768c2e6beffc974e1ddef8aed3cb51c0685d0baddc66ce99dda96c082",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D51C.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "frak_ss",
+            "font": "mt2mff",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "ebadf467f1c010b0aabb7daba14ddb105484a34be5cc5bd4e40cdf5a64ab6c10",
+            "TFM_SHA256": "87877b2e0d9a578897ba76056381ba0d74209edd8ad9173e974b872a26c7b80c",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D51C.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.frak.regular.x",
+      "group": "Frak",
+      "weight": "regular",
+      "base_unicode": "U+1D535",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "frak",
+            "font": "mt2mft",
+            "slot": 56,
+            "PFB_name": "eight",
+            "PFB_SHA256": "e98372d39a7c989568ee6c1504dedee250c4bdf137ae15055ab056d57ecb07e2",
+            "TFM_SHA256": "99fa2dca95c284f6efcb8f15467b941575994efa03737861068dadacfa43d0ef",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D535"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "frak_s",
+            "font": "mt2mfs",
+            "slot": 56,
+            "PFB_name": "eight",
+            "PFB_SHA256": "85ab19db227440243fad219a0cf6ce16b79838bdb7ed9d5ba362117c261830ce",
+            "TFM_SHA256": "b09f973768c2e6beffc974e1ddef8aed3cb51c0685d0baddc66ce99dda96c082",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D535.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "frak_ss",
+            "font": "mt2mff",
+            "slot": 56,
+            "PFB_name": "eight",
+            "PFB_SHA256": "ebadf467f1c010b0aabb7daba14ddb105484a34be5cc5bd4e40cdf5a64ab6c10",
+            "TFM_SHA256": "87877b2e0d9a578897ba76056381ba0d74209edd8ad9173e974b872a26c7b80c",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D535.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.frak.regular.y",
+      "group": "Frak",
+      "weight": "regular",
+      "base_unicode": "U+1D536",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "frak",
+            "font": "mt2mft",
+            "slot": 57,
+            "PFB_name": "nine",
+            "PFB_SHA256": "e98372d39a7c989568ee6c1504dedee250c4bdf137ae15055ab056d57ecb07e2",
+            "TFM_SHA256": "99fa2dca95c284f6efcb8f15467b941575994efa03737861068dadacfa43d0ef",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D536"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "frak_s",
+            "font": "mt2mfs",
+            "slot": 57,
+            "PFB_name": "nine",
+            "PFB_SHA256": "85ab19db227440243fad219a0cf6ce16b79838bdb7ed9d5ba362117c261830ce",
+            "TFM_SHA256": "b09f973768c2e6beffc974e1ddef8aed3cb51c0685d0baddc66ce99dda96c082",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D536.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "frak_ss",
+            "font": "mt2mff",
+            "slot": 57,
+            "PFB_name": "nine",
+            "PFB_SHA256": "ebadf467f1c010b0aabb7daba14ddb105484a34be5cc5bd4e40cdf5a64ab6c10",
+            "TFM_SHA256": "87877b2e0d9a578897ba76056381ba0d74209edd8ad9173e974b872a26c7b80c",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D536.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.frak.bold.Y",
+      "group": "Frak",
+      "weight": "bold",
+      "base_unicode": "U+1D584",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bfrak",
+            "font": "mt2bmft",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "84031cda77ec713ecb2ae545f8f7d30799de100a5487f2bf1b15c0488b6bff24",
+            "TFM_SHA256": "0328e44b453861f160200d75094678e77ddc6f9edf70489e9d375ca49b287cb5",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D584"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bfrak_s",
+            "font": "mt2bmfs",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "6d416d48295bbe7780f4bf32a0c6924dfcee089141ca5acae41454bf8a6a6bed",
+            "TFM_SHA256": "7bec78960343e8c109b8689433ed28327725a8765a0d0e373363909b1d193511",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D584.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bfrak_ss",
+            "font": "mt2bmff",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "7ad63c9d31df7d3c803be47139ff92e5b2d7e7a7177b0d00997078e3e8bff40b",
+            "TFM_SHA256": "cfed553bd91e392ff594478e53a2c643d0168ca817b0d3d35f79b2f45d2f229e",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D584.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.frak.bold.x",
+      "group": "Frak",
+      "weight": "bold",
+      "base_unicode": "U+1D59D",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bfrak",
+            "font": "mt2bmft",
+            "slot": 56,
+            "PFB_name": "eight",
+            "PFB_SHA256": "84031cda77ec713ecb2ae545f8f7d30799de100a5487f2bf1b15c0488b6bff24",
+            "TFM_SHA256": "0328e44b453861f160200d75094678e77ddc6f9edf70489e9d375ca49b287cb5",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D59D"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bfrak_s",
+            "font": "mt2bmfs",
+            "slot": 56,
+            "PFB_name": "eight",
+            "PFB_SHA256": "6d416d48295bbe7780f4bf32a0c6924dfcee089141ca5acae41454bf8a6a6bed",
+            "TFM_SHA256": "7bec78960343e8c109b8689433ed28327725a8765a0d0e373363909b1d193511",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D59D.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bfrak_ss",
+            "font": "mt2bmff",
+            "slot": 56,
+            "PFB_name": "eight",
+            "PFB_SHA256": "7ad63c9d31df7d3c803be47139ff92e5b2d7e7a7177b0d00997078e3e8bff40b",
+            "TFM_SHA256": "cfed553bd91e392ff594478e53a2c643d0168ca817b0d3d35f79b2f45d2f229e",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D59D.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.frak.bold.y",
+      "group": "Frak",
+      "weight": "bold",
+      "base_unicode": "U+1D59E",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "bfrak",
+            "font": "mt2bmft",
+            "slot": 57,
+            "PFB_name": "nine",
+            "PFB_SHA256": "84031cda77ec713ecb2ae545f8f7d30799de100a5487f2bf1b15c0488b6bff24",
+            "TFM_SHA256": "0328e44b453861f160200d75094678e77ddc6f9edf70489e9d375ca49b287cb5",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D59E"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "bfrak_s",
+            "font": "mt2bmfs",
+            "slot": 57,
+            "PFB_name": "nine",
+            "PFB_SHA256": "6d416d48295bbe7780f4bf32a0c6924dfcee089141ca5acae41454bf8a6a6bed",
+            "TFM_SHA256": "7bec78960343e8c109b8689433ed28327725a8765a0d0e373363909b1d193511",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D59E.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "bfrak_ss",
+            "font": "mt2bmff",
+            "slot": 57,
+            "PFB_name": "nine",
+            "PFB_SHA256": "7ad63c9d31df7d3c803be47139ff92e5b2d7e7a7177b0d00997078e3e8bff40b",
+            "TFM_SHA256": "cfed553bd91e392ff594478e53a2c643d0168ca817b0d3d35f79b2f45d2f229e",
+            "accent_calibration": {
+              "skewchar": null
+            }
+          },
+          "current_standard": {
+            "glyph": "u1D59E.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.curly.regular.G",
+      "group": "Curly",
+      "weight": "regular",
+      "base_unicode": "U+1D4A2",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "curly",
+            "font": "mt2mct",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "69dd194e563a1e64b0581a58d1c73cb8e998e5e6969f760a5338ceb13bde67cc",
+            "TFM_SHA256": "b3f4c47755b6ad0c040a569aa60084ea0be5ee7a16eec810e8915394e148e303",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "G.curly"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "curly_s",
+            "font": "mt2mcs",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "6b52d00c0236f67dc5cfbec55d5b3004907c0296cb0cf805ebf52a48546d5f08",
+            "TFM_SHA256": "76ae15a6197f697c182f1d3c7d440eadca27716ee712c5c18bb86ea7d8879dbb",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "G.curly.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "curly_ss",
+            "font": "mt2mcf",
+            "slot": 7,
+            "PFB_name": "BEL",
+            "PFB_SHA256": "1484b6d2b421dbd574d56474d26cd3556123bf2d0247dbe043a822077e45573b",
+            "TFM_SHA256": "c263ef4142feb21796daa3810a5e55282cc04c0fa2c1f16b8671f130512e4ea2",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "G.curly.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.curly.regular.M",
+      "group": "Curly",
+      "weight": "regular",
+      "base_unicode": "U+2133",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "curly",
+            "font": "mt2mct",
+            "slot": 13,
+            "PFB_name": "CR",
+            "PFB_SHA256": "69dd194e563a1e64b0581a58d1c73cb8e998e5e6969f760a5338ceb13bde67cc",
+            "TFM_SHA256": "b3f4c47755b6ad0c040a569aa60084ea0be5ee7a16eec810e8915394e148e303",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "M.curly"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "curly_s",
+            "font": "mt2mcs",
+            "slot": 13,
+            "PFB_name": "CR",
+            "PFB_SHA256": "6b52d00c0236f67dc5cfbec55d5b3004907c0296cb0cf805ebf52a48546d5f08",
+            "TFM_SHA256": "76ae15a6197f697c182f1d3c7d440eadca27716ee712c5c18bb86ea7d8879dbb",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "M.curly.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "curly_ss",
+            "font": "mt2mcf",
+            "slot": 13,
+            "PFB_name": "CR",
+            "PFB_SHA256": "1484b6d2b421dbd574d56474d26cd3556123bf2d0247dbe043a822077e45573b",
+            "TFM_SHA256": "c263ef4142feb21796daa3810a5e55282cc04c0fa2c1f16b8671f130512e4ea2",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "M.curly.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.curly.regular.N",
+      "group": "Curly",
+      "weight": "regular",
+      "base_unicode": "U+1D4A9",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "curly",
+            "font": "mt2mct",
+            "slot": 14,
+            "PFB_name": "dotlessi",
+            "PFB_SHA256": "69dd194e563a1e64b0581a58d1c73cb8e998e5e6969f760a5338ceb13bde67cc",
+            "TFM_SHA256": "b3f4c47755b6ad0c040a569aa60084ea0be5ee7a16eec810e8915394e148e303",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "N.curly"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "curly_s",
+            "font": "mt2mcs",
+            "slot": 14,
+            "PFB_name": "dotlessi",
+            "PFB_SHA256": "6b52d00c0236f67dc5cfbec55d5b3004907c0296cb0cf805ebf52a48546d5f08",
+            "TFM_SHA256": "76ae15a6197f697c182f1d3c7d440eadca27716ee712c5c18bb86ea7d8879dbb",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "N.curly.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "curly_ss",
+            "font": "mt2mcf",
+            "slot": 14,
+            "PFB_name": "dotlessi",
+            "PFB_SHA256": "1484b6d2b421dbd574d56474d26cd3556123bf2d0247dbe043a822077e45573b",
+            "TFM_SHA256": "c263ef4142feb21796daa3810a5e55282cc04c0fa2c1f16b8671f130512e4ea2",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "N.curly.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.curly.regular.Q",
+      "group": "Curly",
+      "weight": "regular",
+      "base_unicode": "U+1D4AC",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "curly",
+            "font": "mt2mct",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "69dd194e563a1e64b0581a58d1c73cb8e998e5e6969f760a5338ceb13bde67cc",
+            "TFM_SHA256": "b3f4c47755b6ad0c040a569aa60084ea0be5ee7a16eec810e8915394e148e303",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "Q.curly"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "curly_s",
+            "font": "mt2mcs",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "6b52d00c0236f67dc5cfbec55d5b3004907c0296cb0cf805ebf52a48546d5f08",
+            "TFM_SHA256": "76ae15a6197f697c182f1d3c7d440eadca27716ee712c5c18bb86ea7d8879dbb",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "Q.curly.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "curly_ss",
+            "font": "mt2mcf",
+            "slot": 17,
+            "PFB_name": "DC1",
+            "PFB_SHA256": "1484b6d2b421dbd574d56474d26cd3556123bf2d0247dbe043a822077e45573b",
+            "TFM_SHA256": "c263ef4142feb21796daa3810a5e55282cc04c0fa2c1f16b8671f130512e4ea2",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "Q.curly.ssty2"
+          }
+        }
+      ]
+    },
+    {
+      "semantic_id": "alt.curly.regular.Y",
+      "group": "Curly",
+      "weight": "regular",
+      "base_unicode": "U+1D4B4",
+      "source_styles": [
+        {
+          "style": "text",
+          "alternate": {
+            "tag": "curly",
+            "font": "mt2mct",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "69dd194e563a1e64b0581a58d1c73cb8e998e5e6969f760a5338ceb13bde67cc",
+            "TFM_SHA256": "b3f4c47755b6ad0c040a569aa60084ea0be5ee7a16eec810e8915394e148e303",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "Y.curly"
+          }
+        },
+        {
+          "style": "script",
+          "alternate": {
+            "tag": "curly_s",
+            "font": "mt2mcs",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "6b52d00c0236f67dc5cfbec55d5b3004907c0296cb0cf805ebf52a48546d5f08",
+            "TFM_SHA256": "76ae15a6197f697c182f1d3c7d440eadca27716ee712c5c18bb86ea7d8879dbb",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "Y.curly.ssty1"
+          }
+        },
+        {
+          "style": "scriptscript",
+          "alternate": {
+            "tag": "curly_ss",
+            "font": "mt2mcf",
+            "slot": 25,
+            "PFB_name": "EM",
+            "PFB_SHA256": "1484b6d2b421dbd574d56474d26cd3556123bf2d0247dbe043a822077e45573b",
+            "TFM_SHA256": "c263ef4142feb21796daa3810a5e55282cc04c0fa2c1f16b8671f130512e4ea2",
+            "accent_calibration": {
+              "skewchar": 42
+            }
+          },
+          "current_standard": {
+            "glyph": "Y.curly.ssty2"
+          }
+        }
+      ]
+    }
+  ]
+}

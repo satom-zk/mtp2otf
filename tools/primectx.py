@@ -1,22 +1,24 @@
-"""Add Word same-run prime forms shifted by preceding MATH italic correction.
+"""Add Word same-run prime forms shifted by preceding MATH italic
+correction.
 
 Use padding and measurements from the local build and generated font.
 """
 from __future__ import annotations
 
-import argparse
 from fractions import Fraction
 import unicodedata
 
-from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
 from fontTools.pens.recordingPen import RecordingPen
 from fontTools.pens.t2CharStringPen import T2CharStringPen
 from fontTools.pens.transformPen import TransformPen
 
+from finalize import update_average_width
 
-# Context classes are a compact Word-compatibility approximation, expressed as
-# fractions of the output em rather than copied MTPro2 measurements.
+
+# Context classes are a compact Word-compatibility approximation,
+# expressed as fractions of the output em rather than
+# copied MTPro2 measurements.
 _CLASS_STEP = Fraction(3, 100)
 _CLASS_CAP = Fraction(27, 100)
 
@@ -27,22 +29,27 @@ def _scaled_policy(upm: int) -> tuple[int, int]:
     return step, cap
 
 
-def apply(path: str, *, base_shift: int) -> None:
-    f = TTFont(path)
+def edit(f, *, base_shift: int) -> bool:
+    """Edit caller-owned font, returning False for a byte-preserving no-op."""
     if 'MATH' not in f or 'GSUB' not in f:
-        return
+        return False
     if 'CFF ' not in f:
-        raise ValueError('prime contextualization expects the generated CFF OTF')
+        raise ValueError(
+            'prime contextualization expects the generated CFF OTF'
+        )
 
     cmap = f.getBestCmap()
     gi = f['MATH'].table.MathGlyphInfo
     icinfo = gi.MathItalicsCorrectionInfo
-    ics = dict(zip(icinfo.Coverage.glyphs,
-                   [v.Value for v in icinfo.ItalicsCorrection]))
+    ics = dict(
+        zip(
+            icinfo.Coverage.glyphs, [v.Value for v in icinfo.ItalicsCorrection]
+        )
+    )
     step, cap = _scaled_policy(f['head'].unitsPerEm)
 
-    # Only encoded mathematical letters participate.  Operators and punctuation
-    # follow their own OpenType MATH placement paths.
+    # Only encoded mathematical letters participate.  Operators and
+    # punctuation follow their own OpenType MATH placement paths.
     classes: dict[int, list[str]] = {}
     for u, g in cmap.items():
         if u < 0x370:
@@ -59,15 +66,22 @@ def apply(path: str, *, base_shift: int) -> None:
             continue
         classes.setdefault(klass, []).append(g)
     if not classes:
-        return
+        return False
 
-    primes = [g for g in (cmap.get(0x2032), cmap.get(0x2033),
-                          cmap.get(0x2034), cmap.get(0x2057)) if g]
+    primes = [
+        g
+        for g in (
+            cmap.get(0x2032), cmap.get(0x2033), cmap.get(0x2034),
+            cmap.get(0x2057)
+        )
+        if g
+    ]
     if not primes:
-        return
+        return False
 
-    # Create translated copies.  Width and left sidebearing move by the same
-    # delta, so the outline-to-advance relationship is preserved exactly.
+    # Create translated copies.  Width and left sidebearing move by the
+    # same delta, so the outline-to-advance
+    # relationship is preserved exactly.
     cff = f['CFF '].cff[f['CFF '].cff.fontNames[0]]
     cs = cff.CharStrings
     hmtx = f['hmtx']
@@ -81,10 +95,11 @@ def apply(path: str, *, base_shift: int) -> None:
             rp = RecordingPen()
             glyphset[src].draw(rp)
             width = hmtx[src][0] + dx
-            pen = T2CharStringPen(width, None)
+            pen = T2CharStringPen(width - cs[src].private.nominalWidthX, None)
             rp.replay(TransformPen(pen, (1, 0, 0, 1, dx, 0)))
-            chstr = pen.getCharString(private=cs[src].private,
-                                      globalSubrs=cs.globalSubrs)
+            chstr = pen.getCharString(
+                private=cs[src].private, globalSubrs=cs.globalSubrs
+            )
             cs.charStringsIndex.append(chstr)
             cs.charStrings[new] = len(cs.charStringsIndex) - 1
             hmtx[new] = (width, hmtx[src][1] + dx)
@@ -142,17 +157,5 @@ def apply(path: str, *, base_shift: int) -> None:
         if fr.FeatureTag == 'ccmp':
             fr.Feature.LookupListIndex.extend(ctx_indices)
             fr.Feature.LookupCount = len(fr.Feature.LookupListIndex)
-    f.save(path)
-
-
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument('font')
-    ap.add_argument('--base-shift', required=True, type=int,
-                    help='local source-derived raw-prime padding')
-    ns = ap.parse_args()
-    apply(ns.font, base_shift=ns.base_shift)
-
-
-if __name__ == '__main__':
-    main()
+    update_average_width(f)
+    return True

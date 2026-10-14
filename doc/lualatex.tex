@@ -1,230 +1,460 @@
-% Run lualatex from doc/ after building the Full edition.
-\documentclass[11pt,a4paper]{article}
-\usepackage[margin=20mm]{geometry}
-\usepackage{amsmath}
-\usepackage{unicode-math}
-\setmainfont{NimbusRoman-Regular.otf}[BoldFont=NimbusRoman-Bold.otf,
-    ItalicFont=NimbusRoman-Italic.otf,BoldItalicFont=NimbusRoman-BoldItalic.otf]
+% MTPro2 Math Full: ordinary LaTeX input, sections 1--5.
+\documentclass[a4paper,10pt]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage{mathtools,unicode-math}
+\setmainfont{NimbusRoman-Regular.otf}[
+  BoldFont=NimbusRoman-Bold.otf,
+  ItalicFont=NimbusRoman-Italic.otf,
+  BoldItalicFont=NimbusRoman-BoldItalic.otf]
+\unimathsetup{math-style=ISO}
 \setmathfont{MTPro2Math.otf}[Path=../out/]
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{0pt}
-\setlength{\abovedisplayskip}{4pt}
-\setlength{\belowdisplayskip}{4pt}
-\setlength{\abovedisplayshortskip}{4pt}
-\setlength{\belowdisplayshortskip}{4pt}
-\newcommand{\sample}[2]{\par\addvspace{7pt}{\small\textbf{#1\quad #2}}\par\nopagebreak}
+
 \begin{document}
-{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
-\medskip{\large Letters and scripts}\par
-\smallskip{\small Each expression appears at normal size, in a superscript and in a nested superscript.}\par
-\sample{01}{Latin letters and digits}
+\noindent{\Large\textbf{MTPro2 Math specimens}}\par\medskip
+
+\section*{1 Three math sizes and compound expressions}
+Compare expressions in normal, superscript and nested superscript positions.
+
+Inline example: $x^n+y^n=z^n$.
+
+% I01
 \[
-A,B,C,\ldots,X,Y,Z\qquad a,b,c,\ldots,x,y,z\qquad 0,1,2,\ldots,9
+\sum_{i=1}^n \sin x+i^{\sin x}+i^{i^{\sin x}}
 \]
+
+% T01_L0
 \[
-2^{A,B,C,\ldots,X,Y,Z\qquad a,b,c,\ldots,x,y,z\qquad 0,1,2,\ldots,9}
+A,\ldots,Z\qquad a,\dots,z\qquad \Gamma,\ldots,\Omega\qquad
+\symup{\Gamma},\ldots,\symup{\Omega} \qquad\alpha,\ldots,\omega
 \]
+
+% T01_L1
 \[
-2^{2^{A,B,C,\ldots,X,Y,Z\qquad a,b,c,\ldots,x,y,z\qquad 0,1,2,\ldots,9}}
+2^{A,\ldots,Z\qquad a,\dots,z\qquad \Gamma,\ldots,\Omega\qquad
+\symup{\Gamma},\ldots,\symup{\Omega} \qquad\alpha,\ldots,\omega}
 \]
-\sample{02}{Greek letters}
+
+% T01_L2
 \[
-\Gamma,\Delta,\Theta,\Lambda,\Xi,\Pi,\Sigma,\Phi,\Psi,\Omega\qquad\alpha,\beta,\gamma,\delta,\varepsilon,\theta,\varphi,\omega
+2^{2^{A,\ldots,Z\qquad a,\dots,z\qquad \Gamma,\ldots,\Omega\qquad
+\symup{\Gamma},\ldots,\symup{\Omega} \qquad\alpha,\ldots,\omega}}
 \]
+
+% T02_L0
 \[
-2^{\Gamma,\Delta,\Theta,\Lambda,\Xi,\Pi,\Sigma,\Phi,\Psi,\Omega\qquad\alpha,\beta,\gamma,\delta,\varepsilon,\theta,\varphi,\omega}
+\aleph_\alpha\times\aleph_\beta=\beta \iff \alpha\le\beta
 \]
+
+% T02_L1
 \[
-2^{2^{\Gamma,\Delta,\Theta,\Lambda,\Xi,\Pi,\Sigma,\Phi,\Psi,\Omega\qquad\alpha,\beta,\gamma,\delta,\varepsilon,\theta,\varphi,\omega}}
+2^{\aleph_\alpha\times\aleph_\beta=\beta \iff \alpha\le\beta}
 \]
-\sample{03}{Cardinals and relations}
+
+% T02_L2
 \[
-\aleph_\alpha\times\aleph_\beta=\aleph_\beta\quad\Longleftrightarrow\quad\alpha\leq\beta
+2^{2^{\aleph_\alpha\times\aleph_\beta=\beta \iff \alpha\le\beta}}
 \]
+
+% T03_L0
 \[
-2^{\aleph_\alpha\times\aleph_\beta=\aleph_\beta\quad\Longleftrightarrow\quad\alpha\leq\beta}
+\forall \varepsilon>\alpha,
+\Gamma_\alpha\hookrightarrow\Gamma_\varepsilon
 \]
+
+% T03_L1
 \[
-2^{2^{\aleph_\alpha\times\aleph_\beta=\aleph_\beta\quad\Longleftrightarrow\quad\alpha\leq\beta}}
+2^{\forall \varepsilon>\alpha,
+\Gamma_\alpha\hookrightarrow\Gamma_\varepsilon}
 \]
-\sample{04}{Limits and implications}
+
+% T03_L2
 \[
-|x-a|<\delta\quad\Longrightarrow\quad|f(x)-L|<\varepsilon
+2^{2^{\forall \varepsilon>\alpha,
+\Gamma_\alpha\hookrightarrow\Gamma_\varepsilon}}
 \]
+
+% T04_L0
 \[
-2^{|x-a|<\delta\quad\Longrightarrow\quad|f(x)-L|<\varepsilon}
+|x-a|<\delta\Longrightarrow|f(x)-l|<\varepsilon
 \]
+
+% T04_L1
 \[
-2^{2^{|x-a|<\delta\quad\Longrightarrow\quad|f(x)-L|<\varepsilon}}
+2^{|x-a|<\delta\Longrightarrow|f(x)-l|<\varepsilon}
 \]
-\sample{05}{Sets and topology}
+
+% T04_L2
 \[
-\{x\mid x\ne x\}=\varnothing\qquad(A\cap B)^\circ\subseteq A^\circ\cap B^\circ
+2^{2^{|x-a|<\delta\Longrightarrow|f(x)-l|<\varepsilon}}
 \]
+
+% T05_L0
 \[
-2^{\{x\mid x\ne x\}=\varnothing\qquad(A\cap B)^\circ\subseteq A^\circ\cap B^\circ}
+\underbrace{V\times\cdots\times V}_k\times\underbrace{V\times\cdots\times
+V}_l \to \underbrace{V\times\cdots\times V}_{k+l}
 \]
+
+% T05_L1
 \[
-2^{2^{\{x\mid x\ne x\}=\varnothing\qquad(A\cap B)^\circ\subseteq A^\circ\cap B^\circ}}
+2^{\underbrace{V\times\cdots\times V}_k\times\underbrace{V\times\cdots\times
+V}_l \to \underbrace{V\times\cdots\times V}_{k+l}}
 \]
-\sample{06}{Tensor indices}
+
+% T05_L2
+\[
+2^{2^{\underbrace{V\times\cdots\times V}_k\times\underbrace{V\times\cdots\times
+V}_l \to \underbrace{V\times\cdots\times V}_{k+l}}}
+\]
+
+% T06_L0
+\[
+\{x|x\ne x\}=\emptyset\qquad(A\cap B)^\circ\subset A^\circ\cap
+B^\circ
+\]
+
+% T06_L1
+\[
+2^{\{x|x\ne x\}=\emptyset\qquad(A\cap B)^\circ\subset A^\circ\cap
+B^\circ}
+\]
+
+% T06_L2
+\[
+2^{2^{\{x|x\ne x\}=\emptyset\qquad(A\cap B)^\circ\subset A^\circ\cap
+B^\circ}}
+\]
+
+% T07_L0
+\[
+\omega=\nu+v(x,y)\,dx +w(x,y)\,dy +d\varkappa
+\]
+
+% T07_L1
+\[
+2^{\omega=\nu+v(x,y)\,dx +w(x,y)\,dy +d\varkappa}
+\]
+
+% T07_L2
+\[
+2^{2^{\omega=\nu+v(x,y)\,dx +w(x,y)\,dy +d\varkappa}}
+\]
+
+% T08_L0
+\[
+d\omega=d\nu+\left(\frac{\partial w}{\partial x}-\frac{\partial v}{\partial y}\right)\,dx\wedge dy
+\]
+
+% T08_L1
+\[
+2^{d\omega=d\nu+\left(\frac{\partial w}{\partial x}-\frac{\partial v}{\partial y}\right)\,dx\wedge dy}
+\]
+
+% T08_L2
+\[
+2^{2^{d\omega=d\nu+\left(\frac{\partial w}{\partial x}-\frac{\partial v}{\partial y}\right)\,dx\wedge dy}}
+\]
+
+% T09_L0
+\[
+\hat x+\widehat X+\widehat{xy}+\widehat{xyz}+\vec A
+\]
+
+% T09_L1
+\[
+2^{\hat x+\widehat X+\widehat{xy}+\widehat{xyz}+\vec A}
+\]
+
+% T09_L2
+\[
+2^{2^{\hat x+\widehat X+\widehat{xy}+\widehat{xyz}+\vec A}}
+\]
+
+% T10_L0
 \[
 R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}
 \]
+
+% T10_L1
 \[
 2^{R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}}
 \]
+
+% T10_L2
 \[
 2^{2^{R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}}}
 \]
-\newpage
-{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
-\medskip{\large Calculus and compound expressions}\par
-\smallskip{\small Each expression appears at normal size, in a superscript and in a nested superscript.}\par
-\sample{07}{Composition and derivatives}
+
+% T11_L0
 \[
-(f\circ g)'(x)=f'(g(x))\,g'(x)
+(f\circ g)'(x)=f'(g(x))\cdot g'(x)
 \]
+
+% T11_L1
 \[
-2^{(f\circ g)'(x)=f'(g(x))\,g'(x)}
+2^{(f\circ g)'(x)=f'(g(x))\cdot g'(x)}
 \]
+
+% T11_L2
 \[
-2^{2^{(f\circ g)'(x)=f'(g(x))\,g'(x)}}
+2^{2^{(f\circ g)'(x)=f'(g(x))\cdot g'(x)}}
 \]
-\sample{08}{Differential forms}
+
+% T12_L0
 \[
-d\omega=\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)\,dx\wedge dy
+f(x)=\begin{cases}
+  |x|  & x>a \\
+  -|x| & x\le a
+\end{cases}
 \]
+
+% T12_L1
 \[
-2^{d\omega=\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)\,dx\wedge dy}
+2^{f(x)=\left\{
+\begin{smallmatrix*}[l]
+  |x|  & x>a \\
+  -|x| & x\le a
+\end{smallmatrix*}\right.}
 \]
+
+% T12_L2
 \[
-2^{2^{d\omega=\left(\frac{\partial Q}{\partial x}-\frac{\partial P}{\partial y}\right)\,dx\wedge dy}}
+2^{2^{f(x)=\left\{
+\begin{smallmatrix*}[l]
+  \scriptscriptstyle |x|  & \scriptscriptstyle x>a \\
+  \scriptscriptstyle -|x| & \scriptscriptstyle x\le a
+\end{smallmatrix*}\right.}}
 \]
-\sample{09}{Vector fields}
+
+% T13_L0
 \[
-X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j\eta^j\frac{\partial}{\partial\dot{x}^j}
+\int_{-\infty}^\infty e^{-x\cdot x}\,dx =\sqrt\pi
 \]
+
+% T13_L1
 \[
-2^{X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j\eta^j\frac{\partial}{\partial\dot{x}^j}}
+2^{\int_{-\infty}^\infty e^{-x\cdot x}\,dx =\sqrt\pi}
 \]
+
+% T13_L2
 \[
-2^{2^{X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j\eta^j\frac{\partial}{\partial\dot{x}^j}}}
+2^{2^{\int_{-\infty}^\infty e^{-x\cdot x}\,dx =\sqrt\pi}}
 \]
-\sample{10}{Gaussian integral}
+
+% T14_L0
 \[
-\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}
+X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j x^j\frac{\partial}{\partial\dot{x}^j}
 \]
+
+% T14_L1
 \[
-2^{\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}}
+2^{X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j x^j\frac{\partial}{\partial\dot{x}^j}}
 \]
+
+% T14_L2
 \[
-2^{2^{\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}}}
+2^{2^{X=\sum_i\xi^i\frac{\partial}{\partial x^i}+\sum_j x^j\frac{\partial}{\partial\dot{x}^j}}}
 \]
-\sample{11}{Piecewise expressions}
+
+\clearpage
+\section*{2 Standard accents}
+Compare ordinary accents with wide accents over longer expressions.
+
+% B19
 \[
-f(x)=\begin{cases}x^2,&x\geq0,\\-x^2,&x<0.\end{cases}
+\mathring{x}
 \]
+
+% B20
 \[
-2^{f(x)=\begin{cases}x^2,&x\geq0,\\-x^2,&x<0.\end{cases}}
+\dot{\Gamma}+\ddot{\Gamma}
 \]
+
+% B22
 \[
-2^{2^{f(x)=\begin{cases}x^2,&x\geq0,\\-x^2,&x<0.\end{cases}}}
+\begin{aligned}
+ & \hat{A},\quad\hat{M} \\
+ & \widehat{A},\quad\widehat{M},\quad\widehat{xy},\quad
+   \widehat{xyz},\quad\widehat{xyzw},\quad\widehat{x+y+z+\cdots+w}
+\end{aligned}
 \]
-\sample{12}{Products and annotations}
+
+% B23
 \[
-\underbrace{V\times\cdots\times V}_{k}\times\underbrace{V\times\cdots\times V}_{l}=V^{k+l}
+\begin{aligned}
+ & \tilde{A},\quad\tilde{M} \\
+ & \widetilde{A},\quad\widetilde{M},\quad\widetilde{xy},\quad
+   \widetilde{xyz},\quad\widetilde{xyzw},\quad\widetilde{x+y+z+\cdots+w}
+\end{aligned}
 \]
+
+% B24
 \[
-2^{\underbrace{V\times\cdots\times V}_{k}\times\underbrace{V\times\cdots\times V}_{l}=V^{k+l}}
+\begin{aligned}
+ & \check{A},\quad\check{M} \\
+ & \widecheck{A},\quad\widecheck{M},\quad\widecheck{xy},\quad
+   \widecheck{xyz},\quad\widecheck{xyzw},\quad\widecheck{x+y+z+\cdots+w}
+\end{aligned}
 \]
+
+% B25
 \[
-2^{2^{\underbrace{V\times\cdots\times V}_{k}\times\underbrace{V\times\cdots\times V}_{l}=V^{k+l}}}
+\bar{M},\qquad\overline{M},\qquad\overline{x+y+z}
 \]
-\newpage
-{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
-\medskip{\large Styles, spacing and accents}\par
-\sample{13}{Math alphabets}
+
+\section*{3 Math alphabets}
+Compare alphabet styles and letters in subscript and superscript positions.
+
+% B15
 \[
-\symit{ABCxyz}\qquad\symbfup{ABCxyz}\qquad\mathcal{ABCXYZ}\qquad\mathbb{CHNRZ}
+A_{\symbfup{X}}(f)=\symbfup{X(f)}=2^{\symbfup{2^{X(g)}}}
 \]
-\sample{14}{Primes}
+
+% A31--A39: nine Unicode alphabet styles present in Full.
 \[
-f'\quad f^{\prime}\qquad f''\quad f^{\prime\prime}\qquad f'''\quad f^{\prime\prime\prime}
+\begin{aligned}
+& \symup{ABGMXYZ} \\
+& \symit{ABGMXYZ} \\
+& \symbfup{ABGMXYZ} \\
+& \symbfit{ABGMXYZ} \\
+& \symscr{ABGMXYZ} \\
+& \symbfscr{ABGMXYZ} \\
+& \symfrak{ABGMXYZ} \\
+& \symbffrak{ABGMXYZ} \\
+& \symbb{ABGMXYZ}
+\end{aligned}
 \]
+
+% Replacement Section 4 body; Fourier matrices use positive-exponent convention.
+% Candidate row counts 24/26; actual delimiter choice requires the user's PDF.
+% Section 4 replacement. No scaling, artificial struts, or delimiter tuning.
+\clearpage
+\section*{4 Parentheses at four matrix sizes}
+
 \[
-x_i'\quad x_i^{\prime}\qquad f'(x)+g''(x)+h'''(x)
+\hat J_x^{(1/2)}=\frac{\hbar}{2}
+\begin{pmatrix}
+0 & 1 \\
+1 & 0
+\end{pmatrix}
+\qquad
+\hat J_x^{(3/2)}=\frac{\hbar}{2}
+\begin{pmatrix}
+0 & \sqrt{3} & 0 & 0 \\
+\sqrt{3} & 0 & 2 & 0 \\
+0 & 2 & 0 & \sqrt{3} \\
+0 & 0 & \sqrt{3} & 0
+\end{pmatrix}
 \]
-\sample{15}{Ordinary spacing and scripts}
+
 \[
-f1\quad f0\quad fA\quad f\alpha\quad V1\quad W1\quad j1\quad ff\quad fi
+\hat J_x^{(5/2)}=\frac{\hbar}{2}
+\begin{pmatrix}
+0 & \sqrt{5} & 0 & 0 & 0 & 0 \\
+\sqrt{5} & 0 & 2\sqrt{2} & 0 & 0 & 0 \\
+0 & 2\sqrt{2} & 0 & 3 & 0 & 0 \\
+0 & 0 & 3 & 0 & 2\sqrt{2} & 0 \\
+0 & 0 & 0 & 2\sqrt{2} & 0 & \sqrt{5} \\
+0 & 0 & 0 & 0 & \sqrt{5} & 0
+\end{pmatrix}
 \]
+
 \[
-f_i\quad f^2\quad f_i^2\qquad X_f+X_j+X_p+X_y+X_A+X_M
+\hat J_x^{(7/2)}=\frac{\hbar}{2}
+\begin{pmatrix}
+0 & \sqrt{7} & 0 & 0 & 0 & 0 & 0 & 0 \\
+\sqrt{7} & 0 & 2\sqrt{3} & 0 & 0 & 0 & 0 & 0 \\
+0 & 2\sqrt{3} & 0 & \sqrt{15} & 0 & 0 & 0 & 0 \\
+0 & 0 & \sqrt{15} & 0 & 4 & 0 & 0 & 0 \\
+0 & 0 & 0 & 4 & 0 & \sqrt{15} & 0 & 0 \\
+0 & 0 & 0 & 0 & \sqrt{15} & 0 & 2\sqrt{3} & 0 \\
+0 & 0 & 0 & 0 & 0 & 2\sqrt{3} & 0 & \sqrt{7} \\
+0 & 0 & 0 & 0 & 0 & 0 & \sqrt{7} & 0
+\end{pmatrix}
 \]
-\sample{16}{Single-character accents}
+
+
+% Replacement Section 5 body. Existing mathtools + unicode-math only.
+% No individual equation titles; subject labels below are source comments.
+\clearpage
+\section*{5 Formulas from physics and mathematics}
+
+% P01: Analytical mechanics; regular Lagrangian and canonical variables.
 \[
-\hat{x}\quad\tilde{y}\quad\check{z}\quad\bar{M}\quad\vec{A}\quad\dot{\Gamma}\quad\ddot{\Gamma}
+\begin{aligned}
+\frac{\mathrm d}{\mathrm dt}\frac{\partial L}{\partial\dot q_i}
+ -\frac{\partial L}{\partial q_i}&=0,
+ & p_i&=\frac{\partial L}{\partial\dot q_i},\\[4pt]
+\dot q_i&=\frac{\partial H}{\partial p_i},
+ & \dot p_i&=-\frac{\partial H}{\partial q_i}.
+\end{aligned}
 \]
-\sample{17}{Wide accents}
+
+% P02: Maxwell equations, microscopic SI form (rho and j are total sources).
 \[
-\widehat{xy}\quad\widehat{xyz}\quad\widehat{x+y+z+w}
+\left\{
+\begin{aligned}
+\nabla\cdot\symbfit{E}&=\frac{\rho}{\varepsilon_0},\\[4pt]
+\nabla\cdot\symbfit{B}&=0,\\[4pt]
+\nabla\times\symbfit{E}&=-\frac{\partial\symbfit{B}}{\partial t},\\[4pt]
+\nabla\times\symbfit{B}&=\mu_0\symbfit{j}
+  +\mu_0\varepsilon_0\frac{\partial\symbfit{E}}{\partial t}.
+\end{aligned}
+\right.
 \]
+
+% P03: Nonrelativistic spinless particle in a scalar potential.
 \[
-\widetilde{xy}\quad\widetilde{xyz}\quad\widetilde{x+y+z+w}
+i\hbar\frac{\partial\psi}{\partial t}
+ =\hat H\psi
+ =\left[-\frac{\hbar^2}{2m}\nabla^2+V(\symbfit{r},t)\right]\psi.
 \]
-\sample{18}{Bars and overlines}
+
+% P04: Quantum canonical ensemble; assume the partition function exists.
 \[
-\bar{M}\qquad\overline{xy}\qquad\overline{x+y+z+w}
+\hat\rho=\frac{e^{-\beta\hat H}}{Z},\qquad
+Z=\operatorname{tr}\!\left(e^{-\beta\hat H}\right),\qquad
+\beta=\frac{1}{k_{\mathrm B}T}.
 \]
-\sample{19}{Radicals}
+
+% P05: Einstein field equation with cosmological constant.
 \[
-\sqrt{x}\qquad\sqrt{x^2+y^2}\qquad\sqrt[n]{\frac{a}{b}}\qquad\sqrt{\frac{1+\sqrt{1+x^2}}{2}}
+R_{\mu\nu}-\frac12 Rg_{\mu\nu}+\Lambda g_{\mu\nu}
+ =\frac{8\pi G}{c^4}T_{\mu\nu}.
 \]
-\newpage
-{\Large\textbf{mtp2otf}}\hfill MTPro2 Math / Full\par
-\medskip{\large Braces, delimiters and operators}\par
-\sample{20}{Overbraces}
+
+% P06: Incompressible Newtonian fluid with constant rho and dynamic viscosity mu.
+% f is body force per unit mass.
 \[
-\overbrace{A}\qquad\overbrace{ABCDEF}\qquad\overbrace{ABCDEFGHIJKLMN}
+\begin{aligned}
+\rho\left(\frac{\partial\symbfit{u}}{\partial t}
+ +(\symbfit{u}\cdot\nabla)\symbfit{u}\right)
+ &=-\nabla p+\mu\nabla^2\symbfit{u}+\rho\symbfit{f},\\
+\nabla\cdot\symbfit{u}&=0.
+\end{aligned}
 \]
-\sample{21}{Underbraces}
-\[
-\underbrace{A}\qquad\underbrace{ABCDEF}\qquad\underbrace{ABCDEFGHIJKLMN}
-\]
-\sample{22}{Brace annotations}
-\[
-\overbrace{a_1+a_2+\cdots+a_n}^{n\ \mathrm{terms}}\qquad\underbrace{x_1x_2\cdots x_m}_{m\ \mathrm{factors}}
-\]
-\sample{23}{Tall delimiters}
-\[
-\left(\begin{matrix}a_{11}&a_{12}&a_{13}\\a_{21}&a_{22}&a_{23}\\a_{31}&a_{32}&a_{33}\end{matrix}\right)\qquad\left[\begin{matrix}1&0&0&0\\0&1&0&0\\0&0&1&0\\0&0&0&1\end{matrix}\right]
-\]
-\sample{24}{Nested fractions and delimiters}
-\[
-\left\{\frac{1}{1+\frac{1}{1+x}}\right\}\qquad\left\langle\frac{u+v}{\sqrt{1+\lVert u\rVert^2}},w\right\rangle
-\]
-\sample{25}{Limits and large operators}
-\[
-\sum_{k=0}^{n}\binom{n}{k}x^k y^{n-k}=(x+y)^n
-\]
-\[
-\int_0^1\frac{dx}{\sqrt{1-x^2}}=\frac{\pi}{2}\qquad\prod_{k=1}^{n}\frac{k+1}{k}=n+1
-\]
-\sample{26}{Composite expressions}
-\[
-R_{\mu\nu}-\frac12 Rg_{\mu\nu}+\Lambda g_{\mu\nu}=\frac{8\pi G}{c^4}T_{\mu\nu}
-\]
-\[
-R^\rho_{\sigma\mu\nu}=\partial_\mu\Gamma^\rho_{\nu\sigma}-\partial_\nu\Gamma^\rho_{\mu\sigma}+\Gamma^\rho_{\mu\lambda}\Gamma^\lambda_{\nu\sigma}-\Gamma^\rho_{\nu\lambda}\Gamma^\lambda_{\mu\sigma}
-\]
-\[
-\Gamma^\rho_{\mu\nu}=\frac12 g^{\rho\sigma}\left(\frac{\partial g_{\sigma\nu}}{\partial x^\mu}+\frac{\partial g_{\sigma\mu}}{\partial x^\nu}-\frac{\partial g_{\mu\nu}}{\partial x^\sigma}\right)
-\]
-\[
-\int_{\partial M}\omega=\int_M\mathrm d\omega\qquad\iint_S(\nabla\times\mathbf F)\cdot\hat{\mathbf n}\,\mathrm dS=\oint_{\partial S}\mathbf F\cdot\mathrm d\mathbf r
-\]
-\[
-\lvert jm\rangle=\sum_{m_1=-j_1}^{j_1}\sum_{m_2=-j_2}^{j_2}(-1)^{j_1-j_2+m}\sqrt{2j+1}\begin{pmatrix}j_1&j_2&j\\m_1&m_2&-m\end{pmatrix}\lvert j_1m_1\rangle\otimes\lvert j_2m_2\rangle
-\]
+
+% M01: Retain r52 S5_11 verbatim, except its subsection title.
+% A_n are events in one probability space; independence is not required.
+\begin{equation*}
+\begin{aligned}
+\sum_{n=1}^{\infty}\symbb{P}(A_n)<\infty
+\quad\Longrightarrow\quad
+\symbb{P}\!\left(\limsup_{n\to\infty}A_n\right)
+&=\symbb{P}\!\left(
+ \bigcap_{m=1}^{\infty}\bigcup_{n=m}^{\infty}A_n
+ \right)\\
+&=0.
+\end{aligned}
+\end{equation*}
+
+% M02: Retain r52 S5_12 verbatim, except its subsection title.
+% n is a nonnegative integer. Preserve display-size binomial in cases.
+\begin{equation*}
+\sum_{k=0}^{n}(-1)^k\binom{n}{k}^{2}
+=\begin{cases}
+ (-1)^{n/2}\dbinom{n}{n/2},&n\text{ even},\\[5pt]
+ 0,&n\text{ odd}.
+\end{cases}
+\end{equation*}
+
 \end{document}

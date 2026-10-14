@@ -4,17 +4,16 @@ Restore source-dependent scalars from the local build snapshot.
 """
 from __future__ import annotations
 
-import argparse
-import json
-from pathlib import Path
+import math
+from copy import deepcopy
 
-from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
 from fontTools.pens.t2CharStringPen import T2CharStringPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.misc.transform import Transform
 from fontTools.pens.boundsPen import BoundsPen
-from build_config import EDITIONS, FONT_REVISION, FONT_VERSION, identity
+
+from build_config import FONT_REVISION, FONT_VERSION, identity
 
 
 def _mvr(v):
@@ -45,7 +44,7 @@ def _set_charstring(font, name, draw_fn, width):
     """Create/replace one CFF1 glyph; ``draw_fn`` receives a pen."""
     top = font['CFF '].cff.topDictIndex[0]
     gs = font.getGlyphSet()
-    pen = T2CharStringPen(width, gs)
+    pen = T2CharStringPen(width - top.Private.nominalWidthX, gs)
     draw_fn(pen)
     cs = pen.getCharString(private=top.Private, globalSubrs=top.GlobalSubrs)
     chars = top.CharStrings
@@ -103,7 +102,9 @@ def _glyph_part(glyph, start, end, full, flags):
 
 
 def _copy_assembly_geometry(font, template, glyphs):
-    """Rebuild an assembly while retaining its source-measured connector lengths."""
+    """Rebuild an assembly while retaining its source-measured connector
+    lengths.
+    """
     if template is None:
         raise ValueError('missing pre-finalize brace assembly template')
     records = list(template.PartRecords or ())
@@ -111,14 +112,12 @@ def _copy_assembly_geometry(font, template, glyphs):
         raise ValueError('brace assembly template length changed unexpectedly')
     ga = ot.GlyphAssembly()
     ga.ItalicsCorrection = _mvr(
-        getattr(getattr(template, 'ItalicsCorrection', None), 'Value', 0))
+        getattr(getattr(template, 'ItalicsCorrection', None), 'Value', 0)
+    )
     ga.PartRecords = [
         _glyph_part(
-            glyph,
-            old.StartConnectorLength,
-            old.EndConnectorLength,
-            font['hmtx'][glyph][0],
-            old.PartFlags,
+            glyph, old.StartConnectorLength, old.EndConnectorLength,
+            font['hmtx'][glyph][0], old.PartFlags,
         )
         for old, glyph in zip(records, glyphs)
     ]
@@ -144,8 +143,12 @@ def _fix_braces(font):
         if req not in font.getGlyphOrder():
             return
 
-    hmap = dict(zip(m.MathVariants.HorizGlyphCoverage.glyphs,
-                    m.MathVariants.HorizGlyphConstruction))
+    hmap = dict(
+        zip(
+            m.MathVariants.HorizGlyphCoverage.glyphs,
+            m.MathVariants.HorizGlyphConstruction
+        )
+    )
     ocn = hmap.get(og)
     ucn = hmap.get(ug)
     if ocn is None or ucn is None:
@@ -154,16 +157,18 @@ def _fix_braces(font):
     old_under = ucn.GlyphAssembly
     over_target_ymin = _assembly_ymin(font, old_over)
 
-    # TeX brace fill concatenates the two cusp halves directly.  Merge each pair
-    # into one fixed non-extender; connector lengths stay those measured from the
-    # local source and already stored in the pre-finalize assembly.
+    # TeX brace fill concatenates the two cusp halves directly.  Merge
+    # each pair into one fixed non-extender; connector lengths stay
+    # those measured from the local source and already stored in the
+    # pre-finalize assembly.
     oc = 'brace.over.center.v18'
     uc = 'brace.under.center.v18'
     _merge_two(font, 'braceru', 'bracelu', oc)
     _merge_two(font, 'bracerd', 'braceld', uc)
 
-    raw_ymin = min(_bbox(font, g)[1]
-                   for g in ('braceld', 'bracerd', oc, 'brace.hext'))
+    raw_ymin = min(
+        _bbox(font, g)[1] for g in ('braceld', 'bracerd', oc, 'brace.hext')
+    )
     dy = int(round(over_target_ymin - raw_ymin))
     ol = _copy_shift(font, 'braceld', 'brace.over.left.v18', dy)
     oe = _copy_shift(font, 'brace.hext', 'brace.over.ext.v18', dy)
@@ -171,11 +176,22 @@ def _fix_braces(font):
     or_ = _copy_shift(font, 'bracerd', 'brace.over.right.v18', dy)
 
     ocn.GlyphAssembly = _copy_assembly_geometry(
-        font, old_over, [ol, oe, oc2, oe, or_])
+        font, old_over, [ol, oe, oc2, oe, or_]
+    )
     ucn.GlyphAssembly = _copy_assembly_geometry(
-        font, old_under, ['bracelu', 'brace.hext', uc, 'brace.hext', 'braceru'])
-    # MinConnectorOverlap is intentionally left untouched: the FontForge stage
-    # computed it from the local source outlines and serialized it already.
+        font, old_under,
+        ['bracelu', 'brace.hext', uc, 'brace.hext', 'braceru']
+    )
+    # Source braces re-use a dedicated glyph at the Unicode entrance.
+    # Retain the former fallback construction with the same
+    # finalized assembly too.
+    for cp, base, con in ((0x23DE, og, ocn), (0x23DF, ug, ucn)):
+        fallback = hmap.get(f'uni{cp:04X}')
+        if base != f'uni{cp:04X}' and fallback is not None:
+            fallback.GlyphAssembly = deepcopy(con.GlyphAssembly)
+    # MinConnectorOverlap is intentionally left untouched: the FontForge
+    # stage computed it from the local source outlines and
+    # serialized it already.
 
 
 def _add_cmap_alias(font, cp, glyph):
@@ -187,8 +203,7 @@ def _add_cmap_alias(font, cp, glyph):
         t.cmap.setdefault(cp, glyph)
 
 
-def _load_local_math_values(path):
-    data = json.loads(Path(path).read_text(encoding='utf-8'))
+def local_math_values(data):
     values = data.get('constants')
     if not isinstance(values, dict):
         raise ValueError('local MATH snapshot has no constants object')
@@ -196,7 +211,9 @@ def _load_local_math_values(path):
 
 
 def _restore_roundtrip_sensitive_constants(math_table, local_values):
-    """Restore scalars FontForge may rewrite, using only the local snapshot."""
+    """Restore scalars FontForge may rewrite, using only the local
+    snapshot.
+    """
     c = math_table.MathConstants
     for name in ('ScriptPercentScaleDown', 'ScriptScriptPercentScaleDown'):
         if name not in local_values:
@@ -207,13 +224,38 @@ def _restore_roundtrip_sensitive_constants(math_table, local_values):
     c.SpaceAfterScript.Value = int(local_values['SpaceAfterScript'])
 
 
-def apply(path, output=None, edition='full',
-          math_values_path=None):
-    if not math_values_path:
-        raise ValueError('--math-values is required; use the local build snapshot')
-    local_values = _load_local_math_values(math_values_path)
+def preserve_windows_ansi_compatibility(font):
+    """Preserve Windows ANSI font selection for this converter's math face."""
+    cmap = font.getBestCmap() or {}
+    names = set(font.getGlyphOrder())
+    missing = [
+        cp for cp in range(0x20, 0x7F)
+        if cmap.get(cp) == '.notdef' or cmap.get(cp) not in names
+    ]
+    if missing:
+        raise ValueError(
+            'ASCII cmap missing valid glyphs: ' + ', '.join(
+                f'U+{cp:04X}' for cp in missing
+            )
+        )
+    font['OS/2'].ulCodePageRange1 |= 1
 
-    f = TTFont(path)
+
+def update_average_width(font):
+    """Derive average advance from each nonzero-width GID once."""
+    widths = [
+        font['hmtx'][name][0] for name in font.getGlyphOrder()
+        if font['hmtx'][name][0] != 0
+    ]
+    if not widths:
+        raise ValueError('xAvgCharWidth: no nonzero advances')
+    average = (2 * sum(widths) + len(widths)) // (2 * len(widths))
+    if not 0 <= average <= 32767:
+        raise ValueError('xAvgCharWidth: average outside FWORD range')
+    font['OS/2'].xAvgCharWidth = average
+
+
+def edit(f, *, edition, local_values):
     if 'MATH' not in f or 'CFF ' not in f:
         raise ValueError('expected CFF OpenType MATH font')
     m = f['MATH'].table
@@ -244,10 +286,14 @@ def apply(path, output=None, edition='full',
     family, psname, unique_id = identity(edition)
 
     # Fixed technical metadata for Windows compatibility.
+    preserve_windows_ansi_compatibility(f)
+    update_average_width(f)
     f['head'].fontRevision = FONT_REVISION
     f['name'].names = [n for n in f['name'].names if n.nameID not in (3, 5)]
-    replacements = {1: family, 2: 'Regular', 4: family,
-                    6: psname, 16: family, 17: 'Regular'}
+    replacements = {
+        1: family, 2: 'Regular', 4: family, 6: psname, 16: family,
+        17: 'Regular'
+    }
     for n in f['name'].names:
         repl = replacements.get(n.nameID)
         if repl is not None:
@@ -269,17 +315,68 @@ def apply(path, output=None, edition='full',
     except Exception:
         pass
     top.rawDict.pop('version', None)
-    out = output or path
-    f.save(out)
-    return out
 
 
-if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument('font')
-    ap.add_argument('-o', '--output')
-    ap.add_argument('--edition', choices=EDITIONS, default='full')
-    ap.add_argument('--math-values', required=True,
-                    help='local build/<edition>/math-constants.json snapshot')
-    a = ap.parse_args()
-    apply(a.font, a.output, edition=a.edition, math_values_path=a.math_values)
+
+
+MATH_FIELDS = (
+    (
+        'MathItalicsCorrectionInfo', 'Coverage', 'ItalicsCorrection',
+        'ItalicsCorrectionCount'
+    ),
+    (
+        'MathTopAccentAttachment', 'TopAccentCoverage', 'TopAccentAttachment',
+        'TopAccentAttachmentCount'
+    )
+)
+
+
+def math_add(font, name, ic, accent):
+    gi = font['MATH'].table.MathGlyphInfo
+    for value, (field, cov, array, count) in zip((ic, accent), MATH_FIELDS):
+        table = getattr(gi, field)
+        pairs = dict(zip(getattr(table, cov).glyphs, getattr(table, array)))
+        if name in pairs:
+            raise ValueError('MATH mbf identity collision')
+        record = ot.MathValueRecord()
+        record.Value = value
+        record.DeviceTable = None
+        pairs[name] = record
+        names = sorted(pairs, key=font.getGlyphID)
+        getattr(table, cov).glyphs = names
+        setattr(table, array, [pairs[n] for n in names])
+        setattr(table, count, len(names))
+
+
+def aggregate_values(font):
+    """Derive specified CFF/head/hhea aggregates from every actual glyph."""
+    gs = font.getGlyphSet()
+    bounds = {}
+    combined = None
+    for name in font.getGlyphOrder():
+        pen = BoundsPen(gs)
+        gs[name].draw(pen)
+        if pen.bounds is not None:
+            bounds[name] = pen.bounds
+            x0, y0, x1, y1 = pen.bounds
+            combined = (
+                x0, y0, x1, y1
+            ) if combined is None else (
+                min(combined[0], x0), min(combined[1], y0),
+                max(combined[2], x1), max(combined[3], y1)
+            )
+    box = [
+        math.floor(combined[0]), math.floor(combined[1]),
+        math.ceil(combined[2]), math.ceil(combined[3])
+    ]
+    widths = {n: math.ceil(b[2]) - math.floor(b[0]) for n, b in bounds.items()}
+    metrics = font['hmtx'].metrics
+    hhea = {
+        'advanceWidthMax': max(v[0] for v in metrics.values()),
+        'minLeftSideBearing': min(metrics[n][1] for n in widths),
+        'minRightSideBearing': min(
+            metrics[n][0] - metrics[n][1] - w for n, w in widths.items()
+        ),
+        'xMaxExtent': max(metrics[n][1] + w for n, w in widths.items())
+    }
+    return {'FontBBox': box, 'head_bbox': box, 'hhea': hhea}

@@ -2,6 +2,23 @@
 import re
 
 
+def apply_raw_alphabet_metrics(tfm, raw):
+    """Overlay raw WD/IC/kern only for explicitly selected new alphabet
+    roles.
+    """
+    source_chars = {
+        int(slot): metrics for slot, metrics in raw['chars'].items()
+    }
+    if set(tfm.chars) != set(source_chars):
+        raise ValueError('PL/raw TFM character coverage differs')
+    for slot, metrics in source_chars.items():
+        tfm.chars[slot]['wd'] = metrics['wd']
+        tfm.chars[slot]['ic'] = metrics['ic']
+    tfm.kerns = {
+        (int(left), int(right)): value for left, right, value in raw['kerns']
+    }
+
+
 def _tok(s):
     # tokenize parens and atoms
     return re.findall(r'\(|\)|[^\s()]+', s)
@@ -51,16 +68,22 @@ def _num(items):
     raise ValueError(items)
 
 
-FD_NAMES = {1: 'slant', 2: 'space', 3: 'stretch', 4: 'shrink', 5: 'xheight', 6: 'quad', 7: 'extraspace',
-            8: 'num1', 9: 'num2', 10: 'num3', 11: 'denom1', 12: 'denom2', 13: 'sup1', 14: 'sup2', 15: 'sup3',
-            16: 'sub1', 17: 'sub2', 18: 'supdrop', 19: 'subdrop', 20: 'delim1', 21: 'delim2', 22: 'axisheight'}
-FD_NAMES_EX = {8: 'defaultrulethickness', 9: 'bigopspacing1', 10: 'bigopspacing2',
-               11: 'bigopspacing3', 12: 'bigopspacing4', 13: 'bigopspacing5'}
+FD_NAMES = {
+    1: 'slant', 2: 'space', 3: 'stretch', 4: 'shrink', 5: 'xheight', 6: 'quad',
+    7: 'extraspace', 8: 'num1', 9: 'num2', 10: 'num3', 11: 'denom1',
+    12: 'denom2', 13: 'sup1', 14: 'sup2', 15: 'sup3', 16: 'sub1', 17: 'sub2',
+    18: 'supdrop', 19: 'subdrop', 20: 'delim1', 21: 'delim2', 22: 'axisheight'
+}
+FD_NAMES_EX = {
+    8: 'defaultrulethickness', 9: 'bigopspacing1', 10: 'bigopspacing2',
+    11: 'bigopspacing3', 12: 'bigopspacing4', 13: 'bigopspacing5'
+}
 
 
 class TFM:
     def __init__(self, plpath):
-        src = open(plpath).read()
+        with open(plpath) as stream:
+            src = stream.read()
         top = _parse(_tok(src))
         self.fontdimen = {}
         self.design_size = None  # TeX points; read from PL DESIGNSIZE
@@ -80,15 +103,23 @@ class TFM:
                         self.fontdimen[idx] = _num(sub[3:5])
                     else:
                         names = {v.upper(): k for k, v in FD_NAMES.items()}
-                        names.update({v.upper(): k for k, v in FD_NAMES_EX.items()})
+                        names.update(
+                            {v.upper(): k for k, v in FD_NAMES_EX.items()}
+                        )
                         idx = names.get(key)
                         if idx:
                             self.fontdimen[idx] = _num(sub[1:3])
             elif head == 'LIGTABLE':
-                if any(isinstance(sub, list) and sub and sub[0] == 'SKIP'
-                       for sub in node[1:]):
+                if any(
+                    isinstance(sub, list) and sub and sub[0] == 'SKIP'
+                    for sub in node[1:]
+                ):
                     raise ValueError(
-                        f'{plpath}: unsupported PL LIGTABLE SKIP; kerning not imported')
+                        (
+                            f'{plpath}: unsupported PL LIGTABLE SKIP; '
+                            f'kerning not imported'
+                        )
+                    )
                 labels = []
                 for sub in node[1:]:
                     if not isinstance(sub, list):
@@ -106,7 +137,10 @@ class TFM:
                         labels = []
             elif head == 'CHARACTER':
                 code = _charcode(node[1], node[2])
-                d = {'wd': 0.0, 'ht': 0.0, 'dp': 0.0, 'ic': 0.0, 'next': None, 'varchar': None}
+                d = {
+                    'wd': 0.0, 'ht': 0.0, 'dp': 0.0, 'ic': 0.0, 'next': None,
+                    'varchar': None
+                }
                 for sub in node[3:]:
                     if not isinstance(sub, list):
                         continue
@@ -124,17 +158,10 @@ class TFM:
                     elif k == 'VARCHAR':
                         vc = {}
                         for p in sub[1:]:
-                            if isinstance(p, list) and p[0] in ('TOP', 'MID', 'BOT', 'REP'):
+                            if (
+                                isinstance(p, list)
+                                and p[0] in ('TOP', 'MID', 'BOT', 'REP')
+                            ):
                                 vc[p[0]] = _charcode(p[1], p[2])
                         d['varchar'] = vc
                 self.chars[code] = d
-
-
-if __name__ == '__main__':
-    import sys, json
-    t = TFM(sys.argv[1])
-    print(json.dumps({'fd': t.fontdimen,
-                      'nchars': len(t.chars),
-                      'chains': {c: d['next'] for c, d in t.chars.items() if d['next'] is not None},
-                      'varchars': {c: d['varchar'] for c, d in t.chars.items() if d['varchar']}},
-                     indent=1))

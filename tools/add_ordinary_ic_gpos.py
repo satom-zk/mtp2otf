@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """Add a compact ordinary CHARIC PairPos lookup.
 
-It accumulates with the serialized TFM kern lookup while preserving hmtx and
-MATH ItalicsCorrection. Exclude prime and combining-accent paths.
+It accumulates with the serialized TFM kern lookup while preserving hmtx
+and MATH ItalicsCorrection. Exclude prime and combining-accent paths.
 """
 from __future__ import annotations
-import argparse, json, unicodedata
-from fontTools.ttLib import TTFont
+import unicodedata
+
 from fontTools.ttLib.tables import otTables
 
 VALUE_XADVANCE = 0x0004
 EXCLUDED_CODEPOINTS = {
-    # Source fixed/wide accent glyphs exposed in PUA; these are accent commands,
-    # not ordinary right-neighbour characters.
-    0xE24A, 0xE24B, 0xE24C, 0xE24E, 0xE24F, 0xE250, 0xE251, 0xE254, 0xE255, 0xE286, 0xE287,
+    # Source fixed/wide accent glyphs exposed in PUA; these are accent
+    # commands, not ordinary right-neighbour characters.
+    0xE24A, 0xE24B, 0xE24C, 0xE24E, 0xE24F, 0xE250, 0xE251, 0xE254, 0xE255,
+    0xE286, 0xE287,
 }
-ALLOWED_GSUB_FEATURES = {'ssty', 'salt', 'dtls'} | {f'cv{i:02d}' for i in range(1, 13)}
+ALLOWED_GSUB_FEATURES = {
+    'ssty', 'salt', 'dtls'
+} | {f'cv{i:02d}' for i in range(1, 13)}
 
 
 def _is_excluded_cp(cp: int) -> bool:
@@ -52,8 +55,10 @@ def _gsub_outputs(font, lookup_indices):
         if lk.LookupType in (1, 3):
             subtables = lk.SubTable
         elif lk.LookupType == 7:  # ExtensionSubst
-            subtables = [st.ExtSubTable for st in lk.SubTable
-                         if getattr(st, 'ExtensionLookupType', None) in (1, 3)]
+            subtables = [
+                st.ExtSubTable for st in lk.SubTable
+                if getattr(st, 'ExtensionLookupType', None) in (1, 3)
+            ]
         for st in subtables:
             if hasattr(st, 'mapping'):
                 out.update(st.mapping.values())
@@ -70,28 +75,40 @@ def _right_domain(font, left_glyphs):
         by_glyph.setdefault(g, []).append(cp)
     rights = set()
     for g, cps in by_glyph.items():
-        # Keep a glyph if it has at least one ordinary/non-mark encoded identity.
+        # Keep a glyph if it has at least one
+        # ordinary/non-mark encoded identity.
         if any(not _is_excluded_cp(int(cp)) for cp in cps):
             rights.add(g)
-    rights.update(_gsub_outputs(font, _feature_lookup_indices(font, ALLOWED_GSUB_FEATURES)))
-    # ssty/cv outputs can be unencoded.  Left glyphs themselves must also be
-    # valid right glyphs for adjacency within the same optical/alternate run.
+    rights.update(
+        _gsub_outputs(
+            font, _feature_lookup_indices(font, ALLOWED_GSUB_FEATURES)
+        )
+    )
+    # ssty/cv outputs can be unencoded.  Left glyphs themselves must
+    # also be valid right glyphs for adjacency within the same
+    # optical/alternate run.
     rights.update(left_glyphs)
 
-    # GDEF class 3 = mark.  This catches unencoded ssty/cv accent outputs that
-    # cannot be filtered by Unicode General_Category alone.  TeX accent noads
-    # and combining-mark shaping are not ordinary adjacency semantics.
+    # GDEF class 3 = mark.  This catches unencoded ssty/cv accent
+    # outputs that cannot be filtered by Unicode General_Category alone.
+    # TeX accent noads and combining-mark shaping are not
+    # ordinary adjacency semantics.
     mark_glyphs = set()
     if 'GDEF' in font and font['GDEF'].table.GlyphClassDef:
-        mark_glyphs = {g for g, c in font['GDEF'].table.GlyphClassDef.classDefs.items()
-                       if int(c) == 3}
+        mark_glyphs = {
+            g for g, c in font['GDEF'].table.GlyphClassDef.classDefs.items()
+            if int(c) == 3
+        }
 
-    # Never allow prime contextual products or mark glyphs into the ordinary
-    # right class.  Prime/script/accent paths have their own TeX semantics.
-    rights = {g for g in rights
-              if g not in mark_glyphs
-              and 'prime' not in g.lower()
-              and not g.endswith('.icK')}
+    # Never allow prime contextual products or mark glyphs into the
+    # ordinary right class. Prime/script/accent paths have
+    # their own TeX semantics.
+    rights = {
+        g for g in rights
+        if g not in mark_glyphs
+        and 'prime' not in g.lower()
+        and not g.endswith('.icK')
+    }
     return rights
 
 
@@ -113,7 +130,9 @@ def add_bridge(font, contract):
             continue
         prev = left_ic.get(g)
         if prev is not None and prev != ic:
-            raise SystemExit(f'conflicting ordinary IC for {g}: {prev} vs {ic}')
+            raise SystemExit(
+                f'conflicting ordinary IC for {g}: {prev} vs {ic}'
+            )
         left_ic[g] = ic
     if not left_ic:
         raise SystemExit('contract has no usable ordinary_ic_lefts')
@@ -175,23 +194,8 @@ def add_bridge(font, contract):
                     fr.Feature.LookupCount = len(fr.Feature.LookupListIndex)
                 features.append(fr)
     if not features:
-        raise SystemExit('font has no existing kern feature; refusing to invent script wiring')
+        raise SystemExit(
+            'font has no existing kern feature; refusing to invent script '
+            'wiring'
+        )
     return len(left_ic), len(values), len(rights), idx
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('font')
-    ap.add_argument('--contract', required=True)
-    ap.add_argument('--output')
-    ns = ap.parse_args()
-    f = TTFont(ns.font)
-    con = json.load(open(ns.contract, encoding='utf-8'))
-    add_bridge(f, con)
-    out = ns.output or ns.font
-    f.save(out, reorderTables=False)
-
-
-
-if __name__ == '__main__':
-    main()
