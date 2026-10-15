@@ -4,8 +4,9 @@ EDITIONS = {
     'full': ('MTPro2 Math', 'MTPro2Math'),
     'lite': ('MTPro2 Math Lite', 'MTPro2MathLite'),
 }
-FONT_REVISION = 1.0
-FONT_VERSION = 'Version 1.0'
+# head.fontRevision is a 16.16 fixed-point field.
+FONT_REVISION = round(1.2 * 65536) / 65536
+FONT_VERSION = 'Version 1.2'
 
 
 def identity(edition):

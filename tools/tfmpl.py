@@ -91,7 +91,9 @@ class TFM:
         self.kerns = {}   # (left,right) -> amount
         for node in top:
             head = node[0]
-            if head == 'DESIGNSIZE':
+            if head == 'BOUNDARYCHAR':
+                raise ValueError(f'{plpath}: unsupported PL boundary character')
+            elif head == 'DESIGNSIZE':
                 self.design_size = float(_num(node[1:3]))
             elif head == 'FONTDIMEN':
                 for sub in node[1:]:
@@ -125,16 +127,20 @@ class TFM:
                     if not isinstance(sub, list):
                         continue
                     if sub[0] == 'LABEL':
+                        if sub[1] == 'BOUNDARYCHAR':
+                            raise ValueError(f'{plpath}: unsupported PL boundary label')
                         labels.append(_charcode(sub[1], sub[2]))
                     elif sub[0] == 'KRN':
                         rc = _charcode(sub[1], sub[2])
                         amt = _num(sub[3:5])
                         for l in labels:
-                            self.kerns[(l, rc)] = amt
-                    elif sub[0] == 'LIG':
-                        pass
+                            self.kerns.setdefault((l, rc), amt)
                     elif sub[0] == 'STOP':
                         labels = []
+                    elif sub[0] != 'COMMENT':
+                        raise ValueError(
+                            f'{plpath}: unsupported PL LIGTABLE command {sub[0]}'
+                        )
             elif head == 'CHARACTER':
                 code = _charcode(node[1], node[2])
                 d = {

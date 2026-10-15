@@ -48,20 +48,10 @@ def read_snapshot(path, edition, coverage, condition):
 
 
 def write_payloads(
-    font, work, edition, snapshot, imported, ordinary_ic, constants,
+    font, work, edition, snapshot, imported, constants,
     min_overlap
 ):
     """Bind payloads to the serialized native font."""
-    _source_contract_path = str(work / 'ordinary-ic.json')
-    _source_contract_expected = write_contract(
-        _source_contract_path,
-        {
-            'ordinary_ic_lefts': [
-                {'glyph': name, 'italic_correction': value}
-                for name, value in sorted(ordinary_ic.items())
-            ],
-        }
-    )
     min_overlap = int(
         getattr(font.math, 'MinConnectorOverlap', min_overlap) or 0
     )
@@ -85,7 +75,6 @@ def write_payloads(
         }
     )
     return {
-        'ordinary-ic.json': _source_contract_expected,
         'math-constants.json': math_expected,
         'large-variant-build.json': inventory_expected
     }
@@ -198,13 +187,13 @@ def generate(
                     )
                 return
             with stage('source spacing and GDEF'):
-                ordinary_ic = features.finish_source_features(
+                features.finish_source_features(
                     glyphs, limits, accents, variants
                 )
             with stage('source payloads'):
                 payloads = write_payloads(
                     font, work, edition, snapshot, glyphs.imported,
-                    ordinary_ic, constants, min_overlap
+                    constants, min_overlap
                 )
             with stage('native range and donor checks'):
                 features.check_native_ranges(glyphs)

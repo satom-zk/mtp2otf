@@ -61,6 +61,7 @@ ADDED_ALPHABET_TAGS = (
 def raw_alphabet_metrics(path):
     """Read exact binary TFM fractions into a local JSON-safe snapshot."""
     from fontTools.tfmLib import TFM
+    from tfm_kerns import read_kerns_fix20
     tfm = TFM(str(path))
     return {
         'chars': {
@@ -70,8 +71,8 @@ def raw_alphabet_metrics(path):
             for slot, char in tfm.chars.items()
         },
         'kerns': [
-            [left, right, value] for left, rights in tfm.kerning.items()
-            for right, value in rights.items()
+            [left, right, value / (1 << 20)]
+            for (left, right), value in read_kerns_fix20(path).items()
         ],
     }
 
@@ -98,29 +99,6 @@ OPTICAL_FD_GROUPS = {
         ('holey bold family', ('hrbd_ss', 'hrbd_s', 'hrbd')),
     ),
 }
-
-# Tags whose source glyphs are ordinary/simple math characters by
-# construction. Symbol-family exceptions are separate because source
-# class, not alphabet role, decides whether an italic correction
-# participates in ordinary adjacency.
-ORDINARY_ALL_TAGS = frozenset(
-    (
-        'mit', 'mit_s', 'mit_ss', 'bmit', 'bmit_s', 'bmit_ss', 'bb', 'bb_s',
-        'bb_ss', 'script', 'script_s', 'script_ss', 'frak', 'frak_s',
-        'frak_ss', 'curly', 'curly_s', 'curly_ss', 'bold', 'bold_s', 'bold_ss',
-        'bscript', 'bscript_s', 'bscript_ss', 'bfrak', 'bfrak_s', 'bfrak_ss',
-        'bbi', 'bbi_s', 'bbi_ss', 'bbd', 'bbd_s', 'bbd_ss', 'hrb', 'hrb_s',
-        'hrb_ss', 'hrbd', 'hrbd_s', 'hrbd_ss', 'hbi', 'hbi_s', 'hbi_ss',
-    )
-)
-
-# The symbol-family ordinary slots are stable TeX
-# identities. Their *metrics*
-# and skew/kern values are always read from local TFM/package sources.
-SYMBOL_ORDINARY_SLOTS = frozenset((114, 177))
-SYMBOL_ORDINARY_TAGS = frozenset(
-    ('syt', 'syt_s', 'syt_ss', 'bsyt', 'bsyt_s', 'bsyt_ss')
-)
 
 # Map builder tags to the LaTeX declaration that owns their skewchar
 # policy. The selector itself is structural; the numeric
@@ -484,12 +462,6 @@ def extract_policy(
     return SourcePolicy(
         sr.numerator, sr.denominator, ssr.numerator, ssr.denominator, skew,
         _parse_accents(sty), _parse_dot_macros(sty),
-    )
-
-
-def is_ordinary_left(tag: str, slot: int) -> bool:
-    return tag in ORDINARY_ALL_TAGS or (
-        tag in SYMBOL_ORDINARY_TAGS and slot in SYMBOL_ORDINARY_SLOTS
     )
 
 

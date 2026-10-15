@@ -110,6 +110,7 @@ files in place. Do not run concurrent builds of the same edition.
 Install the TTF and select \file{MTPro2 Math} or
 \file{MTPro2 Math Lite} as the equation font. For the equation text,
 enable \emph{Kerning for fonts} at 1~pt and above in the Font dialog.
+In Word, ordinary character spacing can be tighter than in the original Type~1 package.
 
 Use Word's equation editor for mathematical alphabets, accents, delimiters
 and operators. It does not expose the same OpenType feature controls as
@@ -131,9 +132,7 @@ Use \file{unicode-math} commands for alphabets and symbols, and the usual
 math structures for scripts, fractions, accents and delimiters.
 OpenType feature selection is described in Section~\ref{sec:selection}.
 
-Ordinary pair spacing uses GPOS data in the font. Lua math does not fully
-apply these adjustments, so spacing can differ from Word and from the
-original Type~1 package.
+Luaotfload 3.29 can omit pair kerning between script-size variants.
 
 The font can also be used with \file{lua-unicode-math}.
 
@@ -654,13 +653,9 @@ Original name & OpenType input & Usage \\ \midrule \endhead
 \subsection{Glyph metrics}
 The output uses 1000 units per em. For an untransformed MTPro2 glyph,
 the TFM width supplies its advance and the TFM italic correction supplies
-its MATH italic correction. Ordinary GPOS pair adjustments combine the
-left glyph's italic correction and the TFM pair kern:
-\[
-  \operatorname{CHARIC}(\text{left})
-  + \operatorname{TFMkern}(\text{left},\text{right}).
-\]
-A missing pair kern contributes zero. Skewchar pairs are excluded from
+its MATH italic correction.
+Ordinary GPOS pair adjustments store the TFM pair kern without an added italic-correction term.
+Skewchar pairs are excluded from
 ordinary kerning; scripts, primes and accents have separate positioning
 data. Top-accent attachment for source math alphabets is based on
 \[

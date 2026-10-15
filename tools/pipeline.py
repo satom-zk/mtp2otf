@@ -211,7 +211,7 @@ def build_condition(root, edition, regular, bold, coverage):
                 candidate.is_file()
                 and candidate.name in {
                     basename + '.otf', basename + '.ttf',
-                    'source-policy.json', 'ordinary-ic.json',
+                    'source-policy.json',
                     'math-constants.json', 'large-variant-build.json',
                     'native-result.json', 'windows-policy.json'
                 }

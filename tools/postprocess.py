@@ -10,7 +10,6 @@ import tempfile
 
 from fontTools.ttLib import TTFont
 
-import add_ordinary_ic_gpos
 import append_alternate_glyphs
 import append_ams_alternates
 import append_original_mbf
@@ -55,7 +54,7 @@ def read_native(native_otf, work, snapshot):
     ):
         raise ValueError('native PRIME_SHIFT must be None or a valid integer')
     filenames = (
-        'math-constants.json', 'ordinary-ic.json', 'large-variant-build.json'
+        'math-constants.json', 'large-variant-build.json'
     )
     if (
         not isinstance(result.get('payloads'), dict)
@@ -79,7 +78,7 @@ def read_native(native_otf, work, snapshot):
         or inventory.get('input_hashes') != snapshot['inputs']
     ):
         raise ValueError('native selector input/edition/policy mismatch')
-    return constants, payloads['ordinary-ic.json'], inventory, shift
+    return constants, inventory, shift
 
 
 @dataclass(frozen=True)
@@ -127,14 +126,12 @@ def edit_full(font, originals, snapshot, ledger):
         append_ams_alternates.edit(font, originals.ams_alternates)
 
 
-def edit_initial(font, *, edition, constants, ordinary_ic, prime_shift):
+def edit_initial(font, *, edition, constants, prime_shift):
     """Edit the native font up to the required CFF/bbox normalization
     boundary.
     """
     with stage('finalize'):
         finalize.edit(font, edition=edition, local_values=constants)
-    with stage('ordinary IC GPOS'):
-        add_ordinary_ic_gpos.add_bridge(font, ordinary_ic)
     changed = False
     if prime_shift is not None:
         with stage('prime contextualization'):
@@ -157,7 +154,7 @@ def process(
 ):
     """Load, normalize CFF in memory, edit, and save atomically."""
     with stage('native handoff'):
-        constants, ordinary_ic, inventory, shift = read_native(
+        constants, inventory, shift = read_native(
             native_otf, work, snapshot
         )
         edition = snapshot['build_identity']['edition']
@@ -171,7 +168,7 @@ def process(
         with TTFont(native_otf) as font:
             prime_changed = edit_initial(
                 font, edition=edition, constants=constants,
-                ordinary_ic=ordinary_ic, prime_shift=shift
+                prime_shift=shift
             )
             # Fixed selectors require serialized head/CFF bounds.
             # Keep this in-memory compile/decompile before installing them.

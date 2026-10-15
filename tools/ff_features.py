@@ -297,10 +297,9 @@ def install_optical_routes(sources, ssty_map, alphabet):
             g.altuni = ((g.altuni or ()) + ((extra_u, -1, 0),))
             uni_owner[extra_u] = g.glyphname
 
-    # Build cumulative spacing after all alphabet imports: hmtx keeps
-    # CHARWD, MATH keeps CHARIC, and GPOS adds ordinary TFM kern plus
-    # CHARIC(left). Exclude family skewchar-right pairs
-    # from ordinary kerning.
+    # After all alphabet imports, hmtx keeps CHARWD, MATH keeps CHARIC,
+    # and ordinary GPOS stores the TFM pair kern alone.
+    # Exclude family skewchar-right pairs from ordinary kerning.
 
     # cv01: swash z.
     zalt_pairs = []
@@ -668,12 +667,8 @@ def finish_source_features(sources, limits, accents, variants):
         _g.altuni = (_g.altuni or ()) + ((0x0305, -1, 0),)
         uni_owner[0x0305] = uni_owner[0x0304]
 
-    # Finalize TopAccent and ordinary spacing after all source and
-    # alternate imports. Source roles, not nonzero IC alone, determine
-    # ordinary-character membership.
-
-    def _source_is_ordinary_left(tag, slot):
-        return source_policy.is_ordinary_left(tag, slot)
+    # Finalize TopAccent and original pair kerning after all source
+    # and alternate imports. MATH italic corrections remain independent.
 
     if 'wideoverbar.compat' in out:
         accent_glyphs.add('wideoverbar.compat')
@@ -726,8 +721,7 @@ def finish_source_features(sources, limits, accents, variants):
     if 'widevector.compat' in out:
         out['widevector.compat'].topaccent = ACC_CENTER
 
-    # Serialize TFM kern alone; add_ordinary_ic_gpos.py adds
-    # the independent IC layer.
+    # Serialize TFM pair kern without an added italic-correction term.
     out.addLookup(
         'kernL', 'gpos_pair', (),
         (
@@ -774,26 +768,6 @@ def finish_source_features(sources, limits, accents, variants):
                 continue
             _remember_source_tfm_pair(_gl, _gr, int(_k))
 
-    # Only ordinary IC values cross the process
-    # boundary to the GPOS producer.
-    _ordinary_ic_left_by_glyph = {}
-    for (_tag, _slot), _gname in sorted(imported.items()):
-        if _tag not in SOURCE_SKEW or _tag not in fonts or _gname not in out:
-            continue
-        _pfb, _tfm, _slots = fonts[_tag]
-        if _slot not in _tfm.chars or _slot not in _slots:
-            continue
-        _ic = round((_tfm.chars[_slot].get('ic') or 0.0) * 1000)
-        if _ic and _source_is_ordinary_left(_tag, _slot):
-            _previous = _ordinary_ic_left_by_glyph.get(_gname)
-            if _previous is not None and _previous != int(_ic):
-                raise RuntimeError(
-                    'conflicting ordinary IC for %s: %d vs %d' % (
-                        _gname, _previous, _ic
-                    )
-                )
-            _ordinary_ic_left_by_glyph[_gname] = int(_ic)
-
     if LARGE_POLICY == 'source':
         for _cp in L.HORIZONTAL:
             _forms = horiz_variants.get(uni_owner.get(_cp), ())
@@ -822,7 +796,6 @@ def finish_source_features(sources, limits, accents, variants):
             _g.glyphclass = 'mark'
         else:
             _g.glyphclass = 'baseglyph'
-    return _ordinary_ic_left_by_glyph
 
 
 def check_native_ranges(sources):

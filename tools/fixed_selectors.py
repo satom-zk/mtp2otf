@@ -251,18 +251,11 @@ def install(font, inventory):
         for table in font['cmap'].tables:
             if table.isUnicode() and cp in table.cmap:
                 table.cmap[cp] = ordinary
-        pair = font['GPOS'].table.LookupList.Lookup[2].SubTable[0]
-        if hasattr(pair, 'ExtSubTable'):
-            pair = pair.ExtSubTable
-        classes = pair.ClassDef2.classDefs
-        if source not in classes or ordinary in classes:
-            raise ValueError('R4 ordinary-right class changed')
-        classes[ordinary] = classes[source]
         root_changes.append(
             {
                 'unicode': f'U+{cp:04X}', 'ordinary_root': ordinary,
                 'retained_source_root': source, 'ordinary_variant_count': 0,
-                'assembly_parts': 5, 'GPOS_ClassDef2': classes[ordinary]
+                'assembly_parts': 5
             }
         )
     top = font['CFF '].cff.topDictIndex[0]

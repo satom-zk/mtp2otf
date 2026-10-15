@@ -1,4 +1,4 @@
-mtp2otf v1.1
+mtp2otf v1.2
 ===========
 Convert MathTime™ Professional 2 Type 1 fonts to OpenType MATH.
 Use TTF in Word and OTF with LuaLaTeX.
@@ -38,7 +38,7 @@ Files
   doc/mtp2otf.pdf           User guide and font reference; source: mtp2otf.tex.
   doc/word.pdf              Word examples; editable source: word.docx.
   doc/lualatex.pdf          LuaLaTeX examples; source: lualatex.tex.
-  LICENSE                  0BSD for project code and documentation.
+  LICENSE                   0BSD for project code and documentation.
 
 Font and dependency licenses apply separately.
 Repository: https://github.com/satom-zk/mtp2otf
