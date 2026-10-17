@@ -1,6 +1,7 @@
-"""Compute MATH constants from local sources using public conversion
-formulas.
+"""Compute MATH constants from source dimensions, TeX rules, and
+explicit OpenType migration choices.
 """
+
 from __future__ import annotations
 
 from fractions import Fraction
@@ -11,15 +12,27 @@ def _pct(frac: Fraction) -> int:
 
 
 def compute(
-    sy, ex, *, script_sy, script_ratio: Fraction, scriptscript_ratio: Fraction,
-    display_operator_min_height: int, quad=1000.0
+    sy,
+    ex,
+    *,
+    script_sy,
+    script_ratio: Fraction,
+    scriptscript_ratio: Fraction,
+    operator_sizes,
+    cap_height,
+    quad=1000.0,
 ):
     """Return MATH values in output units from local fontdimens and
     conversion policy.
     """
     upm = round(quad)
-    s = lambda i: round(sy[i] * upm)
-    e = lambda i: round(ex[i] * upm)
+
+    def s(i):
+        return round(sy[i] * upm)
+
+    def e(i):
+        return round(ex[i] * upm)
+
     theta = e(8)
     xh = s(5)
 
@@ -40,22 +53,21 @@ def compute(
     c['StackBottomDisplayStyleShiftDown'] = s(11)
     c['StackGapMin'] = 3 * theta
     c['StackDisplayStyleGapMin'] = 7 * theta
-    c['SuperscriptShiftUp'] = s(14)
+    c['SuperscriptShiftUp'] = s(13)
     c['SuperscriptShiftUpCramped'] = s(15)
     c['SubscriptShiftDown'] = s(17)
     c['SubscriptTopMax'] = round(Fraction(4, 5) * s(5))
     c['SuperscriptBottomMin'] = round(Fraction(1, 4) * s(5))
     c['SuperscriptBottomMaxWithSubscript'] = round(Fraction(4, 5) * s(5))
     c['SubSuperscriptGapMin'] = 4 * theta
-    # TFM-sourced values assigned by the Word placement compatibility
-    # policy. The upper-limit pair is not the direct TeX
-    # parameter correspondence.
-    c['UpperLimitBaselineRiseMin'] = e(9)
-    c['UpperLimitGapMin'] = e(11)
+    # Map the original upper-limit minimum gap and baseline rise by
+    # their OpenType meanings. Do not include big_op_spacing5 here.
+    c['UpperLimitBaselineRiseMin'] = e(11)
+    c['UpperLimitGapMin'] = e(9)
     c['LowerLimitGapMin'] = e(10)
     c['LowerLimitBaselineDropMin'] = e(12)
-    c['StretchStackTopShiftUp'] = e(9)
-    c['StretchStackGapAboveMin'] = e(11)
+    c['StretchStackTopShiftUp'] = e(11)
+    c['StretchStackGapAboveMin'] = e(9)
     c['StretchStackGapBelowMin'] = e(10)
     c['StretchStackBottomShiftDown'] = e(12)
     c['OverbarRuleThickness'] = theta
@@ -74,14 +86,24 @@ def compute(
     c['ScriptPercentScaleDown'] = _pct(script_ratio)
     c['ScriptScriptPercentScaleDown'] = _pct(scriptscript_ratio)
 
-    # OpenType migration values; derive these from the
-    # local font dimensions.
+    # Round each mapped text/display TFM extent before taking extrema.
+    # The shared threshold is a migration choice, not a TFM fontdimen.
+    text_sizes, display_sizes = zip(*operator_sizes)
+    display_operator_min_height = (
+        max(round(size * upm) for size in text_sizes)
+        + min(round(size * upm) for size in display_sizes)
+    ) // 2
+
+    # Source dimensions and explicit OpenType migration values.
     c['MinConnectorOverlap'] = 100
-    c['AccentBaseHeight'] = 477
-    c['FlattenedAccentBaseHeight'] = 656
+    c['AccentBaseHeight'] = xh
+    c['FlattenedAccentBaseHeight'] = round(cap_height * upm)
     c['DelimitedSubFormulaMinHeight'] = int(display_operator_min_height)
     c['DisplayOperatorMinHeight'] = int(display_operator_min_height)
-    c['MathLeading'] = 154
+    # Fixed reference median: LM 154, STIX Two 150, Cambria 300/2048 em.
+    # These reference fonts are not build inputs. Skewed-fraction values
+    # likewise remain explicit migration values, not TFM-derived values.
+    c['MathLeading'] = 150
     c['SkewedFractionHorizontalGap'] = 350
     c['SkewedFractionVerticalGap'] = 102
     c['SpaceAfterScript'] = round(Fraction(1, 20) * upm)

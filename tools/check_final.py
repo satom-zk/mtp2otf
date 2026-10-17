@@ -1,10 +1,11 @@
 """Check the serialized product pair."""
+
 from fontTools.pens.basePen import NullPen
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
 
-from build_config import FONT_REVISION, FONT_VERSION, identity
-from layout import lang_systems, references
+from config import FONT_REVISION, FONT_VERSION, identity
+from substitution import lang_systems, references
 from windows_policy import read as read_windows, errors as windows_errors
 
 
@@ -40,7 +41,8 @@ def windows_ansi_errors(font):
 
 
 def _glyph_references(node, names, seen=None):
-    """Check references in the layout objects emitted by our generators."""
+    """Check references in the layout objects emitted by our generators.
+    """
     if seen is None:
         seen = set()
     if node is None or isinstance(node, (str, int, float, bool, bytes)):
@@ -57,9 +59,11 @@ def _glyph_references(node, names, seen=None):
         used.extend(node.mapping)
         used.extend(node.mapping.values())
     elif isinstance(node, (ot.AlternateSubst, ot.MultipleSubst)):
-        mapping = node.alternates if isinstance(
-            node, ot.AlternateSubst
-        ) else node.mapping
+        mapping = (
+            node.alternates
+            if isinstance(node, ot.AlternateSubst)
+            else node.mapping
+        )
         used.extend(mapping)
         used.extend(g for values in mapping.values() for g in values)
     elif isinstance(node, ot.LigatureSubst):
@@ -94,19 +98,17 @@ def _layout(font):
             continue
         lookups = table.LookupList.Lookup
         features = table.FeatureList.FeatureRecord
-        if (
-            table.LookupList.LookupCount != len(lookups)
-            or table.FeatureList.FeatureCount != len(features)
-        ):
+        if table.LookupList.LookupCount != len(
+            lookups
+        ) or table.FeatureList.FeatureCount != len(features):
             raise ValueError(tag + ' count mismatch')
         for lookup in lookups:
             if lookup.SubTableCount != len(lookup.SubTable):
                 raise ValueError(tag + ' subtable count mismatch')
         for feature in features:
             indices = feature.Feature.LookupListIndex
-            if (
-                feature.Feature.LookupCount != len(indices)
-                or any(not 0 <= i < len(lookups) for i in indices)
+            if feature.Feature.LookupCount != len(indices) or any(
+                not 0 <= i < len(lookups) for i in indices
             ):
                 raise ValueError(
                     tag + ' feature lookup reference out of range'
@@ -117,9 +119,8 @@ def _layout(font):
                     tag + ' context lookup reference out of range'
                 )
         for lang in lang_systems(table):
-            if (
-                lang.FeatureCount != len(lang.FeatureIndex)
-                or any(not 0 <= i < len(features) for i in lang.FeatureIndex)
+            if lang.FeatureCount != len(lang.FeatureIndex) or any(
+                not 0 <= i < len(features) for i in lang.FeatureIndex
             ):
                 raise ValueError(
                     tag + ' language feature reference out of range'
@@ -136,10 +137,9 @@ def _layout(font):
     for axis in ('Vert', 'Horiz'):
         coverage = getattr(variants, axis + 'GlyphCoverage')
         constructions = getattr(variants, axis + 'GlyphConstruction')
-        if (
-            len(coverage.glyphs) != len(constructions)
-            or getattr(variants, axis + 'GlyphCount') != len(constructions)
-        ):
+        if len(coverage.glyphs) != len(constructions) or getattr(
+            variants, axis + 'GlyphCount'
+        ) != len(constructions):
             raise ValueError('MATH construction count mismatch')
         for construction in constructions:
             if construction.VariantCount != len(
@@ -153,8 +153,17 @@ def _layout(font):
 
 def _one(font, edition):
     required = (
-        'head', 'maxp', 'hmtx', 'hhea', 'OS/2', 'name', 'cmap', 'MATH', 'GSUB',
-        'GPOS', 'GDEF'
+        'head',
+        'maxp',
+        'hmtx',
+        'hhea',
+        'OS/2',
+        'name',
+        'cmap',
+        'MATH',
+        'GSUB',
+        'GPOS',
+        'GDEF',
     )
     missing = set(required) - set(font.keys())
     if missing:
@@ -184,8 +193,14 @@ def _one(font, edition):
         raise ValueError('; '.join(failures))
     family, basename, unique = identity(edition)
     expected_names = {
-        1: family, 2: 'Regular', 3: unique, 4: family, 5: FONT_VERSION,
-        6: basename, 16: family, 17: 'Regular'
+        1: family,
+        2: 'Regular',
+        3: unique,
+        4: family,
+        5: FONT_VERSION,
+        6: basename,
+        16: family,
+        17: 'Regular',
     }
     for key, expected in expected_names.items():
         values = {n.toUnicode() for n in font['name'].names if n.nameID == key}
@@ -219,14 +234,15 @@ def check_pair(
         def cmap_gids(font):
             return [
                 (
-                    t.platformID, t.platEncID, t.language, t.format,
-                    {
-                        cp: font.getGlyphID(name)
-                        for cp, name in t.cmap.items()
-                    }
+                    t.platformID,
+                    t.platEncID,
+                    t.language,
+                    t.format,
+                    {cp: font.getGlyphID(name) for cp, name in t.cmap.items()},
                 )
                 for t in font['cmap'].tables
             ]
+
         if cmap_gids(otf) != cmap_gids(ttf):
             raise ValueError('OTF/TTF cmap GID mismatch')
         if [otf['hmtx'][n] for n in a] != [ttf['hmtx'][n] for n in b]:
@@ -238,9 +254,8 @@ def check_pair(
         if len(cff.topDictIndex) != 1:
             raise ValueError('requires singleton CFF1')
         top = cff.topDictIndex[0]
-        if (
-            list(top.charset) != a
-            or len(top.CharStrings.charStrings) != len(a)
+        if list(top.charset) != a or len(top.CharStrings.charStrings) != len(
+            a
         ):
             raise ValueError('CFF GID/charstring count mismatch')
         for name in a:
@@ -253,12 +268,18 @@ def check_pair(
         if windows_policy:
             obj = read_windows(windows_policy)
             failures = windows_errors(
-                ttf, obj, 'source', font_path=ttf_path, edition=edition,
-                manifest=input_manifest, source_path=otf_path
+                ttf,
+                obj,
+                'source',
+                font_path=ttf_path,
+                edition=edition,
+                manifest=input_manifest,
+                source_path=otf_path,
             )
             if failures:
                 raise ValueError('; '.join(failures))
-        elif [
-            ttf['OS/2'].usWinAscent, ttf['OS/2'].usWinDescent
-        ] != [otf['OS/2'].usWinAscent, otf['OS/2'].usWinDescent]:
+        elif [ttf['OS/2'].usWinAscent, ttf['OS/2'].usWinDescent] != [
+            otf['OS/2'].usWinAscent,
+            otf['OS/2'].usWinDescent,
+        ]:
             raise ValueError('legacy OTF/TTF Windows metrics mismatch')

@@ -1,12 +1,14 @@
-"""Native variant/assembly and composite geometry, in dependency order."""
+"""Native variant/assembly and composite geometry, in dependency order.
+"""
+
 from dataclasses import dataclass, field
 from fractions import Fraction
 
 import psMat
 
-import uni_map as U
+import mapping as U
 import large_variant_policy as L
-from ff_sources import uname
+from glyphs import uname
 
 
 @dataclass(frozen=True)
@@ -42,7 +44,7 @@ def compose_glyph(sources, uni, name, ref, offsets, adv):
         return None
     out.createChar(uni if uni is not None else -1, gn)
     g = out[gn]
-    for (dx, dy) in offsets:
+    for dx, dy in offsets:
         g.addReference(ref, psMat.translate(dx, dy))
     g.width = round(adv)
     if uni is not None:
@@ -63,7 +65,8 @@ def build_variants(sources, limits, op_variants, geometry):
     uni_owner = sources.uni_owner
 
     def exa_chain(start):
-        """Return the NEXTLARGER chain and its terminal VARCHAR recipe."""
+        """Return the NEXTLARGER chain and its terminal VARCHAR recipe.
+        """
         _, tfm, _ = fonts['exa']
         seq, c, seen = [], start, set()
         while c is not None and c in tfm.chars and c not in seen:
@@ -76,7 +79,7 @@ def build_variants(sources, limits, op_variants, geometry):
             c = nxt
         return seq, None
 
-    vert_variants = {}     # base gname -> [gnames]
+    vert_variants = {}  # base gname -> [gnames]
     vert_assembly = {}  # base -> [(glyph, extender)], bottom to top
     # Cap generic connector estimates with local source
     # geometry where needed.
@@ -93,13 +96,11 @@ def build_variants(sources, limits, op_variants, geometry):
         for c in seq:
             # A TeX VARCHAR slot selects an assembly,
             # not a fixed-size variant.
-            is_terminal_piece = (
-                bool(tfm.chars.get(c, {}).get('varchar'))
-                or (
-                    vc is not None and c == seq[-1]
-                    and c in (vc.get('TOP'), vc.get('BOT'), vc.get('MID'))
-                    and c != vc.get('REP')
-                )
+            is_terminal_piece = bool(tfm.chars.get(c, {}).get('varchar')) or (
+                vc is not None
+                and c == seq[-1]
+                and c in (vc.get('TOP'), vc.get('BOT'), vc.get('MID'))
+                and c != vc.get('REP')
             )
             if is_terminal_piece and len(seq) > 1:
                 continue  # Exclude assembly parts from fixed-size variants.
@@ -136,7 +137,8 @@ def build_variants(sources, limits, op_variants, geometry):
         # alone are incomplete; make independent, complete Unicode
         # roots from the raw ends.
         for cp, bottom_slot, top_slot in (
-            (0x23B0, 140, 137), (0x23B1, 139, 138)
+            (0x23B0, 140, 137),
+            (0x23B1, 139, 138),
         ):
             bottom, top, rep = piece(bottom_slot), piece(top_slot), piece(141)
             root = uname(cp)
@@ -168,7 +170,7 @@ def build_variants(sources, limits, op_variants, geometry):
         # The broken TFM NEXTLARGER paths for the eight morphed designs
         # are not followed. Import only their raw outlines/TFM
         # advances for fixed cv19.
-        for slot in range(182, 190):
+        for slot in U.SOURCE_MORPHED_SLOTS:
             if import_glyph('exa', slot, name=f'exa.morphed{slot}') is None:
                 raise RuntimeError('missing morphed source exa:%d' % slot)
 
@@ -233,11 +235,14 @@ def build_variants(sources, limits, op_variants, geometry):
         if added:
             table[base_gname] = table.get(base_gname, [base_gname]) + added
             # Sort variants by size; equal-size stages may remain.
-            key = (lambda gn: out[gn].width) if size_key == 'w' else \
-                  (
-                      lambda gn: out[gn].boundingBox()[3]
-                      - out[gn].boundingBox()[1]
-                  )
+            key = (
+                (lambda gn: out[gn].width)
+                if size_key == 'w'
+                else (
+                    lambda gn: out[gn].boundingBox()[3]
+                    - out[gn].boundingBox()[1]
+                )
+            )
             head, rest = table[base_gname][0], table[base_gname][1:]
             table[base_gname] = [head] + sorted(rest, key=key)
         return added
@@ -258,8 +263,10 @@ def build_variants(sources, limits, op_variants, geometry):
             if tag not in fonts:
                 continue
             g = import_glyph(
-                tag, slot, unicode_=u if not gnames else None, name=None
-                if not gnames else None
+                tag,
+                slot,
+                unicode_=u if not gnames else None,
+                name=None if not gnames else None,
             )
             if g:
                 gnames.append(g)
@@ -304,7 +311,7 @@ def build_variants(sources, limits, op_variants, geometry):
     if 0x23DC in uni_owner and 'exf' in fonts:
         base = uni_owner[0x23DC]
         extra = []
-        for slot in range(177, 184):
+        for slot in U.SOURCE_OVERPAREN_CONTINUATION:
             g = import_glyph('exf', slot, name=f'{base}.exf{slot}')
             if not g:
                 continue
@@ -347,8 +354,14 @@ def build_variants(sources, limits, op_variants, geometry):
                     'local overparen source geometry is missing'
                 ) from exc
             expected_ops = (
-                'moveTo', 'lineTo', 'curveTo', 'curveTo', 'lineTo', 'curveTo',
-                'curveTo', 'closePath'
+                'moveTo',
+                'lineTo',
+                'curveTo',
+                'curveTo',
+                'lineTo',
+                'curveTo',
+                'curveTo',
+                'closePath',
             )
             if tuple(rec.get('op') for rec in ops) != expected_ops:
                 raise RuntimeError(
@@ -417,7 +430,10 @@ def build_variants(sources, limits, op_variants, geometry):
                 pen = None
                 g.width = ext_width
             if right not in out:
-                def tx(pt): return (pt[0] + right_dx, pt[1])
+
+                def tx(pt):
+                    return (pt[0] + right_dx, pt[1])
+
                 out.createChar(-1, right)
                 g = out[right]
                 pen = g.glyphPen()
@@ -445,7 +461,7 @@ def build_variants(sources, limits, op_variants, geometry):
         if import_glyph('exa', 195, name='exa.arc195') is None:
             raise RuntimeError('source exa:195 missing')
         _base = uni_owner[0x23DC]
-        for _tag, _head in (('exe', 208), ('exf', 177), ('exg', 177)):
+        for _tag, _head in U.SOURCE_WIDEARC_CHAINS:
             for _slot in chain_slots(fonts[_tag][1], _head):
                 _g = import_glyph(_tag, _slot, name=f'{_base}.{_tag}{_slot}')
                 if _g not in horiz_variants[_base]:
@@ -460,15 +476,32 @@ def build_accents_and_dots(sources):
     _axis_height = sources.axis_height
     _mu_to_units = sources.mu_to_units
     _pt_to_units = sources.pt_to_units
-    compose = lambda *args: compose_glyph(sources, *args)
+
+    def compose(*args):
+        return compose_glyph(sources, *args)
+
     fonts = sources.faces
     imported = sources.imported
     out = sources.font
     uni_owner = sources.uni_owner
     _NORMALIZED_ACCENT_MACROS = (
-        'grave', 'acute', 'check', 'breve', 'bar', 'hat', 'dot', 'tilde',
-        'ddot', 'mathring', 'vec', 'dotup', 'ddotup', 'dddot', 'ddddot',
-        'dddotup', 'ddddotup',
+        'grave',
+        'acute',
+        'check',
+        'breve',
+        'bar',
+        'hat',
+        'dot',
+        'tilde',
+        'ddot',
+        'mathring',
+        'vec',
+        'dotup',
+        'ddotup',
+        'dddot',
+        'ddddot',
+        'dddotup',
+        'ddddotup',
     )
     try:
         ACCENT_SLOTS = [
@@ -505,14 +538,18 @@ def build_accents_and_dots(sources):
         tfm_symbols = fonts['syt'][1]
         ellipsis_gap = _mu_to_units(Fraction(3, 1))
         compose(
-            0x2026, None, per,
+            0x2026,
+            None,
+            per,
             [(0, 0), (P + ellipsis_gap, 0), (2 * (P + ellipsis_gap), 0)],
-            3 * P + 2 * ellipsis_gap
+            3 * P + 2 * ellipsis_gap,
         )
         compose(
-            0x22EF, None, cdo,
+            0x22EF,
+            None,
+            cdo,
             [(0, 0), (Cw + ellipsis_gap, 0), (2 * (Cw + ellipsis_gap), 0)],
-            3 * Cw + 2 * ellipsis_gap
+            3 * Cw + 2 * ellipsis_gap,
         )
 
         vstep = _pt_to_units(
@@ -608,9 +645,13 @@ def build_arrows_and_braces(sources, limits, variants, accents):
             conn = min(ARROW_CONNECTOR, max(100, out[gn].width // 3))
             return gn, 1, conn, conn, out[gn].width
         conn = min(ARROW_CONNECTOR, max(100, out[gn].width // 3))
-        return gn, 0, (
-            conn if left else 0
-        ), (conn if right else 0), out[gn].width
+        return (
+            gn,
+            0,
+            (conn if left else 0),
+            (conn if right else 0),
+            out[gn].width,
+        )
 
     def _resolve_arrow_parts(part_spec, suffix):
         raw = []
@@ -779,8 +820,15 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                 0, brace_rule_h - CONNECTOR_PROFILE_TOLERANCE
             )
             for q in (
-                bld, brd, blu, bru, over_left, over_center_shift, over_right,
-                over_center, under_center
+                bld,
+                brd,
+                blu,
+                bru,
+                over_left,
+                over_center_shift,
+                over_right,
+                over_center,
+                under_center,
             ):
                 connector_limits[q] = brace_fixed_connector
             connector_limits[ext] = out[ext].width
@@ -791,11 +839,14 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                 (
                     0x23DE,
                     [
-                        over_left, over_ext, over_center_shift, over_ext,
-                        over_right
-                    ]
+                        over_left,
+                        over_ext,
+                        over_center_shift,
+                        over_ext,
+                        over_right,
+                    ],
                 ),
-                (0x23DF, [blu, ext, under_center, ext, bru])
+                (0x23DF, [blu, ext, under_center, ext, bru]),
             ]:
                 gn = uname(u)
                 if gn not in out:
@@ -821,7 +872,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                 # new assemblies isolated.
                 for cp, middle_slot, source_parts, shift in (
                     (0x23DE, 135, (bld, ext, None, ext, brd), over_dy),
-                    (0x23DF, 134, (blu, ext, None, ext, bru), 0)
+                    (0x23DF, 134, (blu, ext, None, ext, bru), 0),
                 ):
                     middle = piece(middle_slot)
                     if middle is None:
@@ -835,15 +886,26 @@ def build_arrows_and_braces(sources, limits, variants, accents):
 
                     def plain_part(source, suffix):
                         return shifted_copy(
-                            source, 'brace.plain.' + label + '.' + suffix,
-                            shift
+                            source,
+                            'brace.plain.' + label + '.' + suffix,
+                            shift,
                         )
+
                     parts = [
                         plain_part(
-                            q, 'left' if i==0 else 'right'
-                            if i==4 else 'middle' if i==2 else 'ext'
+                            q,
+                            (
+                                'left'
+                                if i == 0
+                                else (
+                                    'right'
+                                    if i == 4
+                                    else 'middle' if i == 2 else 'ext'
+                                )
+                            ),
                         )
-                        for i, q in enumerate(source_parts) if q is not None
+                        for i, q in enumerate(source_parts)
+                        if q is not None
                     ]
                     center = plain_part(middle, 'middle')
                     left, rule, right = parts[0], parts[1], parts[-1]
@@ -864,8 +926,11 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                         )
                     connector_limits[rule] = out[rule].width
                     vert_assembly[('H', root)] = [
-                        (left, 0), (rule, 1), (center, 0), (rule, 1),
-                        (right, 0)
+                        (left, 0),
+                        (rule, 1),
+                        (center, 0),
+                        (rule, 1),
+                        (right, 0),
                     ]
 
     # Original overcbrace/undercbrace select these complete designs by
@@ -875,16 +940,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
     # identify the original source import.
     _source_brace_fallbacks = set()
     if LARGE_POLICY == 'source':
-        for _cp, _series in (
-            (
-                0x23DF,
-                (('exe', 144, 160), ('exf', 144, 155), ('exg', 144, 149))
-            ),
-            (
-                0x23DE,
-                (('exe', 176, 192), ('exf', 160, 171), ('exg', 160, 165))
-            )
-        ):
+        for _cp, _series in U.SOURCE_BRACE_SERIES:
             _base = uni_owner[_cp]
             for _tag, _first, _last in _series:
                 for _slot in range(_first, _last + 1):
@@ -937,8 +993,11 @@ def install_variant_geometry(sources, limits, variants):
     for base, var in horiz_variants.items():
         var2 = sorted(
             dict.fromkeys(var),
-            key=(lambda g: out[g].boundingBox()[2] - out[g].boundingBox()[0])
-            if LARGE_POLICY == 'source' else (lambda g: out[g].width)
+            key=(
+                (lambda g: out[g].boundingBox()[2] - out[g].boundingBox()[0])
+                if LARGE_POLICY == 'source'
+                else (lambda g: out[g].width)
+            ),
         )
         if base in _source_brace_fallbacks:
             # The legacy brace base is an assembly fallback, not a fixed
@@ -980,25 +1039,29 @@ def install_variant_geometry(sources, limits, variants):
                         if len(ctrl) == 1:
                             cx, cy = ctrl[0]
                             xx = (
-                                (1 - t)**2
-                                * x0 + 2 * (1 - t) * t * cx + t
-                                * t * x3
+                                (1 - t) ** 2 * x0
+                                + 2 * (1 - t) * t * cx
+                                + t * t * x3
                             )
                             yy = (
-                                (1 - t)**2
-                                * y0 + 2 * (1 - t) * t * cy + t
-                                * t * y3
+                                (1 - t) ** 2 * y0
+                                + 2 * (1 - t) * t * cy
+                                + t * t * y3
                             )
                         else:
                             c1, c2 = ctrl[0], ctrl[-1]
-                            xx = ((1 - t)**3 * x0 + 3 * (1 - t)**2 * t * \
-                                  c1[0]
-                                  + 3 * (1 - t) * t * t * c2[0] + t ** 3
-                                  * x3)
-                            yy = ((1 - t)**3 * y0 + 3 * (1 - t)**2 * t * \
-                                  c1[1]
-                                  + 3 * (1 - t) * t * t * c2[1] + t ** 3
-                                  * y3)
+                            xx = (
+                                (1 - t) ** 3 * x0
+                                + 3 * (1 - t) ** 2 * t * c1[0]
+                                + 3 * (1 - t) * t * t * c2[0]
+                                + t**3 * x3
+                            )
+                            yy = (
+                                (1 - t) ** 3 * y0
+                                + 3 * (1 - t) ** 2 * t * c1[1]
+                                + 3 * (1 - t) * t * t * c2[1]
+                                + t**3 * y3
+                            )
                         pts.append((xx, yy))
                     i = j
             if pts:
@@ -1101,9 +1164,9 @@ def install_variant_geometry(sources, limits, variants):
             for i, (p, e) in enumerate(parts):
                 q = list(part_tuple(p, e, vertical=False))
                 if i == 0 and not e:
-                    q[2] = 0              # StartConnectorLength
+                    q[2] = 0  # StartConnectorLength
                 if i == n - 1 and not e:
-                    q[3] = 0              # EndConnectorLength
+                    q[3] = 0  # EndConnectorLength
                 tups.append(tuple(q))
             out[gname].horizontalComponents = tuple(tups)
         else:
@@ -1142,129 +1205,3 @@ def install_variant_geometry(sources, limits, variants):
             out[gname].isExtendedShape = True
         except Exception as exc:
             raise ValueError(f'ExtendedShape {gname}: {exc}') from exc
-
-
-def build_word_primes(sources, ssty_map, geometry):
-    SCRIPT_RATIO = sources.rules.script_ratio
-    compose = lambda *args: compose_glyph(sources, *args)
-    fonts = sources.faces
-    imported = sources.imported
-    out = sources.font
-    uni_owner = sources.uni_owner
-    PRIME_SHIFT = None
-    PRIME_PADDING_EVIDENCE = None
-    if 0x2032 in uni_owner:
-        xh_u = round(fonts['syt'][1].fontdimen[5] * 1000)
-        SUP_SHIFT = round(fonts['syt'][1].fontdimen[14] * out.em)
-        try:
-            PRIME_PADDING_EVIDENCE = dict(geometry['prime_padding'])
-            PRIME_SHIFT = int(PRIME_PADDING_EVIDENCE['padding'])
-        except Exception as exc:
-            raise RuntimeError(
-                'local prime-padding source geometry is missing'
-            ) from exc
-        _script_scale = float(SCRIPT_RATIO)
-        _targets = [uni_owner[0x2032]]
-        if ('ams', 0x38) in imported:
-            _targets.append(imported[('ams', 0x38)])
-        for _base in _targets:
-            _s1 = _base + '.ssty1'
-            if _s1 not in out:
-                # script design absent: scale and raise the base glyph.
-                _g = out[_base]
-                _g.transform(psMat.scale(_script_scale))
-                _bb = _g.boundingBox()
-                _g.transform(psMat.translate(PRIME_SHIFT, xh_u - _bb[1]))
-                _g.width = round(_g.width)
-                continue
-            # base := local package script-size design scaled by
-            # the local script ratio
-            out.selection.select(_s1)
-            out.copy()
-            out.selection.select(_base)
-            out.paste()
-            _g = out[_base]
-            _g.transform(psMat.scale(_script_scale))
-            _bb = _g.boundingBox()
-            _g.transform(psMat.translate(PRIME_SHIFT, xh_u - _bb[1]))
-            _g.width = round(_g.width)
-            _base_y0 = out[_base].boundingBox()[1]
-            _g1 = out[_s1]
-            _b1 = _g1.boundingBox()
-            _g1.transform(
-                psMat.translate(
-                    0, (_base_y0 - SUP_SHIFT) / _script_scale - _b1[1]
-                )
-            )
-            # Keep the native scriptscript outline and
-            # metrics imported by add_ssty.
-        pr = uni_owner[0x2032]
-        PW = out[pr].width
-        if pr + '.ssty1' in out:
-            # Use the scaled local script-design advance between primes.
-            st = round(out[pr + '.ssty1'].width * _script_scale)
-        else:
-            st = round(PW - PRIME_SHIFT)
-        compose(0x2033, None, pr, [(0, 0), (st, 0)], PW + st)
-        compose(0x2034, None, pr, [(0, 0), (st, 0), (2 * st, 0)], PW + 2 * st)
-        compose(
-            0x2057, None, pr, [(0, 0), (st, 0), (2 * st, 0), (3 * st, 0)],
-            PW + 3 * st
-        )
-        # Compose repeated script primes from their
-        # matching optical forms.
-        for _lvl in (1, 2):
-            _src = f'{pr}.ssty{_lvl}'
-            if _src not in out:
-                continue
-            _stp = out[_src].width
-            for _u, _n in ((0x2033, 2), (0x2034, 3), (0x2057, 4)):
-                _base = uni_owner.get(_u)
-                if not _base:
-                    continue
-                _gn = f'{_base}.ssty{_lvl}'
-                if _gn in out:
-                    continue
-                out.createChar(-1, _gn)
-                _gl = out[_gn]
-                for _i in range(_n):
-                    _gl.addReference(_src, psMat.translate(_i * _stp, 0))
-                _gl.width = _n * _stp
-                ssty_map.setdefault(_base, []).append(_gn)
-        # Ligate raw repeated primes to avoid repeating collision
-        # padding. Pair adjustment covers shapers that skip the
-        # ligature; TeX scripts bypass it.
-        out.addLookup(
-            'primelig', 'gsub_ligature', (),
-            (
-                (
-                    'ccmp',
-                    (
-                        ('DFLT', ('dflt',)), ('latn', ('dflt',)),
-                        ('math', ('dflt',))
-                    )
-                ),
-            )
-        )
-        out.addLookupSubtable('primelig', 'primelig-1')
-        for _u, _n in (
-            (0x2057, 4), (0x2034, 3), (0x2033, 2)
-        ):  # Match longer sequences first.
-            _lig = uni_owner.get(_u)
-            if _lig:
-                out[_lig].addPosSub('primelig-1', tuple([pr] * _n))
-        out.addLookup(
-            'primekern', 'gpos_pair', (),
-            (
-                (
-                    'kern',
-                    (
-                        ('DFLT', ('dflt',)), ('latn', ('dflt',)),
-                        ('math', ('dflt',))
-                    )
-                ),
-            )
-        )
-        out.addLookupSubtable('primekern', 'primekern-1')
-        out[pr].addPosSub('primekern-1', pr, 0, 0, -PRIME_SHIFT, 0, 0, 0, 0, 0)
-    return PRIME_SHIFT

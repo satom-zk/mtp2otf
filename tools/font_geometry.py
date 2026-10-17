@@ -2,6 +2,7 @@
 
 Restore source-dependent scalars from the local build snapshot.
 """
+
 from __future__ import annotations
 
 import math
@@ -13,7 +14,7 @@ from fontTools.pens.transformPen import TransformPen
 from fontTools.misc.transform import Transform
 from fontTools.pens.boundsPen import BoundsPen
 
-from build_config import FONT_REVISION, FONT_VERSION, identity
+from config import FONT_REVISION, FONT_VERSION, identity
 
 
 def _mvr(v):
@@ -35,7 +36,8 @@ def _bbox(font, gname):
 
 
 def _sync_cff_sidebearing(font, name):
-    """Keep advance and outline intact; derive LSB from the CFF outline."""
+    """Keep advance and outline intact; derive LSB from the CFF outline.
+    """
     width, _ = font['hmtx'][name]
     font['hmtx'][name] = (width, int(round(_bbox(font, name)[0])))
 
@@ -75,6 +77,7 @@ def _copy_shift(font, src, dst, dy=0, dx=0):
 
     def draw(pen):
         gs[src].draw(TransformPen(pen, Transform(1, 0, 0, 1, dx, dy)))
+
     _set_charstring(font, dst, draw, width)
     return dst
 
@@ -87,6 +90,7 @@ def _merge_two(font, left, right, dst, dy=0):
     def draw(pen):
         gs[left].draw(TransformPen(pen, Transform(1, 0, 0, 1, 0, dy)))
         gs[right].draw(TransformPen(pen, Transform(1, 0, 0, 1, wl, dy)))
+
     _set_charstring(font, dst, draw, wl + wr)
     return dst
 
@@ -106,7 +110,7 @@ def _copy_assembly_geometry(font, template, glyphs):
     lengths.
     """
     if template is None:
-        raise ValueError('missing pre-finalize brace assembly template')
+        raise ValueError('missing pre-font_geometry brace assembly template')
     records = list(template.PartRecords or ())
     if len(records) != len(glyphs):
         raise ValueError('brace assembly template length changed unexpectedly')
@@ -116,8 +120,11 @@ def _copy_assembly_geometry(font, template, glyphs):
     )
     ga.PartRecords = [
         _glyph_part(
-            glyph, old.StartConnectorLength, old.EndConnectorLength,
-            font['hmtx'][glyph][0], old.PartFlags,
+            glyph,
+            old.StartConnectorLength,
+            old.EndConnectorLength,
+            font['hmtx'][glyph][0],
+            old.PartFlags,
         )
         for old, glyph in zip(records, glyphs)
     ]
@@ -127,12 +134,14 @@ def _copy_assembly_geometry(font, template, glyphs):
 
 def _assembly_ymin(font, assembly):
     if assembly is None or not assembly.PartRecords:
-        raise ValueError('missing pre-finalize overbrace assembly')
+        raise ValueError('missing pre-font_geometry overbrace assembly')
     return min(_bbox(font, rec.glyph)[1] for rec in assembly.PartRecords)
 
 
 def _fix_braces(font):
-    """Normalize brace cusp glyphs without re-encoding source measurements."""
+    """Normalize brace cusp glyphs without re-encoding source
+    measurements.
+    """
     m = font['MATH'].table
     cmap = _cmap(font)
     og = cmap.get(0x23DE)
@@ -146,13 +155,15 @@ def _fix_braces(font):
     hmap = dict(
         zip(
             m.MathVariants.HorizGlyphCoverage.glyphs,
-            m.MathVariants.HorizGlyphConstruction
+            m.MathVariants.HorizGlyphConstruction,
         )
     )
     ocn = hmap.get(og)
     ucn = hmap.get(ug)
     if ocn is None or ucn is None:
-        raise ValueError('brace construction missing from pre-finalize font')
+        raise ValueError(
+            'brace construction missing from pre-font_geometry font'
+        )
     old_over = ocn.GlyphAssembly
     old_under = ucn.GlyphAssembly
     over_target_ymin = _assembly_ymin(font, old_over)
@@ -160,7 +171,7 @@ def _fix_braces(font):
     # TeX brace fill concatenates the two cusp halves directly.  Merge
     # each pair into one fixed non-extender; connector lengths stay
     # those measured from the local source and already stored in the
-    # pre-finalize assembly.
+    # pre-font_geometry assembly.
     oc = 'brace.over.center.v18'
     uc = 'brace.under.center.v18'
     _merge_two(font, 'braceru', 'bracelu', oc)
@@ -179,8 +190,7 @@ def _fix_braces(font):
         font, old_over, [ol, oe, oc2, oe, or_]
     )
     ucn.GlyphAssembly = _copy_assembly_geometry(
-        font, old_under,
-        ['bracelu', 'brace.hext', uc, 'brace.hext', 'braceru']
+        font, old_under, ['bracelu', 'brace.hext', uc, 'brace.hext', 'braceru']
     )
     # Source braces re-use a dedicated glyph at the Unicode entrance.
     # Retain the former fallback construction with the same
@@ -225,18 +235,20 @@ def _restore_roundtrip_sensitive_constants(math_table, local_values):
 
 
 def preserve_windows_ansi_compatibility(font):
-    """Preserve Windows ANSI font selection for this converter's math face."""
+    """Preserve Windows ANSI font selection for this converter's math
+    face.
+    """
     cmap = font.getBestCmap() or {}
     names = set(font.getGlyphOrder())
     missing = [
-        cp for cp in range(0x20, 0x7F)
+        cp
+        for cp in range(0x20, 0x7F)
         if cmap.get(cp) == '.notdef' or cmap.get(cp) not in names
     ]
     if missing:
         raise ValueError(
-            'ASCII cmap missing valid glyphs: ' + ', '.join(
-                f'U+{cp:04X}' for cp in missing
-            )
+            'ASCII cmap missing valid glyphs: '
+            + ', '.join(f'U+{cp:04X}' for cp in missing)
         )
     font['OS/2'].ulCodePageRange1 |= 1
 
@@ -244,7 +256,8 @@ def preserve_windows_ansi_compatibility(font):
 def update_average_width(font):
     """Derive average advance from each nonzero-width GID once."""
     widths = [
-        font['hmtx'][name][0] for name in font.getGlyphOrder()
+        font['hmtx'][name][0]
+        for name in font.getGlyphOrder()
         if font['hmtx'][name][0] != 0
     ]
     if not widths:
@@ -291,8 +304,12 @@ def edit(f, *, edition, local_values):
     f['head'].fontRevision = FONT_REVISION
     f['name'].names = [n for n in f['name'].names if n.nameID not in (3, 5)]
     replacements = {
-        1: family, 2: 'Regular', 4: family, 6: psname, 16: family,
-        17: 'Regular'
+        1: family,
+        2: 'Regular',
+        4: family,
+        6: psname,
+        16: family,
+        17: 'Regular',
     }
     for n in f['name'].names:
         repl = replacements.get(n.nameID)
@@ -317,17 +334,19 @@ def edit(f, *, edition, local_values):
     top.rawDict.pop('version', None)
 
 
-
-
 MATH_FIELDS = (
     (
-        'MathItalicsCorrectionInfo', 'Coverage', 'ItalicsCorrection',
-        'ItalicsCorrectionCount'
+        'MathItalicsCorrectionInfo',
+        'Coverage',
+        'ItalicsCorrection',
+        'ItalicsCorrectionCount',
     ),
     (
-        'MathTopAccentAttachment', 'TopAccentCoverage', 'TopAccentAttachment',
-        'TopAccentAttachmentCount'
-    )
+        'MathTopAccentAttachment',
+        'TopAccentCoverage',
+        'TopAccentAttachment',
+        'TopAccentAttachmentCount',
+    ),
 )
 
 
@@ -349,7 +368,9 @@ def math_add(font, name, ic, accent):
 
 
 def aggregate_values(font):
-    """Derive specified CFF/head/hhea aggregates from every actual glyph."""
+    """Derive specified CFF/head/hhea aggregates from every actual
+    glyph.
+    """
     gs = font.getGlyphSet()
     bounds = {}
     combined = None
@@ -360,14 +381,20 @@ def aggregate_values(font):
             bounds[name] = pen.bounds
             x0, y0, x1, y1 = pen.bounds
             combined = (
-                x0, y0, x1, y1
-            ) if combined is None else (
-                min(combined[0], x0), min(combined[1], y0),
-                max(combined[2], x1), max(combined[3], y1)
+                (x0, y0, x1, y1)
+                if combined is None
+                else (
+                    min(combined[0], x0),
+                    min(combined[1], y0),
+                    max(combined[2], x1),
+                    max(combined[3], y1),
+                )
             )
     box = [
-        math.floor(combined[0]), math.floor(combined[1]),
-        math.ceil(combined[2]), math.ceil(combined[3])
+        math.floor(combined[0]),
+        math.floor(combined[1]),
+        math.ceil(combined[2]),
+        math.ceil(combined[3]),
     ]
     widths = {n: math.ceil(b[2]) - math.floor(b[0]) for n, b in bounds.items()}
     metrics = font['hmtx'].metrics
@@ -377,6 +404,6 @@ def aggregate_values(font):
         'minRightSideBearing': min(
             metrics[n][0] - metrics[n][1] - w for n, w in widths.items()
         ),
-        'xMaxExtent': max(metrics[n][1] + w for n, w in widths.items())
+        'xMaxExtent': max(metrics[n][1] + w for n, w in widths.items()),
     }
     return {'FontBBox': box, 'head_bbox': box, 'hhea': hhea}

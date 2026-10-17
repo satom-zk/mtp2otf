@@ -1,67 +1,34 @@
-"""Build one edition, check its serialized pair, then publish to out/."""
+"""Build one edition, check its serialized pair, then publish to out/.
+"""
+
 from __future__ import annotations
 
-import argparse
 import hashlib
-import importlib
 import json
 from copy import deepcopy
-import uuid
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
+from datetime import datetime, timezone
+from importlib.metadata import version, PackageNotFoundError
 
-from build_config import EDITIONS, identity
+from config import identity, parse_options, resolve_inputs, FONT_VERSION
+import catalog
+import plan
 from contract_io import write_contract
-import donor_coverage
-from source_alternate_ledger import load as load_alternates
+import donors
+
 
 ALTERNATE_PATH = Path(__file__).with_name('source_alternates.json')
 
 
-def parse_options(argv=None, environ=None):
-    environ = os.environ if environ is None else environ
-    parser = argparse.ArgumentParser(
-        prog='./build.sh', allow_abbrev=False,
-        description='Build MTPro2 OpenType math fonts.'
-    )
-    parser.add_argument(
-        '--edition', choices=EDITIONS, default='full',
-        help='font edition (default: full)'
-    )
-    parser.add_argument(
-        '--roman-regular', metavar='PATH',
-        help='regular Roman donor (default: donors/NimbusRoman-Regular.otf)'
-    )
-    parser.add_argument(
-        '--roman-bold', metavar='PATH',
-        help='bold Roman donor (default: donors/NimbusRoman-Bold.otf)'
-    )
-    parser.add_argument(
-        '--donor-coverage', choices=donor_coverage.PUBLIC_MODES,
-        default='minimal',
-        help=(
-            'minimal functional set or extended eligible '
-            'donor characters (default: minimal)'
-        )
-    )
-    args = parser.parse_args(argv)
-    if args.roman_regular == '' or args.roman_bold == '':
-        parser.error('Roman donor paths must not be empty')
-    try:
-        donor_coverage.resolve_mode(args.donor_coverage, environ)
-        if args.edition == 'full':
-            load_alternates(ALTERNATE_PATH)
-    except (ValueError, OSError) as exc:
-        parser.error(str(exc))
-    return parser, args
-
-
 def publish_fonts(root, fonts, checked_sha):
-    """Replace each checked file intact; this is not a pair transaction."""
+    """Replace each checked file intact; this is not a pair transaction.
+    """
     output = root / 'out'
     output.mkdir(parents=True, exist_ok=True)
     for font in fonts:
@@ -72,58 +39,20 @@ def publish_fonts(root, fonts, checked_sha):
         os.close(fd)
         temporary = Path(name)
         try:
-            if hashlib.sha256(
-                font.read_bytes()
-            ).hexdigest() != checked_sha[font]:
+            if (
+                hashlib.sha256(font.read_bytes()).hexdigest()
+                != checked_sha[font]
+            ):
                 raise ValueError('staging font changed before publication')
             shutil.copy2(font, temporary)
-            if hashlib.sha256(
-                temporary.read_bytes()
-            ).hexdigest() != checked_sha[font]:
+            if (
+                hashlib.sha256(temporary.read_bytes()).hexdigest()
+                != checked_sha[font]
+            ):
                 raise ValueError('publication copy differs from checked font')
             os.replace(temporary, destination)
         finally:
             temporary.unlink(missing_ok=True)
-
-
-def resolve_snapshot(source, edition, regular, bold, coverage):
-    """Prepare shared immutable-by-ownership numeric input once in the parent."""
-    import source_policy
-    tags = source_policy.active_tags(edition)
-    resolved = source_policy.extract_policy(source, tags)
-    payload = resolved.to_jsonable()
-    payload['source_font_by_tag'] = {
-        tag: source_policy.SOURCE_FONTS[tag] for tag in sorted(tags)
-    }
-    payload['policy_source_files'] = list(
-        source_policy.required_policy_files(tags)
-    )
-    payload['geometry'] = source_policy.extract_geometry(source, resolved)
-    if edition == 'full':
-        payload['added_alphabet_metrics'] = {
-            tag: source_policy.raw_alphabet_metrics(
-                source / (source_policy.SOURCE_FONTS[tag] + '.tfm')
-            )
-            for tag in source_policy.ADDED_ALPHABET_TAGS
-        }
-    payload['inputs'] = {
-        'mtpro2': {
-            name: hashlib.sha256((source / name).read_bytes()).hexdigest()
-            for name in source_policy.required_source_files(tags)
-        },
-        'donors': {
-            role: {
-                'name': path.name,
-                'sha256': hashlib.sha256(path.read_bytes()).hexdigest()
-            }
-            for role, path in (('regular', regular), ('bold', bold))
-        }
-    }
-    payload['build_identity'] = {
-        'run_id': uuid.uuid4().hex, 'edition': edition,
-        'donor_coverage': coverage, 'upm': 1000
-    }
-    return payload
 
 
 def condition_snapshot(snapshot, policy):
@@ -137,8 +66,11 @@ def condition_snapshot(snapshot, policy):
 def measure_compatibility(
     root, edition, regular, bold, coverage, snapshot, run
 ):
-    """Construct legacy glyphs only to their Windows-assignment boundary."""
+    """Construct legacy glyphs only to their Windows-assignment
+    boundary.
+    """
     from compatibility_metrics import validate
+
     work = root / 'build' / edition / 'compatibility'
     # Remove only owned small results; active PL files are
     # regenerated by native.
@@ -156,10 +88,16 @@ def measure_compatibility(
     run(
         'FontForge compatibility metrics',
         [
-            'fontforge', '-lang=py', '-script', root / 'tools/build.py',
-            '--purpose', 'windows', '--metrics-output', result_path
+            'fontforge',
+            '-lang=py',
+            '-script',
+            root / 'tools/build_font.py',
+            '--purpose',
+            'windows',
+            '--metrics-output',
+            result_path,
         ],
-        environment=env
+        environment=env,
     )
     if not result_path.is_file():
         raise ValueError(
@@ -173,22 +111,27 @@ def measure_compatibility(
 def backend_environment(
     edition, regular, bold, coverage, work, policy_path, policy
 ):
-    env = donor_coverage.child_environment(coverage, os.environ)
+    env = donors.child_environment(coverage, os.environ)
     env.update(
-        MTP2_EDITION=edition, MTP2_BUILD_DIR=str(work),
-        MTP2_LARGE_VARIANTS=policy, MTP2_SOURCE_POLICY_JSON=str(policy_path),
-        MTP2_ROMAN_REGULAR=str(regular), MTP2_ROMAN_BOLD=str(bold),
-        PYTHONDONTWRITEBYTECODE='1'
+        MTP2_EDITION=edition,
+        MTP2_BUILD_DIR=str(work),
+        MTP2_LARGE_VARIANTS=policy,
+        MTP2_SOURCE_POLICY_JSON=str(policy_path),
+        MTP2_ROMAN_REGULAR=str(regular),
+        MTP2_ROMAN_BOLD=str(bold),
+        PYTHONDONTWRITEBYTECODE='1',
     )
     return env
 
 
-def build_condition(root, edition, regular, bold, coverage):
+def build_condition(
+    root, edition, regular, bold, coverage, log, stage, execute, hashes
+):
     """Generate one product pair; the companion returns only run-owned
     numbers.
     """
     from check_final import check_pair
-    from postprocess import process as postprocess_font
+    from write_fonts import process as write_otf
     from windows_policy import derive as derive_windows
 
     source = root / 'mtpro2'
@@ -197,7 +140,6 @@ def build_condition(root, edition, regular, bold, coverage):
     work, final = condition / 'native', condition / 'final'
     work.mkdir(parents=True, exist_ok=True)
     final.mkdir(parents=True, exist_ok=True)
-    log_path = condition / 'build.log'
     policy_path = work / 'source-policy.json'
     otf = work / (basename + '.otf')
     final_otf, final_ttf = (
@@ -207,186 +149,202 @@ def build_condition(root, edition, regular, bold, coverage):
     # failed producer in this run.
     for directory in (work, final):
         for candidate in directory.iterdir():
-            if (
-                candidate.is_file()
-                and candidate.name in {
-                    basename + '.otf', basename + '.ttf',
-                    'source-policy.json',
-                    'math-constants.json', 'large-variant-build.json',
-                    'native-result.json', 'windows-policy.json'
-                }
-            ):
+            if candidate.is_file() and candidate.name in {
+                basename + '.otf',
+                basename + '.ttf',
+                'source-policy.json',
+                'math-constants.json',
+                'large-variant-build.json',
+                'native-result.json',
+                'windows-policy.json',
+            }:
                 candidate.unlink()
     env = backend_environment(
         edition, regular, bold, coverage, work, policy_path, 'source'
     )
     tools = root / 'tools'
-    with log_path.open('w+', encoding='utf-8') as log:
-        def run(label, command, *, environment=None):
-            log.write('\n' + label + '\n')
-            log.flush()
-            start = log.tell()
-            result = subprocess.run(
-                [str(x) for x in command], env=env
-                if environment is None else environment, stdout=log,
-                stderr=subprocess.STDOUT
-            )
-            if result.returncode == 130 or result.returncode == -2:
-                raise KeyboardInterrupt
-            if result.returncode:
-                log.seek(start)
-                lines = log.read().strip().splitlines()
-                diagnostic = '\n'.join(lines[-8:])[-1500:]
-                raise ValueError(label + ': ' + diagnostic)
-            log.seek(0, 2)
 
-        def tool(name, *arguments):
-            run(name, [sys.executable, tools / name, *arguments])
+    def run(label, command, *, environment=None):
+        return execute(
+            label,
+            command,
+            environment=env if environment is None else environment,
+        )
 
-        try:
-            snapshot = resolve_snapshot(
-                source, edition, regular, bold, coverage
-            )
-            write_contract(policy_path, condition_snapshot(snapshot, 'source'))
-            run(
-                'FontForge build',
-                [
-                    'fontforge', '-lang=py', '-script', tools / 'build.py',
-                    '--purpose', 'font'
-                ]
-            )
-            for artifact in (otf, work / 'native-result.json'):
-                if not artifact.is_file():
-                    raise ValueError(
-                        'producer did not write ' + str(
-                            artifact.relative_to(root)
-                        )
-                    )
-            log.write('\nOpenType postprocessing\n')
-            log.flush()
-            postprocess_font(
-                otf, final_otf, work=work, source_dir=source,
-                snapshot=condition_snapshot(snapshot, 'source'),
-                alternate_path=ALTERNATE_PATH
-            )
-            if not final_otf.is_file():
-                raise ValueError('postprocessor did not write final OTF')
-            source_sha = hashlib.sha256(final_otf.read_bytes()).hexdigest()
-            metrics = measure_compatibility(
-                root, edition, regular, bold, coverage, snapshot, run
-            )
-            if hashlib.sha256(
-                final_otf.read_bytes()
-            ).hexdigest() != source_sha:
-                raise ValueError(
-                    'source OTF changed during compatibility measurement'
-                )
-            windows_path = final / 'windows-policy.json'
-            write_contract(
-                windows_path,
-                derive_windows(final_otf, metrics, snapshot, source_sha)
-            )
-            tool(
-                'otf2ttf.py', final_otf, final_ttf, '--windows-policy',
-                windows_path, '--edition', edition, '--input-manifest',
-                policy_path
-            )
-            log.write('\nfinal serialized pair check\n')
-            log.flush()
-            check_pair(
-                final_otf, final_ttf, edition, windows_path, policy_path
-            )
-            checked_sha = {
-                font: hashlib.sha256(font.read_bytes()).hexdigest()
-                for font in (final_otf, final_ttf)
-            }
-            return final_otf, final_ttf, checked_sha
-        except KeyboardInterrupt:
-            log.write('\ninterrupted\n')
-            log.flush()
-            print(
-                'error: interrupted; see ' + str(log_path.relative_to(root)),
-                file=sys.stderr
-            )
-            raise
-        except Exception as exc:
-            log.write('\nerror: ' + str(exc) + '\n')
-            log.flush()
+    def tool(name, *arguments):
+        run(name, [sys.executable, tools / name, *arguments])
+
+    stage('read declarations, metrics, outlines and donor supply into catalog')
+    inputs = catalog.read_inputs(
+        source,
+        work / 'pl',
+        edition,
+        regular,
+        bold,
+        run=run,
+        hashes=hashes,
+        stage=stage,
+    )
+    stage('apply mappings and plan construction dependencies')
+    generation = plan.create(inputs, coverage)
+    stage('preflight required source slots and donor supply')
+    plan.check_sources(inputs, generation, coverage, log=log)
+    log.flush()
+    snapshot = inputs.snapshot(coverage, generation)
+    write_contract(policy_path, condition_snapshot(snapshot, 'source'))
+    run(
+        'FontForge build',
+        [
+            'fontforge',
+            '-lang=py',
+            '-script',
+            tools / 'build_font.py',
+            '--purpose',
+            'font',
+        ],
+    )
+    for artifact in (otf, work / 'native-result.json'):
+        if not artifact.is_file():
             raise ValueError(
-                str(exc) + '\nsee ' + str(log_path.relative_to(root))
-            ) from exc
+                'producer did not write ' + str(artifact.relative_to(root))
+            )
+    stage('OpenType postprocessing')
+    log.flush()
+    write_otf(
+        otf,
+        final_otf,
+        work=work,
+        catalog=inputs,
+        snapshot=condition_snapshot(snapshot, 'source'),
+        alternate_path=ALTERNATE_PATH,
+    )
+    if not final_otf.is_file():
+        raise ValueError('postprocessor did not write final OTF')
+    source_sha = hashlib.sha256(final_otf.read_bytes()).hexdigest()
+    metrics = measure_compatibility(
+        root, edition, regular, bold, coverage, snapshot, run
+    )
+    if hashlib.sha256(final_otf.read_bytes()).hexdigest() != source_sha:
+        raise ValueError('source OTF changed during compatibility measurement')
+    windows_path = final / 'windows-policy.json'
+    write_contract(
+        windows_path,
+        derive_windows(final_otf, metrics, snapshot, source_sha),
+    )
+    tool(
+        'otf2ttf.py',
+        final_otf,
+        final_ttf,
+        '--windows-policy',
+        windows_path,
+        '--edition',
+        edition,
+        '--input-manifest',
+        policy_path,
+    )
+    stage('final serialized pair check')
+    log.flush()
+    check_pair(final_otf, final_ttf, edition, windows_path, policy_path)
+    checked_sha = {
+        font: hashlib.sha256(font.read_bytes()).hexdigest()
+        for font in (final_otf, final_ttf)
+    }
+    return final_otf, final_ttf, checked_sha
 
 
 def main(argv=None):
-    parser, args = parse_options(argv)
+    _, args = parse_options(argv)
     root = Path(__file__).resolve().parents[1]
-    for command in ('fontforge', 'tftopl'):
-        if not shutil.which(command):
-            parser.exit(
-                2, 'error: required command not found: ' + command + '\n'
+    log_path = root / 'build' / args.edition / 'build.log'
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log = log_path.open('w', encoding='utf-8')
+    except OSError as exc:
+        print(f'error: cannot open {log_path}: {exc}', file=sys.stderr)
+        return 1
+    phase = 'log header'
+    with log:
+
+        def stage(label):
+            nonlocal phase
+            phase = label
+            log.write('\nphase: ' + label + '\n')
+            log.flush()
+
+        def run(label, command, *, environment=None, check=True):
+            stage(label)
+            log.write('command: ' + repr([str(x) for x in command]) + '\n')
+            log.flush()
+            result = subprocess.run(
+                [str(x) for x in command],
+                env=environment,
+                stdout=log,
+                stderr=subprocess.STDOUT,
             )
-    for module in (
-        'fontTools.ttLib', 'fontTools.t1Lib', 'fontTools.pens.cu2quPen'
-    ):
+            log.write(f'\nexit code: {result.returncode}\n')
+            log.flush()
+            if result.returncode in (130, -2):
+                raise KeyboardInterrupt
+            if check and result.returncode:
+                raise ValueError(f'{label}: exit code {result.returncode}')
+            return result
+
         try:
-            importlib.import_module(module)
-        except ImportError as exc:
-            parser.exit(
-                2, f'error: required Python module unavailable: {module}: '
-                f'{exc}\n'
+            try:
+                fonttools = version('fonttools')
+            except PackageNotFoundError:
+                fonttools = 'unavailable'
+            except Exception as exc:
+                fonttools = f'unretrievable ({type(exc).__name__}: {exc})'
+            log.write(
+                f'mtp2otf {FONT_VERSION}\n'
+                f'datetime: {datetime.now(timezone.utc).isoformat()}\n'
+                f'edition: {args.edition}\n'
+                f'donor coverage: {args.donor_coverage}\n'
+                f'argv: {repr(sys.argv if argv is None else argv)}\n'
+                f'Python path: {sys.executable}\n'
+                f'Python version: {sys.version}\n'
+                f'fontTools version: {fonttools}\n'
             )
-    import source_policy
-    required = source_policy.required_source_files(
-        source_policy.active_tags(args.edition)
-    )
-    regular = Path(
-        args.roman_regular or root / 'donors/NimbusRoman-Regular.otf'
-    ).resolve()
-    bold = Path(
-        args.roman_bold or root / 'donors/NimbusRoman-Bold.otf'
-    ).resolve()
-    missing = [
-        str(root / 'mtpro2' / name) for name in required
-        if not (root / 'mtpro2' / name).is_file()
-    ]
-    missing += [str(path) for path in (regular, bold) if not path.is_file()]
-    if missing:
-        parser.exit(
-            2,
-            'error: build inputs are not ready.\n' + '\n'.join(missing) + '\n'
-        )
-    donor_coverage.validate_inputs(regular, bold)
-    result = subprocess.run(
-        [
-            'fontforge', '-lang=py', '-c',
-            (
-                'import sys, fontforge, psMat; '
-                'sys.version_info >= (3, 10) or '
-                'sys.exit("FontForge embedded Python 3.10 '
-                'or later is required")'
+            stage('input identities and dependency checks')
+            hashes = {}
+            regular, bold = resolve_inputs(args, root, log, stage, run, hashes)
+            print('building ' + identity(args.edition)[0], flush=True)
+            stage('prepare current build candidates')
+            otf, ttf, checked_sha = build_condition(
+                root,
+                args.edition,
+                regular,
+                bold,
+                args.donor_coverage,
+                log,
+                stage,
+                run,
+                hashes,
             )
-        ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    if result.returncode:
-        parser.exit(
-            2,
-            'error: FontForge Python 3.10 support: ' + result.stderr.decode(
-                errors='replace'
-            ) + '\n'
-        )
-    print('building ' + identity(args.edition)[0], flush=True)
-    otf, ttf, checked_sha = build_condition(
-        root, args.edition, regular, bold, args.donor_coverage
-    )
-    publish_fonts(root, (otf, ttf), checked_sha)
+            stage('publish checked fonts')
+            publish_fonts(root, (otf, ttf), checked_sha)
+            stage('success')
+            return 0
+        except (Exception, KeyboardInterrupt) as exc:
+            log.write('\nfailure phase: ' + phase + '\n')
+            traceback.print_exc(file=log)
+            log.flush()
+            cause = (
+                'interrupted'
+                if isinstance(exc, KeyboardInterrupt)
+                else (
+                    str(exc).splitlines()[0][:400]
+                    if str(exc)
+                    else type(exc).__name__
+                )
+            )
+            print(
+                f'error: {phase}: {cause}; see {log_path.relative_to(root)}',
+                file=sys.stderr,
+            )
+            return 130 if isinstance(exc, KeyboardInterrupt) else 1
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        raise SystemExit(130) from None
-    except Exception as exc:
-        print('error: ' + str(exc), file=sys.stderr)
-        raise SystemExit(1) from None
+    raise SystemExit(main())

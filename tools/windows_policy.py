@@ -1,12 +1,14 @@
 """Bind final source-TTF Windows values to this run's FontForge
 measurement.
 """
+
 import hashlib
 import json
 from pathlib import Path
 
-from build_config import identity
+from config import identity
 from compatibility_metrics import integer_values, validate, validate_identity
+
 
 POLICY = 'source-ttf-fontforge-compatibility-windows/1'
 
@@ -29,7 +31,7 @@ def read(path):
         raise ValueError('Windows policy lacks current measurement')
     validate(
         measurement,
-        {'build_identity': obj['identity'], 'inputs': obj['input_hashes']}
+        {'build_identity': obj['identity'], 'inputs': obj['input_hashes']},
     )
     for key in ('Windows', 'typo', 'hhea', 'upm'):
         if obj.get(key) != measurement[key]:
@@ -71,7 +73,13 @@ def provenance_errors(obj, edition, manifest, source_path=None):
 
 
 def errors(
-    font, obj, profile, *, font_path=None, edition=None, manifest=None,
+    font,
+    obj,
+    profile,
+    *,
+    font_path=None,
+    edition=None,
+    manifest=None,
     source_path=None
 ):
     if profile != 'source' or 'glyf' not in font:
@@ -107,8 +115,11 @@ def errors(
 
 
 def derive(source_otf, measurement, snapshot, source_sha):
-    """Use explicitly bound numeric input, never a legacy final file/path."""
+    """Use explicitly bound numeric input, never a legacy final
+    file/path.
+    """
     from fontTools.ttLib import TTFont
+
     validate(measurement, snapshot)
     edition = snapshot['build_identity']['edition']
     with TTFont(source_otf) as font:
@@ -117,20 +128,27 @@ def derive(source_otf, measurement, snapshot, source_sha):
         os2, hhea = font['OS/2'], font['hhea']
         if font['head'].unitsPerEm != measurement['upm']:
             raise ValueError('Windows source/measurement UPM mismatch')
-        if (
-            [
-                os2.sTypoAscender, os2.sTypoDescender, os2.sTypoLineGap
-            ] != measurement['typo']
-            or [hhea.ascent, hhea.descent, hhea.lineGap] != measurement['hhea']
-        ):
+        if [
+            os2.sTypoAscender,
+            os2.sTypoDescender,
+            os2.sTypoLineGap,
+        ] != measurement['typo'] or [
+            hhea.ascent,
+            hhea.descent,
+            hhea.lineGap,
+        ] != measurement[
+            'hhea'
+        ]:
             raise ValueError(
                 'Windows source/measurement vertical metrics mismatch'
             )
         return {
-            'policy': POLICY, 'profile': 'source',
+            'policy': POLICY,
+            'profile': 'source',
             'identity': measurement['identity'],
             'input_hashes': measurement['input_hashes'],
-            'measurement': measurement, 'source_otf_sha256': source_sha,
+            'measurement': measurement,
+            'source_otf_sha256': source_sha,
             'source_head_bbox': [
                 getattr(font['head'], n)
                 for n in ('xMin', 'yMin', 'xMax', 'yMax')

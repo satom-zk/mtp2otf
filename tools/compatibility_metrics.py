@@ -3,6 +3,7 @@
 Only standard-library dependencies: safe in FontForge's embedded Python.
 This is a numeric result, not a serialized legacy font or a font cache.
 """
+
 import math
 
 SCHEMA = 'mtp2otf7-compatibility-metrics/1'
@@ -27,15 +28,20 @@ def assign_windows(font):
 
 def capture(font, snapshot, bounds):
     result = {
-        'schema': SCHEMA, 'boundary': BOUNDARY, 'condition': 'legacy',
+        'schema': SCHEMA,
+        'boundary': BOUNDARY,
+        'condition': 'legacy',
         'identity': snapshot['build_identity'],
         'input_hashes': snapshot['inputs'],
         'Windows': [font.os2_winascent, font.os2_windescent],
         'typo': [
-            font.os2_typoascent, font.os2_typodescent, font.os2_typolinegap
+            font.os2_typoascent,
+            font.os2_typodescent,
+            font.os2_typolinegap,
         ],
         'hhea': [font.hhea_ascent, font.hhea_descent, font.hhea_linegap],
-        'upm': font.em, 'bounds_y': bounds,
+        'upm': font.em,
+        'bounds_y': bounds,
     }
     validate(result, snapshot)
     return result
@@ -110,7 +116,8 @@ def validate(result, snapshot=None):
     ):
         raise ValueError('compatibility metrics bounds invalid')
     if windows != [
-        max(806, math.ceil(bounds[1])), max(194, math.ceil(-bounds[0]))
+        max(806, math.ceil(bounds[1])),
+        max(194, math.ceil(-bounds[0])),
     ]:
         raise ValueError('compatibility metrics bounds/Windows mismatch')
     if snapshot is not None:

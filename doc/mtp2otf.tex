@@ -683,10 +683,22 @@ Intermediate rounding is part of each assignment.
 The script ratios are the \file{mtpro2.sty} defaults;
 \texttt{\_pct(r)} is \texttt{round(r.numerator * 100 / r.denominator)}.
 
-\texttt{display\_operator\_min\_height} is the floor of the average of
-the separately rounded height-plus-depth values of extension TFM slots
-\texttt{0x50} and \texttt{0x58}, in output units. The delimited-subformula
-threshold uses the same value.
+\texttt{display\_operator\_min\_height} is computed from the 30 mapped
+text/display operator pairs in \file{mt2exa.tfm}. Round each height-plus-depth
+to output units, then take
+\texttt{(max(text sizes) + min(display sizes)) // 2}.
+The source values give \texttt{(1103 + 1203) // 2 = 1153}.
+The delimited-subformula threshold uses the same value. This is a conversion
+policy; TFM box dimensions and OpenType glyph bounds need not select the
+same design in every series.
+
+\texttt{cap\_height} is the TFM height of \texttt{A} (slot \texttt{0x41})
+in \file{mt2mit.tfm}, before conversion to output units.
+Where MATH provides only one shift for display and inline superscripts,
+the display value is used. Fields with separate display values retain both.
+MathLeading uses the median of the em-normalized Latin Modern Math,
+STIX Two Math and Cambria Math reference values. These fonts are not
+build dependencies.
 
 Source labels: MT-TFM, TFM parameters; MT-STY, package declarations;
 MT-PFB, outlines; OT-SUG, OpenType suggested formulas; TeX, the script-space
@@ -728,19 +740,19 @@ Field & Expression and source class \\
 \texttt{Stack\allowbreak Bottom\allowbreak Display\allowbreak Style\allowbreak Shift\allowbreak Down} & \texttt{s(11)}\newline MT-TFM \\
 \texttt{Stack\allowbreak Gap\allowbreak Min} & \texttt{3 \allowbreak * theta}\newline OT-SUG+MT \\
 \texttt{Stack\allowbreak Display\allowbreak Style\allowbreak Gap\allowbreak Min} & \texttt{7 \allowbreak * theta}\newline OT-SUG+MT \\
-\texttt{Superscript\allowbreak Shift\allowbreak Up} & \texttt{s(14)}\newline MT-TFM+OT-MIG \\
+\texttt{Superscript\allowbreak Shift\allowbreak Up} & \texttt{s(13)}\newline MT-TFM+OT-MIG \\
 \texttt{Superscript\allowbreak Shift\allowbreak Up\allowbreak Cramped} & \texttt{s(15)}\newline MT-TFM \\
 \texttt{Subscript\allowbreak Shift\allowbreak Down} & \texttt{s(17)}\newline MT-TFM+OT-MIG \\
 \texttt{Subscript\allowbreak Top\allowbreak Max} & \texttt{round(Fraction(4,\allowbreak 5) \allowbreak * s(5))}\newline OT-SUG+MT \\
 \texttt{Superscript\allowbreak Bottom\allowbreak Min} & \texttt{round(Fraction(1,\allowbreak 4) \allowbreak * s(5))}\newline OT-SUG+MT \\
 \texttt{Superscript\allowbreak Bottom\allowbreak Max\allowbreak With\allowbreak Subscript} & \texttt{round(Fraction(4,\allowbreak 5) \allowbreak * s(5))}\newline OT-SUG+MT \\
 \texttt{Sub\allowbreak Superscript\allowbreak Gap\allowbreak Min} & \texttt{4 \allowbreak * theta}\newline OT-SUG+MT \\
-\texttt{Upper\allowbreak Limit\allowbreak Baseline\allowbreak Rise\allowbreak Min} & \texttt{e(9)}\newline OT-MIG+MT \\
-\texttt{Upper\allowbreak Limit\allowbreak Gap\allowbreak Min} & \texttt{e(11)}\newline OT-MIG+MT \\
+\texttt{Upper\allowbreak Limit\allowbreak Baseline\allowbreak Rise\allowbreak Min} & \texttt{e(11)}\newline OT-MIG+MT \\
+\texttt{Upper\allowbreak Limit\allowbreak Gap\allowbreak Min} & \texttt{e(9)}\newline OT-MIG+MT \\
 \texttt{Lower\allowbreak Limit\allowbreak Gap\allowbreak Min} & \texttt{e(10)}\newline MT-TFM \\
 \texttt{Lower\allowbreak Limit\allowbreak Baseline\allowbreak Drop\allowbreak Min} & \texttt{e(12)}\newline MT-TFM \\
-\texttt{Stretch\allowbreak Stack\allowbreak Top\allowbreak Shift\allowbreak Up} & \texttt{e(9)}\newline OT-MIG+MT \\
-\texttt{Stretch\allowbreak Stack\allowbreak Gap\allowbreak Above\allowbreak Min} & \texttt{e(11)}\newline OT-MIG+MT \\
+\texttt{Stretch\allowbreak Stack\allowbreak Top\allowbreak Shift\allowbreak Up} & \texttt{e(11)}\newline OT-MIG+MT \\
+\texttt{Stretch\allowbreak Stack\allowbreak Gap\allowbreak Above\allowbreak Min} & \texttt{e(9)}\newline OT-MIG+MT \\
 \texttt{Stretch\allowbreak Stack\allowbreak Gap\allowbreak Below\allowbreak Min} & \texttt{e(10)}\newline OT-MIG+MT \\
 \texttt{Stretch\allowbreak Stack\allowbreak Bottom\allowbreak Shift\allowbreak Down} & \texttt{e(12)}\newline OT-MIG+MT \\
 \texttt{Overbar\allowbreak Rule\allowbreak Thickness} & \texttt{theta}\newline MT-TFM \\
@@ -759,11 +771,11 @@ Field & Expression and source class \\
 \texttt{Script\allowbreak Percent\allowbreak Scale\allowbreak Down} & \texttt{\_pct(script\_ratio)}\newline MT-STY \\
 \texttt{Script\allowbreak Script\allowbreak Percent\allowbreak Scale\allowbreak Down} & \texttt{\_pct(scriptscript\_ratio)}\newline MT-STY \\
 \texttt{Min\allowbreak Connector\allowbreak Overlap} & \texttt{100}\newline OT-MIG+MT-PFB \\
-\texttt{Accent\allowbreak Base\allowbreak Height} & \texttt{477}\newline OT-MIG \\
-\texttt{Flattened\allowbreak Accent\allowbreak Base\allowbreak Height} & \texttt{656}\newline OT-MIG \\
+\texttt{Accent\allowbreak Base\allowbreak Height} & \texttt{xh}\newline MT-TFM \\
+\texttt{Flattened\allowbreak Accent\allowbreak Base\allowbreak Height} & \texttt{round(cap\_height \allowbreak * upm)}\newline MT-TFM \\
 \texttt{Delimited\allowbreak Sub\allowbreak Formula\allowbreak Min\allowbreak Height} & \texttt{int(display\_operator\_min\_height)}\newline MT-MIG+MT \\
-\texttt{Display\allowbreak Operator\allowbreak Min\allowbreak Height} & \texttt{int(display\_operator\_min\_height)}\newline MT-TFM \\
-\texttt{Math\allowbreak Leading} & \texttt{154}\newline OT-MIG \\
+\texttt{Display\allowbreak Operator\allowbreak Min\allowbreak Height} & \texttt{int(display\_operator\_min\_height)}\newline MT-TFM+OT-MIG \\
+\texttt{Math\allowbreak Leading} & \texttt{150}\newline OT-MIG \\
 \texttt{Skewed\allowbreak Fraction\allowbreak Horizontal\allowbreak Gap} & \texttt{350}\newline OT-MIG \\
 \texttt{Skewed\allowbreak Fraction\allowbreak Vertical\allowbreak Gap} & \texttt{102}\newline OT-MIG \\
 \texttt{Space\allowbreak After\allowbreak Script} & \texttt{round(Fraction(1,\allowbreak 20) \allowbreak * upm)}\newline TeX \\

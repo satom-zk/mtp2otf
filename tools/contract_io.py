@@ -1,4 +1,5 @@
 """Atomically hand generated data to the next process."""
+
 import hashlib
 import json
 import os
@@ -36,7 +37,7 @@ def write_contract(path, payload):
             if saved != data:
                 actual = {
                     'bytes': len(saved),
-                    'sha256': hashlib.sha256(saved).hexdigest()
+                    'sha256': hashlib.sha256(saved).hexdigest(),
                 }
                 raise ValueError(
                     f'contract saved content mismatch: {path}: '

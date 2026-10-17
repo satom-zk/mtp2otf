@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract policy and geometry from local MTPro2 sources.
+"""Read MTPro2 sty/fd declarations and edition input requirements.
 
 Keep source identities public; evaluate source-dependent values during
 build.
@@ -10,71 +10,12 @@ from dataclasses import dataclass, asdict
 from fractions import Fraction
 from pathlib import Path
 import json
-import math
-import os
 import re
-import subprocess
-import tempfile
 from typing import Dict, Iterable, Mapping, Optional
 
-from build_config import EDITIONS
+from config import EDITIONS
+from mapping import SOURCE_FONTS, LITE_TAGS
 
-
-# Structural source registry. These are filenames/roles,
-# not evaluated metrics.
-SOURCE_FONTS: Dict[str, str] = {
-    'mit': 'mt2mit', 'syt': 'mt2syt', 'exa': 'mt2exa', 'xl': 'mt2xl',
-    'xxxl': 'mt2xxxl', 'ams': 'mt2syat', 'bb': 'mt2bbt', 'script': 'mt2mst',
-    'frak': 'mt2mft', 'bscript': 'mt2bmst', 'bscript_s': 'mt2bmss',
-    'bscript_ss': 'mt2bmsf', 'bfrak': 'mt2bmft', 'bfrak_s': 'mt2bmfs',
-    'bfrak_ss': 'mt2bmff', 'curly': 'mt2mct', 'bold': 'mt2mbt',
-    'exe': 'mt2exe', 'exf': 'mt2exf', 'exg': 'mt2exg', 'mit_s': 'mt2mis',
-    'mit_ss': 'mt2mif', 'syt_s': 'mt2sys', 'syt_ss': 'mt2syf',
-    'ams_s': 'mt2syas', 'ams_ss': 'mt2syaf', 'bb_s': 'mt2bbs',
-    'bb_ss': 'mt2bbf', 'script_s': 'mt2mss', 'script_ss': 'mt2msf',
-    'frak_s': 'mt2mfs', 'frak_ss': 'mt2mff', 'bold_s': 'mt2mbs',
-    'bold_ss': 'mt2mbf', 'curly_s': 'mt2mcs', 'curly_ss': 'mt2mcf',
-    'bbi': 'mt2bbit', 'bbi_s': 'mt2bbis', 'bbi_ss': 'mt2bbif',
-    'bbd': 'mt2bbdt', 'bbd_s': 'mt2bbds', 'bbd_ss': 'mt2bbdf',
-    'hrb': 'mt2hrbt', 'hrb_s': 'mt2hrbs', 'hrb_ss': 'mt2hrbf',
-    'hrbd': 'mt2hrbdt', 'hrbd_s': 'mt2hrbds', 'hrbd_ss': 'mt2hrbdf',
-    'hbi': 'mt2hbit', 'hbi_s': 'mt2hbis', 'hbi_ss': 'mt2hbif',
-    'bmit': 'mt2bmit', 'bmit_s': 'mt2bmis', 'bmit_ss': 'mt2bmif',
-    'bsyt': 'mt2bsyt', 'bsyt_s': 'mt2bsys', 'bsyt_ss': 'mt2bsyf',
-}
-
-LITE_TAGS = frozenset(
-    (
-        'mit', 'mit_s', 'mit_ss', 'syt', 'syt_s', 'syt_ss', 'exa', 'exe',
-        'exf', 'exg', 'xl', 'xxxl', 'bold', 'bold_s', 'bold_ss',
-    )
-)
-
-# Only the new alphabets use raw fixed-point metrics in this
-# implementation. Preserve the historical PL conversion for all
-# existing source roles.
-ADDED_ALPHABET_TAGS = (
-    'bscript', 'bscript_s', 'bscript_ss', 'bfrak', 'bfrak_s', 'bfrak_ss'
-)
-
-
-def raw_alphabet_metrics(path):
-    """Read exact binary TFM fractions into a local JSON-safe snapshot."""
-    from fontTools.tfmLib import TFM
-    from tfm_kerns import read_kerns_fix20
-    tfm = TFM(str(path))
-    return {
-        'chars': {
-            str(slot): {
-                'wd': char.get('width', 0), 'ic': char.get('italic', 0)
-            }
-            for slot, char in tfm.chars.items()
-        },
-        'kerns': [
-            [left, right, value / (1 << 20)]
-            for (left, right), value in read_kerns_fix20(path).items()
-        ],
-    }
 
 # Full-only .fd declarations that define option-alphabet source identity
 # and optical-size ordering.  These are public structural names only.
@@ -113,19 +54,41 @@ for _t in ('bsyt', 'bsyt_s', 'bsyt_ss'):
 for _t in ('bold', 'bold_s', 'bold_ss'):
     _SKEW_ROLE[_t] = ('family', 'sty', 'U', 'mtt')
 for _t in (
-    'script', 'script_s', 'script_ss', 'curly', 'curly_s', 'curly_ss',
-    'bscript', 'bscript_s', 'bscript_ss'
+    'script',
+    'script_s',
+    'script_ss',
+    'curly',
+    'curly_s',
+    'curly_ss',
+    'bscript',
+    'bscript_s',
+    'bscript_ss',
 ):
     _SKEW_ROLE[_t] = ('family', 'umt2ms.fd', 'U', 'mt2ms')
 for _t in ('frak', 'frak_s', 'frak_ss', 'bfrak', 'bfrak_s', 'bfrak_ss'):
     _SKEW_ROLE[_t] = None
 for _t in (
-    'bb', 'bb_s', 'bb_ss', 'bbi', 'bbi_s', 'bbi_ss', 'bbd', 'bbd_s', 'bbd_ss'
+    'bb',
+    'bb_s',
+    'bb_ss',
+    'bbi',
+    'bbi_s',
+    'bbi_ss',
+    'bbd',
+    'bbd_s',
+    'bbd_ss',
 ):
     _SKEW_ROLE[_t] = ('family', 'umt2bb.fd', 'U', 'mt2bb')
 for _t in (
-    'hrb', 'hrb_s', 'hrb_ss', 'hrbd', 'hrbd_s', 'hrbd_ss', 'hbi', 'hbi_s',
-    'hbi_ss'
+    'hrb',
+    'hrb_s',
+    'hrb_ss',
+    'hrbd',
+    'hrbd_s',
+    'hrbd_ss',
+    'hbi',
+    'hbi_s',
+    'hbi_ss',
 ):
     _SKEW_ROLE[_t] = ('family', 'umt2hrb.fd', 'U', 'mt2hrb')
 
@@ -183,11 +146,11 @@ class SourcePolicy:
         return {
             'script_ratio': {
                 'numerator': self.script_ratio_num,
-                'denominator': self.script_ratio_den
+                'denominator': self.script_ratio_den,
             },
             'scriptscript_ratio': {
                 'numerator': self.scriptscript_ratio_num,
-                'denominator': self.scriptscript_ratio_den
+                'denominator': self.scriptscript_ratio_den,
             },
             'skewchar_by_tag': dict(self.skewchar_by_tag),
             'accents': {k: asdict(v) for k, v in sorted(self.accents.items())},
@@ -237,8 +200,10 @@ def _require_one(
 def _family_skew(text: str, encoding: str, family: str) -> Optional[int]:
     pat = (
         r'\\DeclareFontFamily\s*\{'
-        + re.escape(encoding) + r'\}\s*\{'
-        + re.escape(family) + r'\}\s*\{([^}]*)\}'
+        + re.escape(encoding)
+        + r'\}\s*\{'
+        + re.escape(family)
+        + r'\}\s*\{([^}]*)\}'
     )
     m = _require_one(pat, text, f'font family {encoding}/{family}', re.DOTALL)
     body = m.group(1)
@@ -251,14 +216,20 @@ def _shape_skew(
 ) -> Optional[int]:
     pat = (
         r'\\DeclareFontShape\s*\{'
-        + re.escape(encoding) + r'\}\s*\{'
-        + re.escape(family) + r'\}\s*\{'
-        + re.escape(series) + r'\}\s*\{'
-        + re.escape(shape) + r'\}\s*\{.*?\}\s*\{([^}]*)\}'
+        + re.escape(encoding)
+        + r'\}\s*\{'
+        + re.escape(family)
+        + r'\}\s*\{'
+        + re.escape(series)
+        + r'\}\s*\{'
+        + re.escape(shape)
+        + r'\}\s*\{.*?\}\s*\{([^}]*)\}'
     )
     m = _require_one(
-        pat, text, f'font shape {encoding}/{family}/{series}/{shape}',
-        re.DOTALL
+        pat,
+        text,
+        f'font shape {encoding}/{family}/{series}/{shape}',
+        re.DOTALL,
     )
     body = m.group(1)
     sm = re.search(r'\\skewchar\s*\\font\s*([^\s}]+)', body)
@@ -317,8 +288,11 @@ def _parse_dot_macros(sty: str) -> DotMacroPolicy:
     glyphs.
     """
     vm = _require_one(
-        r'\\def\s*\\vdots.*?\\baselineskip\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\\p@',
-        sty, 'vdots baseline step', re.DOTALL
+        r'\\def\s*\\vdots.*?\\baselineskip\s*'
+        r'([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\\p@',
+        sty,
+        'vdots baseline step',
+        re.DOTALL,
     )
     vdots_step = _tex_fraction(vm.group(1))
 
@@ -345,8 +319,10 @@ def _parse_dot_macros(sty: str) -> DotMacroPolicy:
     if mkerns[-2] != inner:
         raise ValueError('ddots internal spacing is asymmetric')
     return DotMacroPolicy(
-        vdots_step.numerator, vdots_step.denominator,
-        tuple((x.numerator, x.denominator) for x in raises), inner.numerator,
+        vdots_step.numerator,
+        vdots_step.denominator,
+        tuple((x.numerator, x.denominator) for x in raises),
+        inner.numerator,
         inner.denominator,
     )
 
@@ -382,9 +358,11 @@ def required_source_files(tags):
     return tuple(
         sorted(
             {
-                SOURCE_FONTS[tag] + suffix for tag in tags
+                SOURCE_FONTS[tag] + suffix
+                for tag in tags
                 for suffix in ('.pfb', '.tfm')
-            } | set(required_policy_files(tags))
+            }
+            | set(required_policy_files(tags))
         )
     )
 
@@ -395,7 +373,8 @@ def validate_source_files(
     """Require the selected edition's fonts and policy declarations."""
     root = Path(mtpro2_dir)
     missing = [
-        name for name in required_source_files(active_tags)
+        name
+        for name in required_source_files(active_tags)
         if not (root / name).is_file()
     ]
     if missing:
@@ -429,14 +408,16 @@ def extract_policy(
     sty = texts['sty']
     sr = _tex_fraction(
         _require_one(
-            r'\\def\s*\\defaultscriptratio\s*\{([^}]+)\}', sty,
-            'defaultscriptratio'
+            r'\\def\s*\\defaultscriptratio\s*\{([^}]+)\}',
+            sty,
+            'defaultscriptratio',
         ).group(1)
     )
     ssr = _tex_fraction(
         _require_one(
-            r'\\def\s*\\defaultscriptscriptratio\s*\{([^}]+)\}', sty,
-            'defaultscriptscriptratio'
+            r'\\def\s*\\defaultscriptscriptratio\s*\{([^}]+)\}',
+            sty,
+            'defaultscriptscriptratio',
         ).group(1)
     )
     if not (0 < sr <= 1 and 0 < ssr <= sr):
@@ -460,8 +441,13 @@ def extract_policy(
             raise AssertionError(role)
 
     return SourcePolicy(
-        sr.numerator, sr.denominator, ssr.numerator, ssr.denominator, skew,
-        _parse_accents(sty), _parse_dot_macros(sty),
+        sr.numerator,
+        sr.denominator,
+        ssr.numerator,
+        ssr.denominator,
+        skew,
+        _parse_accents(sty),
+        _parse_dot_macros(sty),
     )
 
 
@@ -470,7 +456,8 @@ def load_policy_json(path: str | Path) -> SourcePolicy:
 
 
 def policy_from_data(data: dict) -> SourcePolicy:
-    """Decode already-read source declarations, preserving Fraction/tuple
+    """Decode already-read source declarations, preserving
+    Fraction/tuple
     units.
     """
     sr = data['script_ratio']
@@ -478,186 +465,21 @@ def policy_from_data(data: dict) -> SourcePolicy:
     accents = {k: AccentDeclaration(**v) for k, v in data['accents'].items()}
     dm = data['dot_macros']
     dots = DotMacroPolicy(
-        int(dm['vdots_step_num']), int(dm['vdots_step_den']),
+        int(dm['vdots_step_num']),
+        int(dm['vdots_step_den']),
         tuple((int(n), int(d)) for n, d in dm['ddots_raise']),
-        int(dm['ddots_inner_mu_num']), int(dm['ddots_inner_mu_den']),
+        int(dm['ddots_inner_mu_num']),
+        int(dm['ddots_inner_mu_den']),
     )
     return SourcePolicy(
-        int(sr['numerator']), int(sr['denominator']), int(ssr['numerator']),
+        int(sr['numerator']),
+        int(sr['denominator']),
+        int(ssr['numerator']),
         int(ssr['denominator']),
         {
             k: (None if v is None else int(v))
             for k, v in data['skewchar_by_tag'].items()
         },
-        accents, dots,
+        accents,
+        dots,
     )
-
-
-def _type1_slot_path(pfb_path: Path, slot: int) -> dict:
-    """Return one local Type1 slot as a JSON-safe cubic path description."""
-    from fontTools import t1Lib
-    from fontTools.pens.recordingPen import RecordingPen
-    from fontTools.pens.boundsPen import BoundsPen
-
-    font = t1Lib.T1Font(str(pfb_path))
-    font.parse()
-    encoding = font.font.get('Encoding')
-    if not isinstance(encoding, list) or not (0 <= slot < len(encoding)):
-        raise ValueError(
-            f'{pfb_path.name}: no usable Type1 encoding for slot {slot}'
-        )
-    glyph_name = encoding[slot]
-    glyphs = font.getGlyphSet()
-    if glyph_name not in glyphs:
-        raise ValueError(
-            f'{pfb_path.name}: slot {slot} glyph {glyph_name!r} missing'
-        )
-    rec = RecordingPen()
-    glyphs[glyph_name].draw(rec)
-    bounds = BoundsPen(glyphs)
-    glyphs[glyph_name].draw(bounds)
-    ops = []
-    for op, args in rec.value:
-        ops.append(
-            {'op': op, 'points': [[float(x), float(y)] for (x, y) in args]}
-        )
-    return {
-        'source_file': pfb_path.name, 'slot': int(slot),
-        'glyph_name': glyph_name,
-        'bounds': [float(v) for v in (bounds.bounds or (0, 0, 0, 0))],
-        'path': ops,
-    }
-
-
-def _load_tfm_file(path: Path):
-    """Parse one local TFM through the independent tftopl -> PL path."""
-    from tfmpl import TFM
-    fd, pl = tempfile.mkstemp(suffix='.pl')
-    os.close(fd)
-    try:
-        subprocess.run(
-            ['tftopl', str(path), pl], check=True, stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE, text=True,
-        )
-        return TFM(pl)
-    finally:
-        try:
-            os.unlink(pl)
-        except OSError:
-            pass
-
-
-def _type1_upm(font) -> int:
-    matrix = font.font.get('FontMatrix')
-    if not matrix or not matrix[0]:
-        raise ValueError('Type1 font has no usable FontMatrix')
-    upm = round(abs(1.0 / float(matrix[0])))
-    if upm <= 0:
-        raise ValueError('Type1 font has an invalid FontMatrix scale')
-    return upm
-
-
-def _extract_prime_padding(
-    mtpro2_dir: str | Path, script_ratio: Fraction
-) -> dict:
-    """Derive prime padding from local italic overhang and script-prime
-    ink.
-    
-    Use the minimum em-quantized shift plus conversion-policy clearance.
-    """
-    from fontTools import t1Lib
-    from fontTools.pens.boundsPen import BoundsPen
-    import uni_map as U
-
-    root = Path(mtpro2_dir)
-    italic_tag = 'mit'
-    italic_base = SOURCE_FONTS[italic_tag]
-    italic_pfb = root / (italic_base + '.pfb')
-    italic_tfm = root / (italic_base + '.tfm')
-    font = t1Lib.T1Font(str(italic_pfb))
-    font.parse()
-    encoding = font.font.get('Encoding')
-    if not isinstance(encoding, list):
-        raise ValueError(f'{italic_pfb.name}: no usable Type1 encoding')
-    source_upm = _type1_upm(font)
-    tfm = _load_tfm_file(italic_tfm)
-    glyphs = font.getGlyphSet()
-    overhangs = []
-    for slot in tuple(
-        range(ord('A'), ord('Z') + 1)
-    ) + tuple(range(ord('a'), ord('z') + 1)):
-        if slot not in tfm.chars or slot >= len(encoding):
-            continue
-        glyph_name = encoding[slot]
-        if glyph_name not in glyphs:
-            continue
-        pen = BoundsPen(glyphs)
-        glyphs[glyph_name].draw(pen)
-        if not pen.bounds:
-            continue
-        ink_right = float(pen.bounds[2]) * 1000.0 / source_upm
-        advance = float(tfm.chars[slot]['wd']) * 1000.0
-        overhangs.append(ink_right - advance)
-    if not overhangs:
-        raise ValueError(
-            'cannot derive raw-prime padding from local math italic source'
-        )
-    max_overhang = max(0.0, max(overhangs))
-
-    prime_slot = next(
-        (slot for slot, (u, _name) in U.SYT.items() if u == 0x2032), None
-    )
-    if prime_slot is None:
-        raise ValueError('public source registry has no prime identity')
-    prime_tag = 'syt_s'
-    prime_pfb = root / (SOURCE_FONTS[prime_tag] + '.pfb')
-    pfont = t1Lib.T1Font(str(prime_pfb))
-    pfont.parse()
-    penc = pfont.font.get('Encoding')
-    if not isinstance(penc, list) or prime_slot >= len(penc):
-        raise ValueError(f'{prime_pfb.name}: no usable prime encoding')
-    pglyphs = pfont.getGlyphSet()
-    pglyph_name = penc[prime_slot]
-    if pglyph_name not in pglyphs:
-        raise ValueError(f'{prime_pfb.name}: prime source glyph is missing')
-    ppen = BoundsPen(pglyphs)
-    pglyphs[pglyph_name].draw(ppen)
-    if not ppen.bounds:
-        raise ValueError(
-            f'{prime_pfb.name}: prime source glyph has no ink bounds'
-        )
-    prime_upm = _type1_upm(pfont)
-    prime_left = float(
-        ppen.bounds[0]
-    ) * 1000.0 / prime_upm * float(script_ratio)
-
-    quantum = max(1, round(float(Fraction(1, 100)) * 1000))
-    clearance = quantum
-    required_shift = max(0.0, max_overhang + clearance - prime_left)
-    padding = int(math.ceil(required_shift / quantum) * quantum)
-    return {
-        'italic_source_tag': italic_tag, 'prime_source_tag': prime_tag,
-        'max_math_italic_overhang': max_overhang,
-        'scaled_prime_ink_left': prime_left, 'clearance': clearance,
-        'quantum': quantum, 'padding': padding,
-    }
-
-
-def extract_geometry(
-    mtpro2_dir: str | Path, policy: SourcePolicy | None = None
-) -> dict:
-    """Extract geometry for synthesized forms from local PFB slots."""
-    import uni_map as U
-    chain = U.H_CHAINS.get(0x23DC)
-    if not chain:
-        raise ValueError('missing TOP PARENTHESIS source chain')
-    tag, slot = chain[-1]
-    base = SOURCE_FONTS[tag]
-    return {
-        'overparen_template': _type1_slot_path(
-            Path(mtpro2_dir) / (base + '.pfb'), int(slot)
-        ),
-        'prime_padding': _extract_prime_padding(
-            mtpro2_dir, (policy or extract_policy(mtpro2_dir)).script_ratio
-        ),
-    }

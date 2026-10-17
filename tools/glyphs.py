@@ -1,80 +1,17 @@
-"""Native source faces, copied glyphs, and their Unicode/slot ownership."""
-from contextlib import contextmanager, ExitStack
+"""Native source faces, copied glyphs, and their Unicode/slot ownership.
+"""
+
 from dataclasses import dataclass
-import subprocess
-import sys
 from fractions import Fraction
 import os
 
 import fontforge
 import psMat
 
-from tfmpl import TFM, apply_raw_alphabet_metrics
-import uni_map as U
-import source_policy
+from outlines import native_font
+import mapping as U
 import large_variant_policy as L
-import donor_coverage
-
-
-def _close(handle):
-    active_error = sys.exc_info()[0] is not None
-    try:
-        handle.close()
-    except Exception:
-        if not active_error:
-            raise
-
-
-@contextmanager
-def native_font(path=None):
-    """The caller owns this handle through its last
-    copy/reference/generate.
-    """
-    handle = fontforge.font() if path is None else fontforge.open(str(path))
-    try:
-        yield handle
-    finally:
-        _close(handle)
-
-
-@contextmanager
-def source_faces(source_dir, pl_dir, edition, snapshot):
-    """Read current PL/PFB faces; close all acquired faces on every exit."""
-    faces, errors = {}, []
-    with ExitStack() as owners:
-        for tag in source_policy.active_tags(edition):
-            stem = source_policy.SOURCE_FONTS[tag]
-            tfm_path, pfb_path = (
-                source_dir / (stem + '.tfm'), source_dir / (stem + '.pfb')
-            )
-            try:
-                pl_path = pl_dir / (stem + '.pl')
-                subprocess.run(
-                    ['tftopl', str(tfm_path), str(pl_path)], check=True,
-                    stdout=subprocess.DEVNULL
-                )
-                tfm = TFM(pl_path)
-                pfb = owners.enter_context(native_font(pfb_path))
-                slots = {
-                    g.encoding: g.glyphname for g in pfb.glyphs()
-                    if g.encoding < 0x10000
-                }
-                faces[tag] = pfb, tfm, slots
-            except Exception as exc:
-                errors.append((tag, stem, exc))
-        if errors:
-            raise ValueError(
-                'MTPro2 source load failed: ' + '; '.join(
-                    '%s(%s): %s' % row for row in errors
-                )
-            )
-        # Only these six added alphabet roles use raw-TFM exact metrics.
-        if edition == 'full':
-            for tag in source_policy.ADDED_ALPHABET_TAGS:
-                apply_raw_alphabet_metrics(
-                    faces[tag][1], snapshot['added_alphabet_metrics'][tag]
-                )
-        yield faces
+import donors
 
 
 @dataclass(frozen=True)
@@ -92,8 +29,16 @@ def uname(u):
 
 # Prefix digit-leading names for Word font subsetting.
 _DIGIT_NAME = (
-    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
-    'nine'
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
 )
 
 
@@ -110,33 +55,31 @@ def _tfm_design_size(tfm):
     return Fraction(str(size))
 
 
-def _donor_unicode_map(ffont):
-    d = {}
-    for g in ffont.glyphs():
-        u = g.unicode
-        if u is not None and u >= 0:
-            d[u] = g.glyphname
-    return d
-
-
 class GlyphSources:
-    """One font's source-slot and Unicode ownership; no CLI, paths or I/O."""
+    """One font's source-slot and Unicode ownership; no CLI, paths or
+    I/O.
+    """
 
-    def __init__(self, font, faces, rules):
+    def __init__(self, font, faces, rules, plan):
         self.font, self.faces, self.rules = font, faces, rules
+        self.plan = {tag: set(slots) for tag, slots in plan["native"].items()}
         self.imported = {}
         self.uni_owner = {}
 
     def axis_height(self):
-        """Return the local MTPro2 math axis from the active symbol TFM."""
+        """Return the local MTPro2 math axis from the active symbol TFM.
+        """
         return round(self.faces['syt'][1].fontdimen[22] * self.font.em)
 
     def pt_to_units(self, value, tfm):
-        """Convert a package dimension in TeX points to output-font units."""
+        """Convert a package dimension in TeX points to output-font
+        units.
+        """
         return round(value / _tfm_design_size(tfm) * self.font.em)
 
     def mu_to_units(self, value):
-        """Convert TeX math units to output-font units (one em is eighteen
+        """Convert TeX math units to output-font units (one em is
+        eighteen
         mu).
         """
         return round(value / 18 * self.font.em)
@@ -156,8 +99,13 @@ class GlyphSources:
     def import_glyph(
         self, tag, slot, name=None, unicode_=None, force_alt=False
     ):
-        """Copy a source slot, or return its existing output glyph name."""
+        """Copy a source slot, or return its existing output glyph name.
+        """
         key = (tag, slot)
+        if slot not in self.plan.get(tag, set()):
+            raise ValueError(
+                f"unplanned source reference role={tag} slot={slot}"
+            )
         if key in self.imported:
             gname = self.imported[key]
             if (
@@ -176,7 +124,9 @@ class GlyphSources:
                         gname = nn
                 else:
                     self.font[gname].altuni = (
-                        (self.font[gname].altuni or ()) + ((unicode_, -1, 0),)
+                        self.font[gname].altuni or ()
+                    ) + (
+                        (unicode_, -1, 0),
                     )
                 self.uni_owner[unicode_] = gname
             return gname
@@ -256,7 +206,9 @@ class GlyphSources:
         return gn
 
     def visible_contours(self, ffont, glyph):
-        """Flatten references, then require closed, nonzero-area outlines."""
+        """Flatten references, then require closed, nonzero-area
+        outlines.
+        """
         ffont.selection.select(glyph.glyphname)
         ffont.unlinkReferences()
         contours = list(glyph.foreground)
@@ -268,7 +220,8 @@ class GlyphSources:
         return contours, bounds
 
     def regular_dotless_j(self, ffont, byuni):
-        """Use this donor's encoded glyph, or remove its uniquely separated
+        """Use this donor's encoded glyph, or remove its uniquely
+        separated
         j dot.
         """
         source_u = 0x0237 if 0x0237 in byuni else 0x006A
@@ -293,7 +246,8 @@ class GlyphSources:
                     'closed contours'
                 )
             bodies = [
-                i for i, (_, ymin, _, ymax) in enumerate(bounds)
+                i
+                for i, (_, ymin, _, ymax) in enumerate(bounds)
                 if ymin < 0 < ymax
             ]
             if len(bodies) != 1:
@@ -347,7 +301,7 @@ class GlyphSources:
             ('Basic Greek', U.GREEK_LATIN_SHAPED_BASIC_ALIASES),
             (
                 'Mathematical Italic Greek',
-                U.GREEK_LATIN_SHAPED_MATH_ITALIC_ALIASES
+                U.GREEK_LATIN_SHAPED_MATH_ITALIC_ALIASES,
             ),
         )
         count = 0
@@ -356,9 +310,8 @@ class GlyphSources:
                 source_glyph = self.uni_owner.get(source_cp)
                 if source_glyph is None:
                     raise RuntimeError(
-                        '%s alias source U+%04X missing for U+%04X' % (
-                            label, source_cp, target_cp
-                        )
+                        '%s alias source U+%04X missing for U+%04X'
+                        % (label, source_cp, target_cp)
                     )
                 self.alias_unicode(source_glyph, target_cp)
                 count += 1
@@ -409,31 +362,39 @@ def import_core(sources, limits):
                         continue
                     sfx = ['.xl', '.XL', '.XXL', '.XXXL'][sz]
                     if isinstance(sl, tuple):  # Compose the two source halves.
-                        l = import_glyph(ftag, sl[0], name=f'{base}{sfx}.l')
+                        left = import_glyph(
+                            ftag, sl[0], name=f'{base}{sfx}.l'
+                        )
                         r = import_glyph(ftag, sl[1], name=f'{base}{sfx}.r')
-                        if l and r:
+                        if left and r:
                             gn = f'{base}{sfx}'
                             out.createChar(-1, gn)
                             g = out[gn]
                             _scale = 2 if ftag == 'xxxl' else 1
                             _pfb, _tfm, _slots = fonts[ftag]
-                            _boxes = (
-                                [_pfb[_slots[q]].boundingBox() for q in sl]
-                            )
+                            _boxes = [
+                                _pfb[_slots[q]].boundingBox() for q in sl
+                            ]
                             _extent = (
-                                max(
-                                    b[3] for b in _boxes
-                                ) - min(b[1] for b in _boxes)
+                                max(b[3] for b in _boxes)
+                                - min(b[1] for b in _boxes)
                             ) * _scale
-                            _offsets = L.compound_reference_offsets(
-                                _boxes, _scale
-                            ) if (LARGE_POLICY == 'source'
-                            and _extent > MAXVAR) else (0, 0)
-                            g.addReference(l, psMat.translate(0, _offsets[0]))
-                            g.addReference(
-                                r, psMat.translate(out[l].width, _offsets[1])
+                            _offsets = (
+                                L.compound_reference_offsets(_boxes, _scale)
+                                if (
+                                    LARGE_POLICY == 'source'
+                                    and _extent > MAXVAR
+                                )
+                                else (0, 0)
                             )
-                            g.width = out[l].width + out[r].width
+                            g.addReference(
+                                left, psMat.translate(0, _offsets[0])
+                            )
+                            g.addReference(
+                                r,
+                                psMat.translate(out[left].width, _offsets[1]),
+                            )
+                            g.width = out[left].width + out[r].width
                             var.append(gn)
                     else:
                         v = import_glyph(ftag, sl, name=f'{base}{sfx}')
@@ -468,8 +429,12 @@ def import_core(sources, limits):
 
     # Math alphabets.
     for tag, kind in [
-        ('bb', 'bb'), ('script', 'script'), ('frak', 'frak'),
-        ('curly', 'curly'), ('bscript', 'bscript'), ('bfrak', 'bfrak')
+        ('bb', 'bb'),
+        ('script', 'script'),
+        ('frak', 'frak'),
+        ('curly', 'curly'),
+        ('bscript', 'bscript'),
+        ('bfrak', 'bfrak'),
     ]:
         if tag not in fonts:
             continue
@@ -486,7 +451,7 @@ def import_roman(sources, regular, bold):
     upright_dotless = None
     with native_font(ROMAN_REG) as _nf_reg:
         _donor_role = 'regular'
-        _nr = _donor_unicode_map(_nf_reg)
+        _nr = donors.unicode_map(_nf_reg)
         for _u in list(range(0x41, 0x5B)) + list(range(0x61, 0x7B)):
             _copy_donor_glyph(_nf_reg, _nr, _u, _u)
         # dotless i is used internally by dtls. Prefer the
@@ -512,7 +477,7 @@ def import_roman(sources, regular, bold):
 
     with native_font(ROMAN_BOLD) as _nf_bold:
         _donor_role = 'bold'
-        _nb = _donor_unicode_map(_nf_bold)
+        _nb = donors.unicode_map(_nf_bold)
         # Unicode Mathematical Bold Latin and digits follow
         # \mathbf / rmdefault bold.
         for _i, _u in enumerate(range(0x41, 0x5B)):
@@ -570,23 +535,72 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
         # Greek uppercase order in the Unicode
         # Mathematical Alphanumeric block.
         greek_cap_names = [
-            'ALPHA', 'BETA', 'GAMMA', 'DELTA', 'EPSILON', 'ZETA', 'ETA',
-            'THETA', 'IOTA', 'KAPPA', 'LAMDA', 'MU', 'NU', 'XI', 'OMICRON',
-            'PI', 'RHO', 'THETA SYMBOL', 'SIGMA', 'TAU', 'UPSILON', 'PHI',
-            'CHI', 'PSI', 'OMEGA'
+            'ALPHA',
+            'BETA',
+            'GAMMA',
+            'DELTA',
+            'EPSILON',
+            'ZETA',
+            'ETA',
+            'THETA',
+            'IOTA',
+            'KAPPA',
+            'LAMDA',
+            'MU',
+            'NU',
+            'XI',
+            'OMICRON',
+            'PI',
+            'RHO',
+            'THETA SYMBOL',
+            'SIGMA',
+            'TAU',
+            'UPSILON',
+            'PHI',
+            'CHI',
+            'PSI',
+            'OMEGA',
         ]
         basic_cap = {
-            'ALPHA': 0x0391, 'BETA': 0x0392, 'GAMMA': 0x0393, 'DELTA': 0x0394,
-            'EPSILON': 0x0395, 'ZETA': 0x0396, 'ETA': 0x0397, 'THETA': 0x0398,
-            'IOTA': 0x0399, 'KAPPA': 0x039A, 'LAMDA': 0x039B, 'MU': 0x039C,
-            'NU': 0x039D, 'XI': 0x039E, 'OMICRON': 0x039F, 'PI': 0x03A0,
-            'RHO': 0x03A1, 'SIGMA': 0x03A3, 'TAU': 0x03A4, 'UPSILON': 0x03A5,
-            'PHI': 0x03A6, 'CHI': 0x03A7, 'PSI': 0x03A8, 'OMEGA': 0x03A9
+            'ALPHA': 0x0391,
+            'BETA': 0x0392,
+            'GAMMA': 0x0393,
+            'DELTA': 0x0394,
+            'EPSILON': 0x0395,
+            'ZETA': 0x0396,
+            'ETA': 0x0397,
+            'THETA': 0x0398,
+            'IOTA': 0x0399,
+            'KAPPA': 0x039A,
+            'LAMDA': 0x039B,
+            'MU': 0x039C,
+            'NU': 0x039D,
+            'XI': 0x039E,
+            'OMICRON': 0x039F,
+            'PI': 0x03A0,
+            'RHO': 0x03A1,
+            'SIGMA': 0x03A3,
+            'TAU': 0x03A4,
+            'UPSILON': 0x03A5,
+            'PHI': 0x03A6,
+            'CHI': 0x03A7,
+            'PSI': 0x03A8,
+            'OMEGA': 0x03A9,
         }
         latin_visual = {
-            'ALPHA': 'A', 'BETA': 'B', 'EPSILON': 'E', 'ZETA': 'Z', 'ETA': 'H',
-            'IOTA': 'I', 'KAPPA': 'K', 'MU': 'M', 'NU': 'N', 'OMICRON': 'O',
-            'RHO': 'P', 'TAU': 'T', 'CHI': 'X'
+            'ALPHA': 'A',
+            'BETA': 'B',
+            'EPSILON': 'E',
+            'ZETA': 'Z',
+            'ETA': 'H',
+            'IOTA': 'I',
+            'KAPPA': 'K',
+            'MU': 'M',
+            'NU': 'N',
+            'OMICRON': 'O',
+            'RHO': 'P',
+            'TAU': 'T',
+            'CHI': 'X',
         }
 
         # Use mt2bmit for non-Latin-shaped bold Greek and
@@ -613,15 +627,31 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
         alias_unicode(bold_nabla, 0x1D735)
 
         small_order = [
-            ('ALPHA', 0x03B1), ('BETA', 0x03B2), ('GAMMA', 0x03B3),
-            ('DELTA', 0x03B4), ('EPSILON', 0x03B5), ('ZETA', 0x03B6),
-            ('ETA', 0x03B7), ('THETA', 0x03B8), ('IOTA', 0x03B9),
-            ('KAPPA', 0x03BA), ('LAMDA', 0x03BB), ('MU', 0x03BC),
-            ('NU', 0x03BD), ('XI', 0x03BE), ('OMICRON', 0x03BF),
-            ('PI', 0x03C0), ('RHO', 0x03C1), ('FINAL SIGMA', 0x03C2),
-            ('SIGMA', 0x03C3), ('TAU', 0x03C4), ('UPSILON', 0x03C5),
-            ('PHI', 0x03C6), ('CHI', 0x03C7), ('PSI', 0x03C8),
-            ('OMEGA', 0x03C9)
+            ('ALPHA', 0x03B1),
+            ('BETA', 0x03B2),
+            ('GAMMA', 0x03B3),
+            ('DELTA', 0x03B4),
+            ('EPSILON', 0x03B5),
+            ('ZETA', 0x03B6),
+            ('ETA', 0x03B7),
+            ('THETA', 0x03B8),
+            ('IOTA', 0x03B9),
+            ('KAPPA', 0x03BA),
+            ('LAMDA', 0x03BB),
+            ('MU', 0x03BC),
+            ('NU', 0x03BD),
+            ('XI', 0x03BE),
+            ('OMICRON', 0x03BF),
+            ('PI', 0x03C0),
+            ('RHO', 0x03C1),
+            ('FINAL SIGMA', 0x03C2),
+            ('SIGMA', 0x03C3),
+            ('TAU', 0x03C4),
+            ('UPSILON', 0x03C5),
+            ('PHI', 0x03C6),
+            ('CHI', 0x03C7),
+            ('PSI', 0x03C8),
+            ('OMEGA', 0x03C9),
         ]
         for idx, (_name, source_cp) in enumerate(small_order):
             tgt = 0x1D6C2 + idx
@@ -639,10 +669,17 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
 
         # Mathematical Bold Italic Greek U+1D71C..U+1D755.
         italic_cap_regular = {
-            'GAMMA': 0x1D6E4, 'DELTA': 0x1D6E5, 'THETA': 0x1D6E9,
-            'LAMDA': 0x1D6EC, 'XI': 0x1D6EF, 'PI': 0x1D6F1, 'SIGMA': 0x1D6F4,
-            'UPSILON': 0x1D6F6, 'PHI': 0x1D6F7, 'PSI': 0x1D6F9,
-            'OMEGA': 0x1D6FA
+            'GAMMA': 0x1D6E4,
+            'DELTA': 0x1D6E5,
+            'THETA': 0x1D6E9,
+            'LAMDA': 0x1D6EC,
+            'XI': 0x1D6EF,
+            'PI': 0x1D6F1,
+            'SIGMA': 0x1D6F4,
+            'UPSILON': 0x1D6F6,
+            'PHI': 0x1D6F7,
+            'PSI': 0x1D6F9,
+            'OMEGA': 0x1D6FA,
         }
         bold_it_greek = {}
         for idx, name in enumerate(greek_cap_names):
@@ -658,10 +695,31 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
             bold_it_greek[name] = g
 
         reg_it_small = [
-            0x1D6FC, 0x1D6FD, 0x1D6FE, 0x1D6FF, 0x1D700, 0x1D701, 0x1D702,
-            0x1D703, 0x1D704, 0x1D705, 0x1D706, 0x1D707, 0x1D708, 0x1D709,
-            0x1D70A, 0x1D70B, 0x1D70C, 0x1D70D, 0x1D70E, 0x1D70F, 0x1D710,
-            0x1D711, 0x1D712, 0x1D713, 0x1D714
+            0x1D6FC,
+            0x1D6FD,
+            0x1D6FE,
+            0x1D6FF,
+            0x1D700,
+            0x1D701,
+            0x1D702,
+            0x1D703,
+            0x1D704,
+            0x1D705,
+            0x1D706,
+            0x1D707,
+            0x1D708,
+            0x1D709,
+            0x1D70A,
+            0x1D70B,
+            0x1D70C,
+            0x1D70D,
+            0x1D70E,
+            0x1D70F,
+            0x1D710,
+            0x1D711,
+            0x1D712,
+            0x1D713,
+            0x1D714,
         ]
         for i, source_cp in enumerate(reg_it_small):
             tgt = 0x1D736 + i
@@ -675,8 +733,11 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
         ):
             bmit_cp(source_cp, 0x1D750 + i)
     return AlphabetSources(
-        upright_dotless_i, upright_dotless_j, bold_it_latin, bold_dotless_i,
-        bold_dotless_j
+        upright_dotless_i,
+        upright_dotless_j,
+        bold_it_latin,
+        bold_dotless_i,
+        bold_dotless_j,
     )
 
 
@@ -687,13 +748,7 @@ def import_remaining_roman(sources, regular, edition, coverage, spec):
     ROMAN_REG = str(regular)
     out = sources.font
     uni_owner = sources.uni_owner
-    BLANKS = {
-        0x0020: 333, 0x00A0: 333, 0x2000: 500, 0x2001: 1000, 0x2002: 500,
-        0x2003: 1000, 0x2004: 333, 0x2005: 250, 0x2006: 167, 0x2007: 500,
-        0x2008: 250, 0x2009: 200, 0x200A: 100, 0x200B: 0, 0x202F: 200,
-        0x205F: 222, 0x2061: 0, 0x2062: 0, 0x2063: 0, 0x2064: 0
-    }
-    for u, w in BLANKS.items():
+    for u, w in U.BLANKS.items():
         if u in uni_owner:
             continue
         gn = 'space' if u == 0x0020 else uname(u)
@@ -701,73 +756,15 @@ def import_remaining_roman(sources, regular, edition, coverage, spec):
         out[gn].width = w
         uni_owner[u] = gn
 
-    # Reserve math and non-Roman ranges against text-donor substitution.
-    TEXT_ONLY_SKIP = (
-        (0x0370, 0x03FF),  # Greek
-        (0x0400, 0x052F),  # Cyrillic
-        (0x2100, 0x214F),  # Letterlike symbols
-        (0x2190, 0x21FF),  # Arrows
-        (0x2200, 0x22FF),  # Math operators
-        (0x2300, 0x23FF),  # Technical symbols
-        (0x25A0, 0x25FF),  # Geometric shapes
-        (0x27C0, 0x27EF),  # Supplemental math A
-        (0x2980, 0x2AFF),  # Supplemental math B
-        (0x1D400, 0x1D7FF),  # Math alphanumerics
-    )
-
-    # Allow text-only letterlike symbols, but
-    # reserve math-active primes.
-    TEXT_ONLY_PRIMES = set(range(0x2032, 0x2038)) | {0x2057}
-
-    TEXT_ONLY_ALLOW = {
-        0x2105, 0x2116, 0x211E, 0x2120, 0x2121, 0x2122, 0x212E,
-    }
-
-    def _is_math_range(u):
-        if u in TEXT_ONLY_PRIMES:
-            return True
-        if u in TEXT_ONLY_ALLOW:
-            return False
-        return any(a <= u <= b for a, b in TEXT_ONLY_SKIP)
-
-    # Limit donor additions to Latin/Common text; math
-    # ownership takes precedence.
-    ROMAN_TEXT_EXTRA_RANGES = (
-        (0x0020, 0x036F), (0x1E00, 0x1EFF), (0x2000, 0x218F), (0x2500, 0x266F),
-        (0x301A, 0x301B), (0xFB00, 0xFB06),
-    )
-
-    def _is_roman_text_extra(u):
-        return any(
-            first <= u <= last for first, last in ROMAN_TEXT_EXTRA_RANGES
-        )
-
-    # Reserve Full-only source codepoints in Lite, including AMSa eth.
-    CANONICAL_FULL_ONLY_SOURCE_UNICODE = set()
-    for _u, _name in U.AMSA.values():
-        if _u is not None:
-            CANONICAL_FULL_ONLY_SOURCE_UNICODE.add(_u)
-    for _kind in ('bb', 'script', 'frak', 'curly', 'bscript', 'bfrak'):
-        for _slot, (_u, _name) in U.alpha_map(_kind).items():
-            if _u is not None:
-                CANONICAL_FULL_ONLY_SOURCE_UNICODE.add(_u)
-
-    # Text-donor symbols used directly by Word math.
-    ROMAN_EXTRA = {
-        'percent': 0x0025, 'ampersand': 0x0026, 'at': 0x0040,
-        'underscore': 0x005F, 'asciitilde': 0x007E, 'numbersign': 0x0023,
-        'dollar': 0x0024, 'degree': 0x00B0, 'fraction': 0x2044,
-        'question': 0x003F, 'exclam': 0x0021
-    }
     if os.path.exists(ROMAN_REG):
         with native_font(ROMAN_REG) as nf2:
             _roman_extra_scale = float(out.em) / float(nf2.em)
-            for src_name, u in ROMAN_EXTRA.items():
+            for src_name, u in donors.ROMAN_EXTRA.items():
                 if u in uni_owner or src_name not in nf2:
                     continue
                 if (
                     EDITION == 'lite'
-                    and u in CANONICAL_FULL_ONLY_SOURCE_UNICODE
+                    and u in donors.CANONICAL_FULL_ONLY_SOURCE_UNICODE
                 ):
                     continue
                 nf2.selection.select(src_name)
@@ -783,31 +780,14 @@ def import_remaining_roman(sources, regular, edition, coverage, spec):
 
             # Fill remaining text coverage without
             # replacing existing math glyphs.
-            todo = []
-            for g in nf2.glyphs():
-                u = g.unicode
-                if u is None or u < 0x20 or u in uni_owner:
-                    continue
-                if not _is_roman_text_extra(u):
-                    # A selectable donor must not add unrelated scripts.
-                    continue
-                if (
-                    EDITION == 'lite'
-                    and u in CANONICAL_FULL_ONLY_SOURCE_UNICODE
-                ):
-                    # Full-only source semantics remain holes in Lite.
-                    continue
-                if _is_math_range(u):
-                    continue  # Reserve math glyphs.
-                if 0xE000 <= u <= 0xF8FF or u in (0xFEFF, 0xFFFD):
-                    continue  # Exclude private and special-use ranges.
-                gn = uname(u)
-                if gn in out:
-                    continue
-                todo.append((g.glyphname, u, gn, g.width))
-            todo = donor_coverage.select_remaining(
-                todo, DONOR_COVERAGE, PUBLIC_SPEC,
-                {r[0] for g in out.glyphs() for r in (g.references or ())}
+            todo = donors.text_candidates(
+                nf2,
+                uni_owner,
+                {g.glyphname for g in out.glyphs()},
+                EDITION,
+                DONOR_COVERAGE,
+                PUBLIC_SPEC,
+                {r[0] for g in out.glyphs() for r in (g.references or ())},
             )
             for src_name, u, gn, w in todo:
                 nf2.selection.select(src_name)
@@ -838,7 +818,7 @@ def check_minimal_supply(sources, spec, alphabet):
             _bb = _g.boundingBox()
             _public_observed[_u] = {
                 'visible': _bb[2] > _bb[0] and _bb[3] > _bb[1],
-                'advance': _g.width
+                'advance': _g.width,
             }
         _names = {g.glyphname for g in out.glyphs()}
         _dependencies = {
@@ -854,6 +834,137 @@ def check_minimal_supply(sources, spec, alphabet):
                 )
             )
         }
-        donor_coverage.validate_outputs(
+        donors.validate_outputs(
             PUBLIC_SPEC, _public_observed, _internal, _dependencies, _names
         )
+
+
+def import_optical_forms(sources, accents):
+    ACCENT_SLOTS = accents.slots
+    ACC_CENTER = accents.center
+    SKEW = dict(sources.rules.skewchar_by_tag)
+    accent_glyphs = accents.glyphs
+    fonts = sources.faces
+    import_glyph = sources.import_glyph
+    imported = sources.imported
+    out = sources.font
+    ssty_map = {}
+
+    def add_ssty(coretag, stag, sstag, table):
+        if stag not in fonts:
+            return
+        for slot in table:
+            key = (coretag, slot)
+            if key not in imported:
+                continue
+            base = imported[key]
+            alts = []
+            for lvl, t in ((1, stag), (2, sstag)):
+                if t not in fonts:
+                    continue
+                g = import_glyph(t, slot, name=f'{base}.ssty{lvl}')
+                if g:
+                    alts.append(g)
+            if alts:
+                ssty_map[base] = alts
+
+    add_ssty('mit', 'mit_s', 'mit_ss', U.MIT)
+    add_ssty('syt', 'syt_s', 'syt_ss', U.SYT)
+    add_ssty('ams', 'ams_s', 'ams_ss', U.AMSA)
+    add_ssty('bb', 'bb_s', 'bb_ss', U.alpha_map('bb'))
+    # Import option-family script sources so cv03..cv07
+    # preserve optical designs.
+    for _core, _s, _ss in (
+        ('bbd', 'bbd_s', 'bbd_ss'),
+        ('bbi', 'bbi_s', 'bbi_ss'),
+        ('hrb', 'hrb_s', 'hrb_ss'),
+        ('hrbd', 'hrbd_s', 'hrbd_ss'),
+        ('hbi', 'hbi_s', 'hbi_ss'),
+    ):
+        if _core not in fonts:
+            continue
+        for _slot, (_u, _nm) in U.alpha_map('bb').items():
+            _base = import_glyph(_core, _slot, name=f'{_nm}.{_core}')
+            if not _base:
+                continue
+            _alts = []
+            for _lvl, _tag in ((1, _s), (2, _ss)):
+                if _tag not in fonts:
+                    continue
+                _g = import_glyph(_tag, _slot, name=f'{_base}.ssty{_lvl}')
+                if _g:
+                    _alts.append(_g)
+            if _alts:
+                ssty_map[_base] = _alts
+    add_ssty('script', 'script_s', 'script_ss', U.alpha_map('script'))
+    add_ssty('frak', 'frak_s', 'frak_ss', U.alpha_map('frak'))
+    add_ssty('bscript', 'bscript_s', 'bscript_ss', U.alpha_map('bscript'))
+    add_ssty('bfrak', 'bfrak_s', 'bfrak_ss', U.alpha_map('bfrak'))
+    # Donor mathematical bold has no mt2mb* script
+    # substitutions; mbf is separate.
+    add_ssty('curly', 'curly_s', 'curly_ss', U.alpha_map('curly'))
+    add_ssty('bmit', 'bmit_s', 'bmit_ss', U.MIT)
+    add_ssty('bsyt', 'bsyt_s', 'bsyt_ss', U.SYT)
+
+    # Normalize script accents and use their own
+    # source-family skew kern.
+    for tag in ('syt_s', 'syt_ss'):
+        for slot in ACCENT_SLOTS:
+            key = (tag, slot)
+            if key not in imported:
+                continue
+            g = out[imported[key]]
+            bb = g.boundingBox()
+            g.transform(psMat.translate(ACC_CENTER - (bb[0] + bb[2]) / 2, 0))
+            g.width = 0
+            g.topaccent = ACC_CENTER
+            accent_glyphs.add(g.glyphname)
+    for tag in (
+        'mit_s',
+        'mit_ss',
+        'syt_s',
+        'syt_ss',
+        'bmit_s',
+        'bmit_ss',
+        'bsyt_s',
+        'bsyt_ss',
+        'bb_s',
+        'bb_ss',
+        'bbi_s',
+        'bbi_ss',
+        'bbd_s',
+        'bbd_ss',
+        'hrb_s',
+        'hrb_ss',
+        'hrbd_s',
+        'hrbd_ss',
+        'hbi_s',
+        'hbi_ss',
+        'script_s',
+        'script_ss',
+        'frak_s',
+        'frak_ss',
+        'bscript_s',
+        'bscript_ss',
+        'bfrak_s',
+        'bfrak_ss',
+        'curly_s',
+        'curly_ss',
+        'bold_s',
+        'bold_ss',
+    ):
+        if tag not in fonts:
+            continue
+        _, tfm, _ = fonts[tag]
+        sk = SKEW[tag]
+        for (tg, slot), gname in imported.items():
+            if tg != tag or slot not in tfm.chars or gname in accent_glyphs:
+                continue
+            kern = tfm.kerns.get((slot, sk), 0.0) if sk is not None else 0.0
+            try:
+                w = tfm.chars[slot]['wd']
+                ic = tfm.chars[slot].get('ic') or 0.0
+                out[gname].topaccent = round(((w + ic) / 2 + kern) * 1000)
+            except Exception as exc:
+                raise ValueError(f'TopAccent {gname}: {exc}') from exc
+    return ssty_map

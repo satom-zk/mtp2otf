@@ -1,4 +1,5 @@
 """Private native entry: sources, geometry, and features in order."""
+
 from contextlib import contextmanager, ExitStack
 import hashlib
 import json
@@ -6,18 +7,21 @@ import os
 from pathlib import Path
 import sys
 
+import glyphs as sources
+import outlines
+import substitution
+import primes
+import constructions
+import math_tables as features
+import declarations
+import donors
+from compatibility_metrics import capture
+from config import identity
+from contract_io import write_contract
+
 # FontForge script runners do not uniformly add the
 # script's own directory.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-import ff_sources as sources
-import ff_constructions as constructions
-import ff_features as features
-import source_policy
-import donor_coverage
-from compatibility_metrics import capture
-from build_config import identity
-from contract_io import write_contract
 
 
 @contextmanager
@@ -48,8 +52,7 @@ def read_snapshot(path, edition, coverage, condition):
 
 
 def write_payloads(
-    font, work, edition, snapshot, imported, constants,
-    min_overlap
+    font, work, edition, snapshot, imported, constants, min_overlap
 ):
     """Bind payloads to the serialized native font."""
     min_overlap = int(
@@ -58,68 +61,76 @@ def write_payloads(
     math_expected = write_contract(
         work / 'math-constants.json',
         {
-            'upm': font.em, 'constants': dict(constants),
-            'MinConnectorOverlap': min_overlap
-        }
+            'upm': font.em,
+            'constants': dict(constants),
+            'MinConnectorOverlap': min_overlap,
+        },
     )
     inventory_expected = write_contract(
         work / 'large-variant-build.json',
         {
-            'policy': 'source', 'edition': edition,
+            'policy': 'source',
+            'edition': edition,
             'input_hashes': snapshot['inputs'],
             'imports': [
                 {'tag': tag, 'slot': slot, 'glyph': name}
                 for (tag, slot), name in sorted(imported.items())
                 if name in font
             ],
-        }
+        },
     )
     return {
         'math-constants.json': math_expected,
-        'large-variant-build.json': inventory_expected
+        'large-variant-build.json': inventory_expected,
     }
 
 
-def save_native(font, work, basename, snapshot, payloads, prime_shift):
+def save_native(font, work, basename, snapshot, payloads):
     path = work / (basename + '.otf')
     font.generate(str(path), flags=('opentype',))
     write_contract(
         work / 'native-result.json',
         {
-            'schema': 'mtp2otf7-native-result/1',
+            'schema': 'mtp2otf7-native-result/2',
             'identity': snapshot['build_identity'],
             'native_otf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
-            'prime_shift': prime_shift, 'payloads': payloads,
-        }
+            'payloads': payloads,
+        },
     )
 
 
 def generate(
-    root, work, snapshot_path, edition, regular, bold, coverage, policy, *,
-    purpose='font', metrics_path=None
+    root,
+    work,
+    snapshot_path,
+    edition,
+    regular,
+    bold,
+    coverage,
+    policy,
+    *,
+    purpose='font',
+    metrics_path=None
 ):
-    if (
-        purpose not in ('font', 'windows')
-        or policy != ('source' if purpose == 'font' else 'legacy')
+    if purpose not in ('font', 'windows') or policy != (
+        'source' if purpose == 'font' else 'legacy'
     ):
         raise ValueError('invalid FontForge purpose/condition')
     if purpose == 'windows' and metrics_path is None:
         raise ValueError('compatibility metrics output absent')
-    coverage = donor_coverage.public_mode(coverage)
+    coverage = donors.public_mode(coverage)
     root, work = Path(root), Path(work)
     pl_dir = work / 'pl'
     pl_dir.mkdir(parents=True, exist_ok=True)
     with stage('input snapshot'):
         snapshot = read_snapshot(snapshot_path, edition, coverage, policy)
-        rules = source_policy.policy_from_data(snapshot)
+        rules = declarations.policy_from_data(snapshot)
         limits = constructions.VariantLimits(policy)
-        spec = donor_coverage.load_spec() if coverage == 'minimal' else None
+        spec = donors.load_spec() if coverage == 'minimal' else None
     with ExitStack() as owners:
         with stage('source faces'):
             faces = owners.enter_context(
-                sources.source_faces(
-                    root / 'mtpro2', pl_dir, edition, snapshot
-                )
+                outlines.source_faces(root / 'mtpro2', edition, snapshot)
             )
         with sources.native_font() as font:
             family, basename, _ = identity(edition)
@@ -129,11 +140,14 @@ def generate(
             font.fontname = basename
             font.fullname = family
             font.weight = 'Regular'
-            font.copyright = ('Copyright (C) Publish or Perish, Inc. 2005.  '
-            'Outlines from the MathTime(TM) Professional II Type1 fonts. '
-            "Unofficial OpenType MATH conversion for the licensee's own use; "
-            'redistribution of this font file is not permitted.')
-            glyphs = sources.GlyphSources(font, faces, rules)
+            font.copyright = (
+                'Copyright (C) Publish or Perish, Inc. 2005.  '
+                'Outlines from the MathTime(TM) Professional II Type1 fonts. '
+                "Unofficial OpenType MATH conversion "
+                "for the licensee's own use; "
+                'redistribution of this font file is not permitted.'
+            )
+            glyphs = sources.GlyphSources(font, faces, rules, snapshot["plan"])
             with stage('core source glyphs'):
                 operators = sources.import_core(glyphs, limits)
             with stage('Roman donor glyphs'):
@@ -163,13 +177,11 @@ def generate(
                     glyphs, limits, variants
                 )
             with stage('optical source glyphs'):
-                optical = features.import_optical_forms(glyphs, accents)
-            with stage('Word prime geometry'):
-                prime_shift = constructions.build_word_primes(
-                    glyphs, optical, snapshot['geometry']
-                )
+                optical = sources.import_optical_forms(glyphs, accents)
+            with stage('source prime geometry'):
+                prime_accents = primes.build_primes(glyphs, optical)
             with stage('optical routes'):
-                features.install_optical_routes(glyphs, optical, alphabet)
+                substitution.install_optical_routes(glyphs, optical, alphabet)
             with stage('remaining Roman donor'):
                 sources.import_remaining_roman(
                     glyphs, regular, edition, coverage, spec
@@ -177,7 +189,9 @@ def generate(
             with stage('private codepoints'):
                 features.assign_private_codepoints(glyphs)
             with stage('native metrics'):
-                bounds = features.assign_metrics(glyphs)
+                bounds = features.assign_metrics(
+                    glyphs, cap_height=constants['FlattenedAccentBaseHeight']
+                )
             # Exactly the same native glyph set/scan;
             # no source-only payloads.
             if purpose == 'windows':
@@ -188,24 +202,32 @@ def generate(
                 return
             with stage('source spacing and GDEF'):
                 features.finish_source_features(
-                    glyphs, limits, accents, variants
+                    glyphs,
+                    limits,
+                    accents,
+                    variants,
+                    prime_accents=prime_accents,
                 )
             with stage('source payloads'):
                 payloads = write_payloads(
-                    font, work, edition, snapshot, glyphs.imported,
-                    constants, min_overlap
+                    font,
+                    work,
+                    edition,
+                    snapshot,
+                    glyphs.imported,
+                    constants,
+                    min_overlap,
                 )
             with stage('native range and donor checks'):
                 features.check_native_ranges(glyphs)
                 sources.check_minimal_supply(glyphs, spec, alphabet)
             with stage('serialization and handoff'):
-                save_native(
-                    font, work, basename, snapshot, payloads, prime_shift
-                )
+                save_native(font, work, basename, snapshot, payloads)
 
 
 def main(argv=None):
     import argparse
+
     p = argparse.ArgumentParser(description='Private FontForge backend entry')
     p.add_argument('--purpose', choices=('font', 'windows'), required=True)
     p.add_argument('--metrics-output', type=Path)
@@ -214,11 +236,13 @@ def main(argv=None):
         Path(__file__).resolve().parents[1],
         Path(os.environ['MTP2_BUILD_DIR']),
         Path(os.environ['MTP2_SOURCE_POLICY_JSON']),
-        os.environ['MTP2_EDITION'], Path(os.environ['MTP2_ROMAN_REGULAR']),
+        os.environ['MTP2_EDITION'],
+        Path(os.environ['MTP2_ROMAN_REGULAR']),
         Path(os.environ['MTP2_ROMAN_BOLD']),
-        os.environ[donor_coverage.INTERNAL_MODE],
-        os.environ['MTP2_LARGE_VARIANTS'], purpose=args.purpose,
-        metrics_path=args.metrics_output
+        os.environ[donors.INTERNAL_MODE],
+        os.environ['MTP2_LARGE_VARIANTS'],
+        purpose=args.purpose,
+        metrics_path=args.metrics_output,
     )
 
 
