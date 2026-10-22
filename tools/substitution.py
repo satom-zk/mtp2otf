@@ -1,6 +1,23 @@
-"""Manage native/serialized GSUB routes and shared lookup references."""
+"""Native and serialized GSUB routes with shared lookup-reference
+management.
+"""
 
 import mapping as U
+
+
+def with_ssty(pairs, glyphs):
+    """Extend substitution pairs with existing matching optical forms.
+    """
+    res = []
+    for base, alt in pairs:
+        if not base or not alt:
+            continue
+        res.append((base, alt))
+        for level in (1, 2):
+            b, a = f"{base}.ssty{level}", f"{alt}.ssty{level}"
+            if b in glyphs and a in glyphs:
+                res.append((b, a))
+    return res
 
 
 def lang_systems(gs):
@@ -13,25 +30,24 @@ def lang_systems(gs):
 
 def ssty_index(gs):
     features = [
-        r for r in gs.FeatureList.FeatureRecord if r.FeatureTag == 'ssty'
+        r for r in gs.FeatureList.FeatureRecord if r.FeatureTag == "ssty"
     ]
     if len(features) != 1 or len(features[0].Feature.LookupListIndex) != 1:
-        raise ValueError('expected one ssty feature with one lookup')
+        raise ValueError("expected one ssty feature with one lookup")
     index = features[0].Feature.LookupListIndex[0]
     if not 0 <= index < len(gs.LookupList.Lookup):
-        raise ValueError('ssty lookup index out of range')
+        raise ValueError("ssty lookup index out of range")
     lookup = gs.LookupList.Lookup[index]
     if (
         lookup.LookupType != 3
         or len(lookup.SubTable) != 1
-        or (not hasattr(lookup.SubTable[0], 'alternates'))
+        or (not hasattr(lookup.SubTable[0], "alternates"))
     ):
         raise ValueError(
-            'unsupported ssty structure (requires one AlternateSubst '
-            'subtable)'
+            "unsupported ssty structure (requires one AlternateSubst subtable)"
         )
     if lookup.LookupFlag != 0:
-        raise ValueError('unsupported ssty lookup flags')
+        raise ValueError("unsupported ssty lookup flags")
     return index
 
 
@@ -54,56 +70,56 @@ def references(node, seen=None):
         children = node.values()
     elif isinstance(node, (list, tuple)):
         children = node
-    elif hasattr(node, '__dict__'):
+    elif hasattr(node, "__dict__"):
         children = vars(node).values()
     else:
-        raise ValueError('unknown GSUB object: ' + type(node).__name__)
+        raise ValueError("unknown GSUB object: " + type(node).__name__)
     for child in children:
         yield from references(child, seen)
 
 
 def validate_gsub(gs):
-    if getattr(gs, 'FeatureVariations', None) is not None:
+    if getattr(gs, "FeatureVariations", None) is not None:
         raise ValueError(
-            'FeatureVariations not supported by mathematical bold stage'
+            "FeatureVariations not supported by mathematical bold stage"
         )
     if gs.Version != 65536:
-        raise ValueError('unsupported GSUB version')
+        raise ValueError("unsupported GSUB version")
     n = len(gs.LookupList.Lookup)
     if gs.LookupList.LookupCount != n or gs.FeatureList.FeatureCount != len(
         gs.FeatureList.FeatureRecord
     ):
-        raise ValueError('GSUB count mismatch')
+        raise ValueError("GSUB count mismatch")
     for lookup in gs.LookupList.Lookup:
         if lookup.LookupType not in range(1, 9) or lookup.SubTableCount != len(
             lookup.SubTable
         ):
-            raise ValueError('unsupported GSUB lookup type/count')
+            raise ValueError("unsupported GSUB lookup type/count")
         if lookup.LookupType == 7:
             for sub in lookup.SubTable:
                 if (
                     sub.ExtensionLookupType not in (1, 2, 3, 4, 5, 6, 8)
                     or sub.ExtSubTable is None
                 ):
-                    raise ValueError('unsupported GSUB extension structure')
+                    raise ValueError("unsupported GSUB extension structure")
     for feature in gs.FeatureList.FeatureRecord:
         if feature.Feature.LookupCount != len(
             feature.Feature.LookupListIndex
         ) or any((not 0 <= i < n for i in feature.Feature.LookupListIndex)):
-            raise ValueError('feature lookup reference out of range')
+            raise ValueError("feature lookup reference out of range")
     for record in references(gs):
         if not 0 <= record.LookupListIndex < n:
-            raise ValueError('context lookup reference out of range')
+            raise ValueError("context lookup reference out of range")
     nf = len(gs.FeatureList.FeatureRecord)
     for lang in lang_systems(gs):
         if lang.FeatureCount != len(lang.FeatureIndex) or any(
             (not 0 <= i < nf for i in lang.FeatureIndex)
         ):
-            raise ValueError('LangSys feature reference out of range')
+            raise ValueError("LangSys feature reference out of range")
         if lang.ReqFeatureIndex != 65535 and (
             not 0 <= lang.ReqFeatureIndex < nf
         ):
-            raise ValueError('required feature reference out of range')
+            raise ValueError("required feature reference out of range")
 
 
 def remap_lookups(gs, mapping):
@@ -115,23 +131,23 @@ def remap_lookups(gs, mapping):
         record.LookupListIndex = mapping[record.LookupListIndex]
 
 
-def insert_routes(font, rows, index, tag='cv89'):
+def insert_routes(font, rows, index, tag):
     from fontTools.ttLib.tables import otTables as ot
 
-    gs = font['GSUB'].table
+    gs = font["GSUB"].table
     lookup_map = {
         i: i if i < index else i + 1 for i in range(len(gs.LookupList.Lookup))
     }
     remap_lookups(gs, lookup_map)
     grouped = {
         cp: {
-            r['style']: r['output_glyph']
+            r["style"]: r["output_glyph"]
             for r in rows
-            if r['Unicode_input'] == cp
+            if r["Unicode_input"] == cp
         }
-        for cp in sorted({r['Unicode_input'] for r in rows})
+        for cp in sorted({r["Unicode_input"] for r in rows})
     }
-    mapping = {font.getBestCmap()[cp]: v['T'] for cp, v in grouped.items()}
+    mapping = {font.getBestCmap()[cp]: v["T"] for cp, v in grouped.items()}
     sub = ot.SingleSubst()
     sub.mapping = mapping
     lookup = ot.Lookup()
@@ -142,9 +158,9 @@ def insert_routes(font, rows, index, tag='cv89'):
     gs.LookupList.Lookup.insert(index, lookup)
     gs.LookupList.LookupCount += 1
     oldssty = gs.LookupList.Lookup[index + 1].SubTable[0].alternates
-    new_ssty = {v['T']: [v['S'], v['SS']] for v in grouped.values()}
+    new_ssty = {v["T"]: [v["S"], v["SS"]] for v in grouped.values()}
     if set(new_ssty) & set(oldssty):
-        raise ValueError('mbf ssty collision')
+        raise ValueError("mbf ssty collision")
     oldssty.update(new_ssty)
     feature = ot.Feature()
     feature.FeatureParams = None
@@ -171,26 +187,26 @@ def insert_routes(font, rows, index, tag='cv89'):
     gs.FeatureList.FeatureCount = len(records)
     validate_gsub(gs)
     return {
-        'inserted_lookup_index': index,
-        'old_to_new_lookup_index': lookup_map,
-        'old_to_new_feature_index': {
+        "inserted_lookup_index": index,
+        "old_to_new_lookup_index": lookup_map,
+        "old_to_new_feature_index": {
             i: feature_map[i] for i in range(len(old_features))
         },
-        tag + '_feature_index': new_fi,
-        tag + '_mapping': mapping,
-        'ssty_added': new_ssty,
+        tag + "_feature_index": new_fi,
+        tag + "_mapping": mapping,
+        "ssty_added": new_ssty,
     }
 
 
 def ssty_mapping(font):
-    gs = font['GSUB'].table
+    gs = font["GSUB"].table
     features = [
         i
         for i, r in enumerate(gs.FeatureList.FeatureRecord)
-        if r.FeatureTag == 'ssty'
+        if r.FeatureTag == "ssty"
     ]
     if len(features) != 1:
-        raise ValueError('one actual ssty feature required')
+        raise ValueError("one actual ssty feature required")
     feature_index = features[0]
     reachable = False
     for script in gs.ScriptList.ScriptRecord:
@@ -208,15 +224,15 @@ def ssty_mapping(font):
             )
         )
     if not reachable:
-        raise ValueError('ssty feature unreachable from ScriptList')
+        raise ValueError("ssty feature unreachable from ScriptList")
     indices = gs.FeatureList.FeatureRecord[
         feature_index
     ].Feature.LookupListIndex
     if len(indices) != 1:
-        raise ValueError('one actual ssty lookup required')
+        raise ValueError("one actual ssty lookup required")
     lk = gs.LookupList.Lookup[indices[0]]
     if lk.LookupType != 3 or len(lk.SubTable) != 1:
-        raise ValueError('unsupported actual ssty lookup')
+        raise ValueError("unsupported actual ssty lookup")
     return lk.SubTable[0].alternates
 
 
@@ -224,8 +240,6 @@ def install_optical_routes(sources, ssty_map, alphabet):
     bold_dotless_i = alphabet.bold_dotless_i
     bold_dotless_j = alphabet.bold_dotless_j
     bold_it_latin = alphabet.bold_italic
-    fonts = sources.faces
-    import_glyph = sources.import_glyph
     imported = sources.imported
     out = sources.font
     uni_owner = sources.uni_owner
@@ -233,26 +247,26 @@ def install_optical_routes(sources, ssty_map, alphabet):
     upright_dotless_j = alphabet.upright_dotless_j
     if ssty_map:
         out.addLookup(
-            'ssty',
-            'gsub_alternate',
+            "ssty",
+            "gsub_alternate",
             (),
             (
                 (
-                    'ssty',
+                    "ssty",
                     (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
+                        ("DFLT", ("dflt",)),
+                        ("latn", ("dflt",)),
+                        ("math", ("dflt",)),
                     ),
                 ),
             ),
         )
-        out.addLookupSubtable('ssty', 'ssty-1')
+        out.addLookupSubtable("ssty", "ssty-1")
         for base, alts in ssty_map.items():
             try:
-                out[base].addPosSub('ssty-1', tuple(alts))
+                out[base].addPosSub("ssty-1", tuple(alts))
             except Exception as exc:
-                raise ValueError(f'ssty glyph {base}: {exc}') from exc
+                raise ValueError(f"ssty glyph {base}: {exc}") from exc
 
     # Dotless substitutions for italic i/j and upright i/j.
     dtls_pairs = []
@@ -264,59 +278,29 @@ def install_optical_routes(sources, ssty_map, alphabet):
         dtls_pairs.append((uni_owner[0x0069], upright_dotless))
     if 0x006A in uni_owner:
         dtls_pairs.append((uni_owner[0x006A], upright_dotless_j))
-    if bold_it_latin.get('i') and bold_dotless_i:
-        dtls_pairs.append((bold_it_latin['i'], bold_dotless_i))
-    if bold_it_latin.get('j') and bold_dotless_j:
-        dtls_pairs.append((bold_it_latin['j'], bold_dotless_j))
+    if bold_it_latin.get("i") and bold_dotless_i:
+        dtls_pairs.append((bold_it_latin["i"], bold_dotless_i))
+    if bold_it_latin.get("j") and bold_dotless_j:
+        dtls_pairs.append((bold_it_latin["j"], bold_dotless_j))
     if dtls_pairs:
         out.addLookup(
-            'dtls',
-            'gsub_single',
+            "dtls",
+            "gsub_single",
             (),
             (
                 (
-                    'dtls',
+                    "dtls",
                     (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
+                        ("DFLT", ("dflt",)),
+                        ("latn", ("dflt",)),
+                        ("math", ("dflt",)),
                     ),
                 ),
             ),
         )
-        out.addLookupSubtable('dtls', 'dtls-1')
+        out.addLookupSubtable("dtls", "dtls-1")
         for base, sub in dtls_pairs:
-            out[base].addPosSub('dtls-1', sub)
-
-    # Calligraphic salt maps Script to Curly.
-    curly_pairs = []
-    for slot, (u, name) in U.alpha_map('curly').items():
-        key = ('curly', slot)
-        if key in imported and ('script', slot) in imported:
-            curly_pairs.append((imported[('script', slot)], imported[key]))
-    # Keep varnothing in cv02 so calligraphic salt cannot change it.
-    if curly_pairs:
-        out.addLookup(
-            'salt',
-            'gsub_alternate',
-            (),
-            (
-                (
-                    'salt',
-                    (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
-                    ),
-                ),
-            ),
-        )
-        out.addLookupSubtable('salt', 'salt-1')
-        for base, alt in curly_pairs:
-            try:
-                out[base].addPosSub('salt-1', (alt,))
-            except Exception as exc:
-                raise ValueError(f'salt glyph {base}: {exc}') from exc
+            out[base].addPosSub("dtls-1", sub)
 
     # Expose alternate codepoints for the same glyph.
     for base_u, extra_u in [
@@ -333,184 +317,96 @@ def install_optical_routes(sources, ssty_map, alphabet):
     # and ordinary GPOS stores the TFM pair kern alone.
     # Exclude family skewchar-right pairs from ordinary kerning.
 
-    # cv01: swash z.
-    zalt_pairs = []
-    if ('mit', 180) in imported and 0x1D467 in uni_owner:
-        zalt_pairs.append((uni_owner[0x1D467], imported[('mit', 180)]))
-        for lvl, t in ((1, 'mit_s'), (2, 'mit_ss')):
-            if t in fonts and 180 in fonts[t][1].chars:
-                alt = import_glyph(t, 180, name=f'z.alt.ssty{lvl}')
-                basek = (t, 0x7A)
-                if alt and basek in imported:
-                    zalt_pairs.append((imported[basek], alt))
-    # cv03..cv07: blackboard and holey alphabet options.
-    for cvn, tag in (
-        ('cv03', 'bbd'),
-        ('cv04', 'bbi'),
-        ('cv05', 'hrb'),
-        ('cv06', 'hrbd'),
-        ('cv07', 'hbi'),
-    ):
-        if tag not in fonts:
-            continue
-        pairs = []
-        for slot, (u, nm) in U.alpha_map('bb').items():
-            alt = import_glyph(tag, slot, name=f'{nm}.{tag}')
-            if alt and u in uni_owner:
-                base = uni_owner[u]
-                pairs.append((base, alt))
-                # Add script-form pairs for either shaping order: ssty
-                # then cv, or cv then ssty.
-                for lvl in (1, 2):
-                    bb, aa = f'{base}.ssty{lvl}', f'{alt}.ssty{lvl}'
-                    if bb in out and aa in out:
-                        pairs.append((bb, aa))
-        if not pairs:
-            continue
+    # cv51: slashed-zero and circular empty-set forms.
+    if ("ams", 191) in imported and 0x2205 in uni_owner:
         out.addLookup(
-            cvn,
-            'gsub_single',
+            "cv51",
+            "gsub_single",
             (),
             (
                 (
-                    cvn,
+                    "cv51",
                     (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
+                        ("DFLT", ("dflt",)),
+                        ("latn", ("dflt",)),
+                        ("math", ("dflt",)),
                     ),
                 ),
             ),
         )
-        out.addLookupSubtable(cvn, cvn + '-1')
-        for base, alt in pairs:
+        out.addLookupSubtable("cv51", "cv51-1")
+        for base, alt in with_ssty(
+            [(uni_owner[0x2205], imported[("ams", 191)])], out
+        ):
             try:
-                out[base].addPosSub(cvn + '-1', alt)
+                out[base].addPosSub("cv51-1", alt)
             except Exception as exc:
-                raise ValueError(f'{cvn} glyph {base}: {exc}') from exc
-
-    # cv02: slashed-zero and circular empty-set forms.
-    if ('ams', 191) in imported and 0x2205 in uni_owner:
-        out.addLookup(
-            'cv02',
-            'gsub_single',
-            (),
-            (
-                (
-                    'cv02',
-                    (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
-                    ),
-                ),
-            ),
-        )
-        out.addLookupSubtable('cv02', 'cv02-1')
-        try:
-            out[uni_owner[0x2205]].addPosSub('cv02-1', imported[('ams', 191)])
-        except Exception as exc:
-            raise ValueError(f'cv02 glyph {uni_owner[0x2205]}: {exc}') from exc
-
-    if zalt_pairs:
-        out.addLookup(
-            'cv01',
-            'gsub_single',
-            (),
-            (
-                (
-                    'cv01',
-                    (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
-                    ),
-                ),
-            ),
-        )
-        out.addLookupSubtable('cv01', 'cv01-1')
-        for base, alt in zalt_pairs:
-            try:
-                out[base].addPosSub('cv01-1', alt)
-            except Exception as exc:
-                raise ValueError(f'cv01 glyph {base}: {exc}') from exc
-
-    def with_ssty(pairs):
-        """Extend substitution pairs with matching optical script forms.
-        """
-        res = []
-        for b, a in pairs:
-            if not b or not a:
-                continue
-            res.append((b, a))
-            for lvl in (1, 2):
-                bb, aa = f'{b}.ssty{lvl}', f'{a}.ssty{lvl}'
-                if bb in out and aa in out:
-                    res.append((bb, aa))
-        return res
+                raise ValueError(f"cv51 glyph {base}: {exc}") from exc
 
     def add_cv(tag, pairs):
         """Register a single-substitution character-variant feature."""
-        pairs = [(b, a) for b, a in with_ssty(pairs) if b in out and a in out]
+        pairs = [
+            (b, a) for b, a in with_ssty(pairs, out) if b in out and a in out
+        ]
         if not pairs:
             return
         out.addLookup(
             tag,
-            'gsub_single',
+            "gsub_single",
             (),
             (
                 (
                     tag,
                     (
-                        ('DFLT', ('dflt',)),
-                        ('latn', ('dflt',)),
-                        ('math', ('dflt',)),
+                        ("DFLT", ("dflt",)),
+                        ("latn", ("dflt",)),
+                        ("math", ("dflt",)),
                     ),
                 ),
             ),
         )
-        out.addLookupSubtable(tag, tag + '-1')
+        out.addLookupSubtable(tag, tag + "-1")
         for base, alt in pairs:
             try:
-                out[base].addPosSub(tag + '-1', alt)
+                out[base].addPosSub(tag + "-1", alt)
             except Exception as exc:
-                raise ValueError(f'{tag} glyph {base}: {exc}') from exc
+                raise ValueError(f"{tag} glyph {base}: {exc}") from exc
 
-    # cv08: straight braces.
+    # cv21: straight braces.
     add_cv(
-        'cv08',
+        "cv21",
         [
-            (uni_owner.get(0x007B), 'braceleft.straight'),
-            (uni_owner.get(0x007D), 'braceright.straight'),
+            (uni_owner.get(0x007B), "braceleft.straight"),
+            (uni_owner.get(0x007D), "braceright.straight"),
         ],
     )
 
-    # cv09: AMS negated relations; defaults retain MTPro2 forms.
+    # cv47: AMS negated relations; defaults retain MTPro2 forms.
     add_cv(
-        'cv09',
+        "cv47",
         [
-            (uni_owner.get(u), imported.get(('ams', slot)))
-            for u, slot in ((0x2241, 156), (0x2288, 170), (0x2289, 171))
+            (uni_owner.get(u), imported.get(("ams", slot)))
+            for u, slot in ((0x2241, 156),)
         ],
     )
 
-    # cv10: variant subsetneq and supsetneq.
+    # cv41: variant subsetneq and supsetneq.
     add_cv(
-        'cv10',
+        "cv41",
         [
-            (uni_owner.get(u), imported.get(('ams', slot)))
+            (uni_owner.get(u), imported.get(("ams", slot)))
             for u, slot in ((0x228A, 160), (0x228B, 161))
         ],
     )
 
-    # cv11: hbar and hslash.
-    add_cv('cv11', [(uni_owner.get(0x210F), imported.get(('syt', 175)))])
+    # cv03: hbar and hslash.
+    add_cv("cv03", [(uni_owner.get(0x210F), imported.get(("syt", 175)))])
 
-    # cv12: slanted large operators.
+    # cv11: slanted large operators.
     add_cv(
-        'cv12',
+        "cv11",
         [
-            (uni_owner.get(u), imported.get(('exa', slot)))
+            (uni_owner.get(u), imported.get(("exa", slot)))
             for u, slot in ((0x2211, 160), (0x220F, 162), (0x2210, 164))
         ],
     )
@@ -530,7 +426,7 @@ def sort_features(gs):
                 )
                 if lang.ReqFeatureIndex != 65535:
                     lang.ReqFeatureIndex = remap[lang.ReqFeatureIndex]
-    if getattr(gs, 'FeatureVariations', None):
+    if getattr(gs, "FeatureVariations", None):
         for rec in gs.FeatureVariations.FeatureVariationRecord:
             for sub in rec.FeatureTableSubstitution.SubstitutionRecord:
                 sub.FeatureIndex = remap[sub.FeatureIndex]
@@ -540,7 +436,7 @@ def sort_features(gs):
 def feature(font, tag, mapping):
     from fontTools.ttLib.tables import otTables as ot
 
-    gs = font['GSUB'].table
+    gs = font["GSUB"].table
     st = ot.SingleSubst()
     st.mapping = dict(mapping)
     lk = ot.Lookup()
@@ -571,26 +467,250 @@ def feature(font, tag, mapping):
     sort_features(gs)
 
 
-def fraktur_mapping(font):
-    """Reuse ordinary Fraktur I/R through actual reachable ssty inputs.
+def alternate_feature(font, tag, choices):
+    """Install an ordered final choice list without provisional
+    features.
     """
-    ssty = ssty_mapping(font)
+    from fontTools.ttLib.tables import otTables as ot
+
+    feature(font, tag, {})
+    gs = font["GSUB"].table
+    record = next(
+        r for r in gs.FeatureList.FeatureRecord if r.FeatureTag == tag
+    )
+    lookup = gs.LookupList.Lookup[record.Feature.LookupListIndex[0]]
+    lookup.LookupType = 3
+    sub = ot.AlternateSubst()
+    sub.alternates = {a: list(bs) for a, bs in choices.items()}
+    lookup.SubTable = [sub]
+    validate_gsub(gs)
+
+
+def finish(font, edition):
+    """Serialize only declared public lookups, in their specified order.
+    """
+    gs = font["GSUB"].table
+    validate_gsub(gs)
+    by_tag = {r.FeatureTag: r for r in gs.FeatureList.FeatureRecord}
+    unknown = set(by_tag) - set(U.SUBSTITUTION_ORDER)
+    if unknown:
+        raise ValueError(
+            "undeclared public substitutions: " + repr(sorted(unknown))
+        )
+    order = []
+    for tag in U.SUBSTITUTION_ORDER:
+        if tag in by_tag:
+            indices = by_tag[tag].Feature.LookupListIndex
+            if len(indices) != 1:
+                raise ValueError("one final lookup expected: " + tag)
+            order.extend(indices)
+    if len(order) != len(set(order)):
+        raise ValueError("unexpected shared final lookup")
+    used = set(order)
+    if any(True for i in used for _ in references(gs.LookupList.Lookup[i])):
+        raise ValueError(
+            "contextual final lookup requires an explicit order rule"
+        )
+    lookups = gs.LookupList.Lookup
+    remap_lookups(gs, {old: new for new, old in enumerate(order)})
+    gs.LookupList.Lookup = [lookups[i] for i in order]
+    gs.LookupList.LookupCount = len(order)
+    validate_gsub(gs)
+    cv = sum(tag.startswith("cv") for tag in by_tag)
+    ss = sum(tag.startswith("ss") and tag != "ssty" for tag in by_tag)
+    if (cv, ss) != ((23, 2) if edition == "full" else (10, 0)):
+        raise ValueError("final selector inventory differs")
+    return dict(
+        features=sorted(by_tag),
+        lookup_order=[tag for tag in U.SUBSTITUTION_ORDER if tag in by_tag],
+    )
+
+
+def install_maps(font, maps, new_tags=()):
+    from fontTools.ttLib.tables import otTables as ot
+
+    gs = font["GSUB"].table
+    validate_gsub(gs)
+    by_tag = {r.FeatureTag: r for r in gs.FeatureList.FeatureRecord}
+    if set(new_tags) & set(by_tag):
+        raise ValueError("new relation CV already installed")
+    # Existing cv41 is expanded in place, retaining all of its old
+    # mappings.
+    if "cv41" in maps:
+        rec = by_tag["cv41"]
+        if len(rec.Feature.LookupListIndex) != 1:
+            raise ValueError("unsupported cv41 structure")
+        st = gs.LookupList.Lookup[rec.Feature.LookupListIndex[0]].SubTable[0]
+        for a, b in maps["cv41"].items():
+            if a in st.mapping and st.mapping[a] != b:
+                raise ValueError("cv41 prior route changed")
+            st.mapping[a] = b
+    tags = [tag for tag in new_tags if maps.get(tag)]
+    shift = len(tags)
+    remap_lookups(gs, {i: i + shift for i in range(len(gs.LookupList.Lookup))})
+    new_lookups, new_records = [], []
+    old_records = list(gs.FeatureList.FeatureRecord)
+    for i, tag in enumerate(tags):
+        st = ot.SingleSubst()
+        st.mapping = maps[tag]
+        lookup = ot.Lookup()
+        lookup.LookupType = 1
+        lookup.LookupFlag = 0
+        lookup.SubTable = [st]
+        lookup.SubTableCount = 1
+        lookup.MarkFilteringSet = None
+        new_lookups.append(lookup)
+        rec = ot.FeatureRecord()
+        rec.FeatureTag = tag
+        rec.Feature = ot.Feature()
+        rec.Feature.FeatureParams = None
+        rec.Feature.LookupListIndex = [i]
+        rec.Feature.LookupCount = 1
+        new_records.append(rec)
+    gs.LookupList.Lookup = new_lookups + gs.LookupList.Lookup
+    gs.LookupList.LookupCount = len(gs.LookupList.Lookup)
+    records = old_records + new_records
+    order = sorted(range(len(records)), key=lambda i: records[i].FeatureTag)
+    feature_map = {old: new for new, old in enumerate(order)}
+    for lang in lang_systems(gs):
+        lang.FeatureIndex = sorted(
+            [feature_map[i] for i in lang.FeatureIndex]
+            + [feature_map[i] for i in range(len(old_records), len(records))]
+        )
+        lang.FeatureCount = len(lang.FeatureIndex)
+        if lang.ReqFeatureIndex != 65535:
+            lang.ReqFeatureIndex = feature_map[lang.ReqFeatureIndex]
+    gs.FeatureList.FeatureRecord = [records[i] for i in order]
+    gs.FeatureList.FeatureCount = len(records)
+    validate_gsub(gs)
+
+
+def install_logical_and(font):
+    """Select existing logical-and alternatives, including size-grown
+    input.
+
+    Both large roots already have the matching exa:166/167 MATH
+    sequence. Map its standard text and display glyphs, so either
+    selection order works.
+    """
+    c = font.getBestCmap()
+    ss = ssty_mapping(font)
+    small = [c[0x2227], *ss[c[0x2227]]]
+    alternate = ["varland", *ss["varland"]]
+    m = font["MATH"].table.MathVariants
+    constructions = dict(
+        zip(m.VertGlyphCoverage.glyphs, m.VertGlyphConstruction)
+    )
+    base = constructions[c[0x22C0]]
+    target = constructions["varland.big"]
+    old_large = [r.VariantGlyph for r in base.MathGlyphVariantRecord]
+    new_large = [r.VariantGlyph for r in target.MathGlyphVariantRecord]
+    if old_large != [c[0x22C0], "uni22C0.dsp"]:
+        raise ValueError("unexpected standard bigwedge construction")
+    if new_large != ["varland.big", "varland.big.dsp"]:
+        raise ValueError("unexpected alternate bigwedge construction")
+    if base.GlyphAssembly or target.GlyphAssembly:
+        raise ValueError("unexpected bigwedge assembly")
+    mapping = dict(zip(small + old_large, alternate + new_large))
+    if len(mapping) != 5:
+        raise ValueError("incomplete G08 input coverage")
+    install_maps(font, {"cv12": mapping}, new_tags=("cv12",))
+    return dict(
+        tag="cv12",
+        mapping=mapping,
+        base_large_source_slots=[86, 94],
+        alternate_large_source_slots=[166, 167],
+        MATH_constructions_changed=False,
+        GPOS_changed=False,
+        new_glyphs=0,
+        physical_deletion=False,
+    )
+
+
+def install_negative_choices(font, edition):
+    if edition == "lite":
+        return dict(
+            edition=edition,
+            routes=[],
+            removed=[],
+            removed_cmap={},
+            physical_deletion=False,
+        )
+    if edition != "full":
+        raise ValueError("unknown edition")
     cmap = font.getBestCmap()
-    names = set(font.getGlyphOrder())
-    maps = {tag: {} for tag in ('cv90', 'cv91', 'cv92')}
-    for cp, letter in ((8465, 'I'), (8476, 'R')):
-        base = f'uni{cp:04X}'
-        if cmap.get(cp) != base:
-            raise ValueError('Fraktur reserved Unicode owner changed')
-        styles = ssty.get(base)
-        if not styles or len(styles) != 2 or len(set([base, *styles])) != 3:
-            raise ValueError('Fraktur requires actual S/SS ssty inputs')
-        for i, tag in enumerate(maps):
-            target = letter + '.frak' + ('', '.ssty1', '.ssty2')[i]
-            if target not in names:
-                raise ValueError('Fraktur target missing')
-            for name in [base] if i == 0 else [base, styles[i - 1]]:
-                if name not in names or name in maps[tag]:
-                    raise ValueError('Fraktur route collision/missing input')
-                maps[tag][name] = target
-    return maps
+    ss = ssty_mapping(font)
+    choices = {}
+    routes = []
+    for cp, first, second in U.NEGATIVE_CHOICES:
+        forms = [cmap[cp], *ss[cmap[cp]]]
+        left = [first, *ss[first]]
+        right = [second, *ss[second]]
+        for level, (a, b, c) in enumerate(zip(forms, left, right)):
+            choices[a] = [b, c]
+            routes.append(
+                dict(
+                    tag="cv46",
+                    Unicode=f"U+{cp:04X}",
+                    level=level,
+                    input=a,
+                    choices=[b, c],
+                )
+            )
+    alternate_feature(font, "cv46", choices)
+    return dict(
+        edition=edition,
+        routes=routes,
+        choice_order="slanted/AMS first; double relation second",
+    )
+
+
+def install_alphabet_routes(font, maps, ss):
+    from fontTools.ttLib.tables import otTables as ot
+
+    gs = font["GSUB"].table
+    replaced = set(maps) | {"ssty"}
+    keep = [
+        r for r in gs.FeatureList.FeatureRecord if r.FeatureTag not in replaced
+    ]
+    newlook = []
+    newrecords = []
+    for tag, entries in [*maps.items(), ("ssty", ss)]:
+        if not entries:
+            continue
+        lookup = ot.Lookup()
+        lookup.LookupType = 3 if tag == "ssty" else 1
+        lookup.LookupFlag = 0
+        lookup.SubTableCount = 1
+        st = ot.AlternateSubst() if tag == "ssty" else ot.SingleSubst()
+        if tag == "ssty":
+            st.alternates = {k: list(v) for k, v in entries.items()}
+        else:
+            st.mapping = entries
+        lookup.SubTable = [st]
+        lookup.MarkFilteringSet = None
+        newlook.append(lookup)
+        rec = ot.FeatureRecord()
+        rec.FeatureTag = tag
+        rec.Feature = ot.Feature()
+        rec.Feature.FeatureParams = None
+        rec.Feature.LookupListIndex = [len(newlook) - 1]
+        rec.Feature.LookupCount = 1
+        newrecords.append(rec)
+    shift = len(newlook)
+    for rec in keep:
+        rec.Feature.LookupListIndex = [
+            n + shift for n in rec.Feature.LookupListIndex
+        ]
+    for rec in references(gs.LookupList):
+        rec.LookupListIndex += shift
+    gs.LookupList.Lookup = newlook + gs.LookupList.Lookup
+    gs.LookupList.LookupCount = len(gs.LookupList.Lookup)
+    gs.FeatureList.FeatureRecord = sorted(
+        keep + newrecords, key=lambda r: r.FeatureTag
+    )
+    gs.FeatureList.FeatureCount = len(gs.FeatureList.FeatureRecord)
+    for lang in lang_systems(gs):
+        lang.ReqFeatureIndex = 65535
+        lang.FeatureIndex = list(range(gs.FeatureList.FeatureCount))
+        lang.FeatureCount = len(lang.FeatureIndex)

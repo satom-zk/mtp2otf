@@ -4,40 +4,40 @@
 Keep source identities public; evaluate source-dependent values during
 build.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from fractions import Fraction
-from pathlib import Path
 import json
 import re
+from dataclasses import asdict, dataclass
+from fractions import Fraction
+from pathlib import Path
 from typing import Dict, Iterable, Mapping, Optional
 
 from config import EDITIONS
-from mapping import SOURCE_FONTS, LITE_TAGS
-
+from mapping import LITE_TAGS, SOURCE_FONTS
 
 # Full-only .fd declarations that define option-alphabet source identity
 # and optical-size ordering.  These are public structural names only.
 OPTICAL_FD_GROUPS = {
-    'umt2ms.fd': (
-        ('curly option family', ('curly_ss', 'curly_s', 'curly')),
-        ('script option family', ('script_ss', 'script_s', 'script')),
-        ('bold script family', ('bscript_ss', 'bscript_s', 'bscript')),
+    "umt2ms.fd": (
+        ("curly option family", ("curly_ss", "curly_s", "curly")),
+        ("script option family", ("script_ss", "script_s", "script")),
+        ("bold script family", ("bscript_ss", "bscript_s", "bscript")),
     ),
-    'umt2mf.fd': (
-        ('Fraktur family', ('frak_ss', 'frak_s', 'frak')),
-        ('bold Fraktur family', ('bfrak_ss', 'bfrak_s', 'bfrak')),
+    "umt2mf.fd": (
+        ("Fraktur family", ("frak_ss", "frak_s", "frak")),
+        ("bold Fraktur family", ("bfrak_ss", "bfrak_s", "bfrak")),
     ),
-    'umt2bb.fd': (
-        ('blackboard family', ('bb_ss', 'bb_s', 'bb')),
-        ('italic blackboard family', ('bbi_ss', 'bbi_s', 'bbi')),
-        ('bold blackboard family', ('bbd_ss', 'bbd_s', 'bbd')),
+    "umt2bb.fd": (
+        ("blackboard family", ("bb_ss", "bb_s", "bb")),
+        ("italic blackboard family", ("bbi_ss", "bbi_s", "bbi")),
+        ("bold blackboard family", ("bbd_ss", "bbd_s", "bbd")),
     ),
-    'umt2hrb.fd': (
-        ('holey Roman family', ('hrb_ss', 'hrb_s', 'hrb')),
-        ('holey italic family', ('hbi_ss', 'hbi_s', 'hbi')),
-        ('holey bold family', ('hrbd_ss', 'hrbd_s', 'hrbd')),
+    "umt2hrb.fd": (
+        ("holey Roman family", ("hrb_ss", "hrb_s", "hrb")),
+        ("holey italic family", ("hbi_ss", "hbi_s", "hbi")),
+        ("holey bold family", ("hrbd_ss", "hrbd_s", "hrbd")),
     ),
 }
 
@@ -45,52 +45,52 @@ OPTICAL_FD_GROUPS = {
 # policy. The selector itself is structural; the numeric
 # skewchar is parsed at runtime.
 _SKEW_ROLE = {}
-for _t in ('mit', 'mit_s', 'mit_ss', 'bmit', 'bmit_s', 'bmit_ss'):
-    _SKEW_ROLE[_t] = ('family', 'sty', 'LMP1', 'mtt')
-for _t in ('syt', 'syt_s', 'syt_ss'):
-    _SKEW_ROLE[_t] = ('shape', 'sty', 'LMP2', 'mtt', 'm', 'n')
-for _t in ('bsyt', 'bsyt_s', 'bsyt_ss'):
-    _SKEW_ROLE[_t] = ('shape', 'sty', 'LMP2', 'mtt', 'b', 'n')
-for _t in ('bold', 'bold_s', 'bold_ss'):
-    _SKEW_ROLE[_t] = ('family', 'sty', 'U', 'mtt')
+for _t in ("mit", "mit_s", "mit_ss", "bmit", "bmit_s", "bmit_ss"):
+    _SKEW_ROLE[_t] = ("family", "sty", "LMP1", "mtt")
+for _t in ("syt", "syt_s", "syt_ss"):
+    _SKEW_ROLE[_t] = ("shape", "sty", "LMP2", "mtt", "m", "n")
+for _t in ("bsyt", "bsyt_s", "bsyt_ss"):
+    _SKEW_ROLE[_t] = ("shape", "sty", "LMP2", "mtt", "b", "n")
+for _t in ("bold", "bold_s", "bold_ss"):
+    _SKEW_ROLE[_t] = ("family", "sty", "U", "mtt")
 for _t in (
-    'script',
-    'script_s',
-    'script_ss',
-    'curly',
-    'curly_s',
-    'curly_ss',
-    'bscript',
-    'bscript_s',
-    'bscript_ss',
+    "script",
+    "script_s",
+    "script_ss",
+    "curly",
+    "curly_s",
+    "curly_ss",
+    "bscript",
+    "bscript_s",
+    "bscript_ss",
 ):
-    _SKEW_ROLE[_t] = ('family', 'umt2ms.fd', 'U', 'mt2ms')
-for _t in ('frak', 'frak_s', 'frak_ss', 'bfrak', 'bfrak_s', 'bfrak_ss'):
+    _SKEW_ROLE[_t] = ("family", "umt2ms.fd", "U", "mt2ms")
+for _t in ("frak", "frak_s", "frak_ss", "bfrak", "bfrak_s", "bfrak_ss"):
     _SKEW_ROLE[_t] = None
 for _t in (
-    'bb',
-    'bb_s',
-    'bb_ss',
-    'bbi',
-    'bbi_s',
-    'bbi_ss',
-    'bbd',
-    'bbd_s',
-    'bbd_ss',
+    "bb",
+    "bb_s",
+    "bb_ss",
+    "bbi",
+    "bbi_s",
+    "bbi_ss",
+    "bbd",
+    "bbd_s",
+    "bbd_ss",
 ):
-    _SKEW_ROLE[_t] = ('family', 'umt2bb.fd', 'U', 'mt2bb')
+    _SKEW_ROLE[_t] = ("family", "umt2bb.fd", "U", "mt2bb")
 for _t in (
-    'hrb',
-    'hrb_s',
-    'hrb_ss',
-    'hrbd',
-    'hrbd_s',
-    'hrbd_ss',
-    'hbi',
-    'hbi_s',
-    'hbi_ss',
+    "hrb",
+    "hrb_s",
+    "hrb_ss",
+    "hrbd",
+    "hrbd_s",
+    "hrbd_ss",
+    "hbi",
+    "hbi_s",
+    "hbi_ss",
 ):
-    _SKEW_ROLE[_t] = ('family', 'umt2hrb.fd', 'U', 'mt2hrb')
+    _SKEW_ROLE[_t] = ("family", "umt2hrb.fd", "U", "mt2hrb")
 
 
 @dataclass(frozen=True)
@@ -144,23 +144,23 @@ class SourcePolicy:
 
     def to_jsonable(self) -> dict:
         return {
-            'script_ratio': {
-                'numerator': self.script_ratio_num,
-                'denominator': self.script_ratio_den,
+            "script_ratio": {
+                "numerator": self.script_ratio_num,
+                "denominator": self.script_ratio_den,
             },
-            'scriptscript_ratio': {
-                'numerator': self.scriptscript_ratio_num,
-                'denominator': self.scriptscript_ratio_den,
+            "scriptscript_ratio": {
+                "numerator": self.scriptscript_ratio_num,
+                "denominator": self.scriptscript_ratio_den,
             },
-            'skewchar_by_tag': dict(self.skewchar_by_tag),
-            'accents': {k: asdict(v) for k, v in sorted(self.accents.items())},
-            'dot_macros': asdict(self.dot_macros),
-            'source_font_by_tag': dict(SOURCE_FONTS),
+            "skewchar_by_tag": dict(self.skewchar_by_tag),
+            "accents": {k: asdict(v) for k, v in sorted(self.accents.items())},
+            "dot_macros": asdict(self.dot_macros),
+            "source_font_by_tag": dict(SOURCE_FONTS),
         }
 
 
 def _strip_comments(text: str) -> str:
-    return re.sub(r'(?<!\\)%.*$', '', text, flags=re.MULTILINE)
+    return re.sub(r"(?<!\\)%.*$", "", text, flags=re.MULTILINE)
 
 
 def _tex_int(token: str) -> int:
@@ -174,14 +174,14 @@ def _tex_int(token: str) -> int:
 
 def _tex_fraction(token: str) -> Fraction:
     token = token.strip()
-    if token.startswith('.'):
-        token = '0' + token
-    if '.' in token:
-        sign = -1 if token.startswith('-') else 1
-        if token[0] in '+-':
+    if token.startswith("."):
+        token = "0" + token
+    if "." in token:
+        sign = -1 if token.startswith("-") else 1
+        if token[0] in "+-":
             token = token[1:]
-        a, b = token.split('.', 1)
-        n = int((a or '0') + b)
+        a, b = token.split(".", 1)
+        n = int((a or "0") + b)
         return Fraction(sign * n, 10 ** len(b))
     return Fraction(int(token), 1)
 
@@ -192,22 +192,22 @@ def _require_one(
     hits = list(re.finditer(pattern, text, flags))
     if len(hits) != 1:
         raise ValueError(
-            f'{label}: expected exactly one declaration, found {len(hits)}'
+            f"{label}: expected exactly one declaration, found {len(hits)}"
         )
     return hits[0]
 
 
 def _family_skew(text: str, encoding: str, family: str) -> Optional[int]:
     pat = (
-        r'\\DeclareFontFamily\s*\{'
+        r"\\DeclareFontFamily\s*\{"
         + re.escape(encoding)
-        + r'\}\s*\{'
+        + r"\}\s*\{"
         + re.escape(family)
-        + r'\}\s*\{([^}]*)\}'
+        + r"\}\s*\{([^}]*)\}"
     )
-    m = _require_one(pat, text, f'font family {encoding}/{family}', re.DOTALL)
+    m = _require_one(pat, text, f"font family {encoding}/{family}", re.DOTALL)
     body = m.group(1)
-    sm = re.search(r'\\skewchar\s*\\font\s*([^\s}]+)', body)
+    sm = re.search(r"\\skewchar\s*\\font\s*([^\s}]+)", body)
     return _tex_int(sm.group(1)) if sm else None
 
 
@@ -215,24 +215,24 @@ def _shape_skew(
     text: str, encoding: str, family: str, series: str, shape: str
 ) -> Optional[int]:
     pat = (
-        r'\\DeclareFontShape\s*\{'
+        r"\\DeclareFontShape\s*\{"
         + re.escape(encoding)
-        + r'\}\s*\{'
+        + r"\}\s*\{"
         + re.escape(family)
-        + r'\}\s*\{'
+        + r"\}\s*\{"
         + re.escape(series)
-        + r'\}\s*\{'
+        + r"\}\s*\{"
         + re.escape(shape)
-        + r'\}\s*\{.*?\}\s*\{([^}]*)\}'
+        + r"\}\s*\{.*?\}\s*\{([^}]*)\}"
     )
     m = _require_one(
         pat,
         text,
-        f'font shape {encoding}/{family}/{series}/{shape}',
+        f"font shape {encoding}/{family}/{series}/{shape}",
         re.DOTALL,
     )
     body = m.group(1)
-    sm = re.search(r'\\skewchar\s*\\font\s*([^\s}]+)', body)
+    sm = re.search(r"\\skewchar\s*\\font\s*([^\s}]+)", body)
     return _tex_int(sm.group(1)) if sm else None
 
 
@@ -240,8 +240,8 @@ def _parse_accents(sty: str) -> Dict[str, AccentDeclaration]:
     # MTPro2 declarations are simple braced tokens;
     # whitespace/newlines are allowed.
     pat = re.compile(
-        r'\\DeclareMathAccent\s*\{\\([A-Za-z@]+)\}\s*'
-        r'\{\\([A-Za-z@]+)\}\s*\{([^}]+)\}\s*\{([^}]+)\}',
+        r"\\DeclareMathAccent\s*\{\\([A-Za-z@]+)\}\s*"
+        r"\{\\([A-Za-z@]+)\}\s*\{([^}]+)\}\s*\{([^}]+)\}",
         re.DOTALL,
     )
     out: Dict[str, AccentDeclaration] = {}
@@ -251,11 +251,11 @@ def _parse_accents(sty: str) -> Dict[str, AccentDeclaration]:
         rec = AccentDeclaration(macro, math_class, family.strip(), slot)
         old = out.get(macro)
         if old is not None and old != rec:
-            raise ValueError(f'conflicting \\DeclareMathAccent for \\{macro}')
+            raise ValueError(f"conflicting \\DeclareMathAccent for \\{macro}")
         out[macro] = rec
     if not out:
         raise ValueError(
-            'no \\DeclareMathAccent declarations found in mtpro2.sty'
+            "no \\DeclareMathAccent declarations found in mtpro2.sty"
         )
     return out
 
@@ -263,24 +263,24 @@ def _parse_accents(sty: str) -> Dict[str, AccentDeclaration]:
 def _extract_braced_def_body(text: str, macro: str) -> str:
     """Return the balanced body of one TeX macro declaration."""
     m = _require_one(
-        r'\\def\s*\\' + re.escape(macro) + r'\s*\{', text, macro + ' macro'
+        r"\\def\s*\\" + re.escape(macro) + r"\s*\{", text, macro + " macro"
     )
     start = m.end() - 1
     depth = 0
     for i in range(start, len(text)):
         ch = text[i]
-        escaped = i > 0 and text[i - 1] == '\\'
+        escaped = i > 0 and text[i - 1] == "\\"
         if escaped:
             continue
-        if ch == '{':
+        if ch == "{":
             depth += 1
-        elif ch == '}':
+        elif ch == "}":
             depth -= 1
             if depth == 0:
                 return text[start + 1:i]
             if depth < 0:
                 break
-    raise ValueError(f'{macro}: unbalanced macro body')
+    raise ValueError(f"{macro}: unbalanced macro body")
 
 
 def _parse_dot_macros(sty: str) -> DotMacroPolicy:
@@ -288,36 +288,36 @@ def _parse_dot_macros(sty: str) -> DotMacroPolicy:
     glyphs.
     """
     vm = _require_one(
-        r'\\def\s*\\vdots.*?\\baselineskip\s*'
-        r'([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\\p@',
+        r"\\def\s*\\vdots.*?\\baselineskip\s*"
+        r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\\p@",
         sty,
-        'vdots baseline step',
+        "vdots baseline step",
         re.DOTALL,
     )
     vdots_step = _tex_fraction(vm.group(1))
 
-    body = _extract_braced_def_body(sty, 'ddots')
+    body = _extract_braced_def_body(sty, "ddots")
     raises = []
     for token in re.findall(
-        r'\\raise\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)?)\s*\\p@', body
+        r"\\raise\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)?)\s*\\p@", body
     ):
-        raises.append(_tex_fraction(token or '1'))
+        raises.append(_tex_fraction(token or "1"))
     mkerns = [
         _tex_fraction(x)
         for x in re.findall(
-            r'\\mkern\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*mu', body
+            r"\\mkern\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*mu", body
         )
     ]
     if len(raises) != 3 or len(mkerns) < 3:
         raise ValueError(
-            'ddots macro geometry is not the expected three-dot structure'
+            "ddots macro geometry is not the expected three-dot structure"
         )
     # The internal spacing is the first kern between two successive dot
     # boxes; edge kerns are math-class padding and are
     # not baked into the glyph.
     inner = mkerns[1]
     if mkerns[-2] != inner:
-        raise ValueError('ddots internal spacing is asymmetric')
+        raise ValueError("ddots internal spacing is asymmetric")
     return DotMacroPolicy(
         vdots_step.numerator,
         vdots_step.denominator,
@@ -332,10 +332,10 @@ def required_policy_files(active_tags: Iterable[str]) -> tuple[str, ...]:
     edition.
     """
     tags = set(active_tags)
-    files = {'mtpro2.sty'}
+    files = {"mtpro2.sty"}
     for tag in tags:
         role = _SKEW_ROLE.get(tag)
-        if role is not None and role[1] != 'sty':
+        if role is not None and role[1] != "sty":
             files.add(role[1])
     for filename, groups in OPTICAL_FD_GROUPS.items():
         if any(
@@ -347,9 +347,9 @@ def required_policy_files(active_tags: Iterable[str]) -> tuple[str, ...]:
 
 def active_tags(edition):
     if edition not in EDITIONS:
-        raise ValueError(f'unknown edition: {edition}')
+        raise ValueError(f"unknown edition: {edition}")
     return tuple(
-        tag for tag in SOURCE_FONTS if edition == 'full' or tag in LITE_TAGS
+        tag for tag in SOURCE_FONTS if edition == "full" or tag in LITE_TAGS
     )
 
 
@@ -360,7 +360,7 @@ def required_source_files(tags):
             {
                 SOURCE_FONTS[tag] + suffix
                 for tag in tags
-                for suffix in ('.pfb', '.tfm')
+                for suffix in (".pfb", ".tfm")
             }
             | set(required_policy_files(tags))
         )
@@ -379,7 +379,7 @@ def validate_source_files(
     ]
     if missing:
         raise FileNotFoundError(
-            'incomplete MTPro2 source set: ' + ', '.join(missing)
+            "incomplete MTPro2 source set: " + ", ".join(missing)
         )
 
 
@@ -387,41 +387,41 @@ def extract_policy(
     mtpro2_dir: str | Path, active_tags: Optional[Iterable[str]] = None
 ) -> SourcePolicy:
     root = Path(mtpro2_dir)
-    sty_path = root / 'mtpro2.sty'
+    sty_path = root / "mtpro2.sty"
     if not sty_path.is_file():
         raise FileNotFoundError(sty_path)
-    texts = {'sty': _strip_comments(sty_path.read_text(encoding='latin-1'))}
+    texts = {"sty": _strip_comments(sty_path.read_text(encoding="latin-1"))}
 
     tags = set(active_tags) if active_tags is not None else set(_SKEW_ROLE)
     # Only require .fd files that are actually referenced by the active
     # edition. Lite must not accidentally depend on Full-only
     # option-family declarations.
     required_text_sources = [
-        name for name in required_policy_files(tags) if name != 'mtpro2.sty'
+        name for name in required_policy_files(tags) if name != "mtpro2.sty"
     ]
     for name in required_text_sources:
         p = root / name
         if not p.is_file():
             raise FileNotFoundError(p)
-        texts[name] = _strip_comments(p.read_text(encoding='latin-1'))
+        texts[name] = _strip_comments(p.read_text(encoding="latin-1"))
 
-    sty = texts['sty']
+    sty = texts["sty"]
     sr = _tex_fraction(
         _require_one(
-            r'\\def\s*\\defaultscriptratio\s*\{([^}]+)\}',
+            r"\\def\s*\\defaultscriptratio\s*\{([^}]+)\}",
             sty,
-            'defaultscriptratio',
+            "defaultscriptratio",
         ).group(1)
     )
     ssr = _tex_fraction(
         _require_one(
-            r'\\def\s*\\defaultscriptscriptratio\s*\{([^}]+)\}',
+            r"\\def\s*\\defaultscriptscriptratio\s*\{([^}]+)\}",
             sty,
-            'defaultscriptscriptratio',
+            "defaultscriptscriptratio",
         ).group(1)
     )
     if not (0 < sr <= 1 and 0 < ssr <= sr):
-        raise ValueError('invalid MTPro2 script ratios')
+        raise ValueError("invalid MTPro2 script ratios")
 
     skew: Dict[str, Optional[int]] = {}
     for tag in sorted(tags):
@@ -433,9 +433,9 @@ def extract_policy(
             continue
         kind, source, enc, fam, *rest = role
         text = texts[source]
-        if kind == 'family':
+        if kind == "family":
             skew[tag] = _family_skew(text, enc, fam)
-        elif kind == 'shape':
+        elif kind == "shape":
             skew[tag] = _shape_skew(text, enc, fam, rest[0], rest[1])
         else:
             raise AssertionError(role)
@@ -452,7 +452,7 @@ def extract_policy(
 
 
 def load_policy_json(path: str | Path) -> SourcePolicy:
-    return policy_from_data(json.loads(Path(path).read_text(encoding='utf-8')))
+    return policy_from_data(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
 def policy_from_data(data: dict) -> SourcePolicy:
@@ -460,25 +460,25 @@ def policy_from_data(data: dict) -> SourcePolicy:
     Fraction/tuple
     units.
     """
-    sr = data['script_ratio']
-    ssr = data['scriptscript_ratio']
-    accents = {k: AccentDeclaration(**v) for k, v in data['accents'].items()}
-    dm = data['dot_macros']
+    sr = data["script_ratio"]
+    ssr = data["scriptscript_ratio"]
+    accents = {k: AccentDeclaration(**v) for k, v in data["accents"].items()}
+    dm = data["dot_macros"]
     dots = DotMacroPolicy(
-        int(dm['vdots_step_num']),
-        int(dm['vdots_step_den']),
-        tuple((int(n), int(d)) for n, d in dm['ddots_raise']),
-        int(dm['ddots_inner_mu_num']),
-        int(dm['ddots_inner_mu_den']),
+        int(dm["vdots_step_num"]),
+        int(dm["vdots_step_den"]),
+        tuple((int(n), int(d)) for n, d in dm["ddots_raise"]),
+        int(dm["ddots_inner_mu_num"]),
+        int(dm["ddots_inner_mu_den"]),
     )
     return SourcePolicy(
-        int(sr['numerator']),
-        int(sr['denominator']),
-        int(ssr['numerator']),
-        int(ssr['denominator']),
+        int(sr["numerator"]),
+        int(sr["denominator"]),
+        int(ssr["numerator"]),
+        int(ssr["denominator"]),
         {
             k: (None if v is None else int(v))
-            for k, v in data['skewchar_by_tag'].items()
+            for k, v in data["skewchar_by_tag"].items()
         },
         accents,
         dots,

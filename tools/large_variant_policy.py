@@ -8,25 +8,25 @@ HORIZONTAL = frozenset((770, 771, 780, 9182, 9183, 9180))
 
 
 def exempt(policy, identity, direction, operator=False):
-    if policy not in ('legacy', 'source'):
-        raise ValueError('unknown large-variant policy: ' + policy)
-    return policy == 'source' and (
-        direction == 'h'
+    if policy not in ("legacy", "source"):
+        raise ValueError("unknown large-variant policy: " + policy)
+    return policy == "source" and (
+        direction == "h"
         and (operator or identity in VERTICAL)
-        or (direction == 'w' and identity in HORIZONTAL)
+        or (direction == "w" and identity in HORIZONTAL)
     )
 
 
-def checked_chain(chars, start, next_key='nextlarger'):
+def checked_chain(chars, start, next_key="nextlarger"):
     """A missing successor and a cycle are errors, never truncated
     ladders.
     """
     sequence, seen, slot = ([], set(), start)
     while slot is not None:
         if slot in seen:
-            raise ValueError('NEXTLARGER cycle at slot %d' % slot)
+            raise ValueError("NEXTLARGER cycle at slot %d" % slot)
         if slot not in chars:
-            raise ValueError('NEXTLARGER missing slot %d' % slot)
+            raise ValueError("NEXTLARGER missing slot %d" % slot)
         seen.add(slot)
         sequence.append(slot)
         slot = chars[slot].get(next_key)
@@ -36,7 +36,7 @@ def checked_chain(chars, start, next_key='nextlarger'):
 def field_range(label, value, lower, upper):
     if not lower <= value <= upper:
         raise ValueError(
-            '%s=%s outside [%s,%s]' % (label, value, lower, upper)
+            "%s=%s outside [%s,%s]" % (label, value, lower, upper)
         )
 
 

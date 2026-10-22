@@ -1,14 +1,12 @@
-"""Plan required source references and construction dependencies.
-
-Mapping owns semantic slots. TFM supplies chain/assembly relationships.
-Encoding and CharStrings establish presence without substituting slots.
+"""Required source references and construction dependencies, then
+preflight. Mapping owns semantic slots. TFM supplies chain/assembly
+relationships only; Encoding and CharStrings establish presence, never
+substitute another slot.
 """
 
 from dataclasses import dataclass, field
-import json
 
 import mapping as U
-import donors
 
 
 @dataclass
@@ -17,6 +15,10 @@ class GenerationPlan:
     originals: dict
     routes: list
     coverage: str
+    growth: dict
+    alphabet: dict
+    required_uses: list
+    numeric: dict
     alternate_rows: list = field(default_factory=list, repr=False)
 
     def to_data(self):
@@ -25,6 +27,18 @@ class GenerationPlan:
             originals={t: sorted(s) for t, s in self.originals.items()},
             routes=self.routes,
             donor_coverage=self.coverage,
+            growth=self.growth,
+            alphabet=self.alphabet,
+            required_uses=self.required_uses,
+            numeric_references=self.numeric,
+            input_categories={
+                "native": (
+                    "outline, assembly, hint estimator and Windows "
+                    "measurement inputs"
+                ),
+                "originals": "raw Type1/raw TFM product additions",
+                "numeric_references": "family skewchar and fontdimens",
+            },
         )
 
 
@@ -37,48 +51,48 @@ def create(catalog, coverage):
             target.setdefault(tag, set()).update(slots)
 
     def optical(tag, table):
-        for suffix in ['', '_s', '_ss']:
+        for suffix in ["", "_s", "_ss"]:
             add(tag + suffix, table)
 
-    for tag, table in [('mit', U.MIT), ('syt', U.SYT), ('ams', U.AMSA)]:
+    for tag, table in [("mit", U.MIT), ("syt", U.SYT), ("ams", U.AMSA)]:
         optical(tag, table)
     for tag, kind in [
-        ('bb', 'bb'),
-        ('script', 'script'),
-        ('frak', 'frak'),
-        ('curly', 'curly'),
-        ('bscript', 'bscript'),
-        ('bfrak', 'bfrak'),
-        ('bbd', 'bb'),
-        ('bbi', 'bb'),
-        ('hrb', 'bb'),
-        ('hrbd', 'bb'),
-        ('hbi', 'bb'),
+        ("bb", "bb"),
+        ("script", "script"),
+        ("frak", "frak"),
+        ("curly", "curly"),
+        ("bscript", "bscript"),
+        ("bfrak", "bfrak"),
+        ("bbd", "bb"),
+        ("bbi", "bb"),
+        ("hrb", "bb"),
+        ("hrbd", "bb"),
+        ("hbi", "bb"),
     ]:
         optical(tag, U.alpha_map(kind))
-    optical('bmit', U.bold_source_slots())
+    optical("bmit", U.bold_source_slots())
     optical(
-        'bsyt', [slot for slot, (cp, name) in U.SYT.items() if cp == 0x2207]
+        "bsyt", [slot for slot, (cp, name) in U.SYT.items() if cp == 0x2207]
     )
     for slot, (cp, name, display) in U.EXA_OPS.items():
-        add('exa', [slot, display])
+        add("exa", [slot, display])
         if name in U.XL_TABLE:
-            for tag, s in zip(['xl', 'xl', 'xl', 'xxxl'], U.XL_TABLE[name]):
+            for tag, s in zip(["xl", "xl", "xl", "xxxl"], U.XL_TABLE[name]):
                 add(tag, s if isinstance(s, tuple) else [s])
     starts = []
     for cp, (base, start) in list(U.V_DELIMS.items()) + list(
         U.V_DELIMS_ALT.items()
     ):
         add(base[0], [base[1]])
-        add('exa', [start])
-        starts.append(('exa', start))
+        add("exa", [start])
+        starts.append(("exa", start))
         if cp in U.V_DELIMS:
-            for tag in ['exe', 'exf', 'exg']:
+            for tag in ["exe", "exf", "exg"]:
                 chars = catalog.faces[tag].tfm.chars
                 targets = {
-                    v['next']
+                    v["next"]
                     for v in chars.values()
-                    if v.get('next') is not None
+                    if v.get("next") is not None
                 }
                 if start in chars and start not in targets:
                     starts.append((tag, start))
@@ -87,28 +101,33 @@ def create(catalog, coverage):
         for tag, slot in chain:
             add(tag, [slot])
         if cp in [0x302, 0x303, 0x30C]:
-            exa = [s for t, s in chain if t == 'exa']
+            exa = [s for t, s in chain if t == "exa"]
             if exa:
-                for tag in ['exe', 'exf', 'exg']:
+                for tag in ["exe", "exf", "exg"]:
                     chars = catalog.faces[tag].tfm.chars
                     targets = {
-                        v['next']
+                        v["next"]
                         for v in chars.values()
-                        if v.get('next') is not None
+                        if v.get("next") is not None
                     }
                     if exa[0] in chars and exa[0] not in targets:
                         starts.append((tag, exa[0]))
                         add(tag, [exa[0]])
-    add('exa', U.SOURCE_BRACE_PIECES + U.SOURCE_MORPHED_SLOTS + (195,))
-    add('exf', U.SOURCE_OVERPAREN_CONTINUATION)
+    add("exa", U.SOURCE_BRACE_PIECES + U.SOURCE_MORPHED_SLOTS + (195,))
+    add("exf", U.SOURCE_OVERPAREN_CONTINUATION)
     for tag, start in U.SOURCE_WIDEARC_CHAINS:
         add(tag, [start])
         starts.append((tag, start))
     for cp, series in U.SOURCE_BRACE_SERIES:
         for tag, first, last in series:
             add(tag, range(first, last + 1))
-    # Native chains include their original VARCHAR components.
-    # Keep cycle/error checks.
+    for choice in U.vertical_choices().values():
+        for tag, slot in choice["refs"]:
+            add(tag, [slot])
+    add("exa", U.VERTICAL_METRIC_REFERENCES.values())
+    # Native chains include their original VARCHAR components; keep
+    # cycle/error
+    # checks.
     for tag, start in starts:
         chars = catalog.faces[tag].tfm.chars
         slot = start
@@ -117,121 +136,105 @@ def create(catalog, coverage):
             seen.add(slot)
             add(tag, [slot])
             v = chars[slot]
-            if v.get('varchar'):
-                add(tag, v['varchar'].values())
-            slot = v.get('next')
+            if v.get("varchar"):
+                add(tag, v["varchar"].values())
+            slot = v.get("next")
         if slot is not None and slot not in chars:
             # Keep the missing target in the required set for joint
             # preflight.
             add(tag, [slot])
         elif slot is not None:
             raise ValueError(
-                f'plan {catalog.faces[tag].stem}.tfm role={tag} slot={slot}: '
-                'broken NEXTLARGER chain'
+                f"plan {catalog.faces[tag].stem}.tfm role={tag} "
+                f"slot={slot}: broken NEXTLARGER chain"
             )
     # Independent original-source additions intentionally use binary
     # metrics.
-    import source_glyphs as additions
-
-    for row in additions.bold_identities():
-        add(row['source_role'], [row['source_slot']], post)
-    if catalog.edition == 'full':
-        for role in ['ams', 'ams_s', 'ams_ss']:
+    for row in U.bold_identities():
+        add(row["source_role"], [row["source_slot"]], post)
+    if catalog.edition == "full":
+        for role in ["ams", "ams_s", "ams_ss"]:
             add(role, [88, 122, 85, 114], post)
-        ledger = U.load_alternates(U.ALTERNATE_PATH)['rows']
+        ledger = U.load_alternates(U.ALTERNATE_PATH)["rows"]
         for row in ledger:
-            routes.append(row['semantic_id'])
-            for style in row['source_styles']:
-                alt = style['alternate']
-                add(alt['tag'], [alt['slot']], post)
-                if alt['font'] != U.SOURCE_FONTS[alt['tag']]:
-                    raise ValueError('plan alternate source family mismatch')
+            routes.append(row["semantic_id"])
+            for style in row["source_styles"]:
+                alt = style["alternate"]
+                add(alt["tag"], [alt["slot"]], post)
+                if alt["font"] != U.SOURCE_FONTS[alt["tag"]]:
+                    raise ValueError("plan alternate source family mismatch")
                 if (
-                    alt['accent_calibration']['skewchar']
-                    != catalog.declarations.skewchar_by_tag[alt['tag']]
+                    alt["accent_calibration"]["skewchar"]
+                    != catalog.declarations.skewchar_by_tag[alt["tag"]]
                 ):
-                    raise ValueError('plan alternate skew policy mismatch')
-    return GenerationPlan(native, post, routes, coverage, ledger)
-
-
-def source_status(face, slot, chars):
-    """Check presence using dictionaries/metrics already read."""
-    encoding = face.font['Encoding']
-    name = encoding[slot] if 0 <= slot < len(encoding) else None
-    present = name is not None and name in face.font['CharStrings']
-    return dict(
-        encoding_name=name,
-        charstring_present=present,
-        pfb_usable=bool(name and name != '.notdef' and present),
-        tfm_valid=slot in chars,
+                    raise ValueError("plan alternate skew policy mismatch")
+    alphabet = U.alphabet_spec(catalog.edition)
+    required = U.final_source_requests(catalog.edition, alphabet, ledger)
+    for row in required:
+        if row["role"] not in catalog.faces:
+            raise ValueError(
+                "planned product source role missing: " + row["role"]
+            )
+        add(row["role"], [row["slot"]], post)
+    return GenerationPlan(
+        native,
+        post,
+        routes,
+        coverage,
+        normal_growth(catalog),
+        alphabet,
+        required,
+        dict(
+            **U.SOURCE_NUMERIC_REQUIREMENTS,
+            skew_operands={
+                role: value
+                for role, value in catalog.declarations.skewchar_by_tag.items()
+                if role in catalog.faces
+            },
+        ),
+        ledger,
     )
 
 
-def check_sources(catalog, generation, coverage, *, log=None):
-    missing = []
-    for phase, table in [
-        ('native', generation.native),
-        ('original additions', generation.originals),
-    ]:
-        for role, slots in table.items():
-            face = catalog.faces[role]
-            if phase == 'original additions':
-                if tuple(face.font['FontMatrix']) != (
-                    0.001,
-                    0,
-                    0,
-                    0.001,
-                    0,
-                    0,
-                ):
-                    raise ValueError(
-                        f'preflight {face.pfb_path.name} role={role}: '
-                        'unsupported FontMatrix'
-                    )
-                chars = face.raw_metrics().chars
-            else:
-                chars = face.tfm.chars
-            for slot in sorted(slots):
-                status = source_status(face, slot, chars)
-                if status['pfb_usable'] and status['tfm_valid']:
-                    continue
-                record = dict(
-                    phase=phase,
-                    role=role,
-                    pfb_file=str(face.pfb_path),
-                    tfm_file=str(face.tfm_path),
-                    slot=slot,
-                    slot_hex=f'0x{slot:02X}',
-                    **status,
+def normal_growth(catalog):
+    """Resolve final allowed source identities before an outline is
+    copied.
+    """
+    vertical = {}
+    for cp in sorted(U.NORMAL_VERTICAL):
+        base, start = U.V_DELIMS[cp]
+        allowed = {base}
+        chars = catalog.faces["exa"].raw_metrics().chars
+        seen = set()
+        while start is not None:
+            if start in seen or start not in chars:
+                raise ValueError(
+                    f"normal growth exa:{start}: broken NEXTLARGER"
                 )
-                # Reuse the small ledger already read by create.
-                # No reverse index is needed.
-                for row in generation.alternate_rows:
-                    for style in row['source_styles']:
-                        alt = style['alternate']
-                        if alt['tag'] == role and alt['slot'] == slot:
-                            record.setdefault('semantic_sources', []).append(
-                                dict(
-                                    semantic_id=row['semantic_id'],
-                                    style=style['style'],
-                                )
-                            )
-                missing.append(record)
-                if log is not None:
-                    log.write(
-                        'required source missing: ' + json.dumps(record) + '\n'
-                    )
-                    log.flush()
-    if missing:
-        first = missing[0]
-        raise ValueError(
-            f'{len(missing)} required source reference(s) missing; first: '
-            f'{first["phase"]} role={first["role"]} '
-            f'slot={first["slot"]} ({first["slot_hex"]})'
-        )
-    for role in ['bold', 'bold_s', 'bold_ss']:
-        if catalog.declarations.skewchar_by_tag.get(role) != 32:
-            raise ValueError(
-                f'preflight role={role}: mbf source/skewchar role mismatch'
-            )
-    donors.check_supply(catalog.donors, coverage)
+            seen.add(start)
+            record = chars[start]
+            if not record.get("varchar"):
+                allowed.add(("exa", start))
+            start = record.get("nextlarger")
+        vertical[str(cp)] = sorted(allowed)
+    # Explicit morphed topology supersedes the broken raw NEXTLARGER
+    # links.
+    for cp, side in ((123, 0), (125, 1)):
+        vertical[str(cp)] = [U.V_DELIMS[cp][0]] + [
+            ("exa", slot + side) for slot in (182, 184, 186, 188)
+        ]
+    operators = {
+        name: [("exa", text), ("exa", display)]
+        for text, (cp, name, display) in U.EXA_OPS.items()
+    }
+    horizontal = {
+        str(cp): [(role, s) for role, slots in series for s in slots]
+        for cp, series in U.NORMAL_HORIZONTAL.items()
+    }
+    return dict(
+        vertical=vertical,
+        horizontal=horizontal,
+        operators=operators,
+        choices=U.vertical_choices(),
+        metric_references=U.VERTICAL_METRIC_REFERENCES,
+    )

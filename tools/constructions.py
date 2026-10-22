@@ -4,10 +4,9 @@
 from dataclasses import dataclass, field
 from fractions import Fraction
 
-import psMat
-
-import mapping as U
 import large_variant_policy as L
+import mapping as U
+import psMat
 from glyphs import uname
 
 
@@ -67,13 +66,13 @@ def build_variants(sources, limits, op_variants, geometry):
     def exa_chain(start):
         """Return the NEXTLARGER chain and its terminal VARCHAR recipe.
         """
-        _, tfm, _ = fonts['exa']
+        _, tfm, _ = fonts["exa"]
         seq, c, seen = [], start, set()
         while c is not None and c in tfm.chars and c not in seen:
             seen.add(c)
             seq.append(c)
-            vc = tfm.chars[c]['varchar']
-            nxt = tfm.chars[c]['next']
+            vc = tfm.chars[c]["varchar"]
+            nxt = tfm.chars[c]["next"]
             if nxt is None:
                 return seq, vc
             c = nxt
@@ -88,36 +87,37 @@ def build_variants(sources, limits, op_variants, geometry):
     def build_vdelim(basespec, exastart, base_uni=None, base_name=None):
         tag, slot = basespec
         base = import_glyph(tag, slot, name=base_name, unicode_=base_uni)
-        if base is None or 'exa' not in fonts:
+        if base is None or "exa" not in fonts:
             return
-        _, tfm, _ = fonts['exa']
+        _, tfm, _ = fonts["exa"]
         seq, vc = exa_chain(exastart)
         var = [base]
         for c in seq:
             # A TeX VARCHAR slot selects an assembly,
             # not a fixed-size variant.
-            is_terminal_piece = bool(tfm.chars.get(c, {}).get('varchar')) or (
+            is_terminal_piece = bool(tfm.chars.get(c, {}).get("varchar")) or (
                 vc is not None
                 and c == seq[-1]
-                and c in (vc.get('TOP'), vc.get('BOT'), vc.get('MID'))
-                and c != vc.get('REP')
+                and c in (vc.get("TOP"), vc.get("BOT"), vc.get("MID"))
+                and c != vc.get("REP")
             )
             if is_terminal_piece and len(seq) > 1:
-                continue  # Exclude assembly parts from fixed-size variants.
-            v = import_glyph('exa', c, name=f'{base}.v{len(var)}')
+                # Exclude assembly parts from fixed-size variants.
+                continue
+            v = import_glyph("exa", c, name=f"{base}.v{len(var)}")
             if v:
                 var.append(v)
         vert_variants[base] = var
-        if vc and 'REP' in vc:
+        if vc and "REP" in vc:
             parts = []  # Bottom to top.
-            if 'BOT' in vc:
-                parts.append((piece(vc['BOT']), 0))
-            parts.append((piece(vc['REP']), 1))
-            if 'MID' in vc:
-                parts.append((piece(vc['MID']), 0))
-                parts.append((piece(vc['REP']), 1))
-            if 'TOP' in vc:
-                parts.append((piece(vc['TOP']), 0))
+            if "BOT" in vc:
+                parts.append((piece(vc["BOT"]), 0))
+            parts.append((piece(vc["REP"]), 1))
+            if "MID" in vc:
+                parts.append((piece(vc["MID"]), 0))
+                parts.append((piece(vc["REP"]), 1))
+            if "TOP" in vc:
+                parts.append((piece(vc["TOP"]), 0))
             parts = [(p, e) for (p, e) in parts if p]
             if parts and not any(e == 0 for (p, e) in parts):
                 # Repeat-only recipes use the same glyph as fixed ends
@@ -132,7 +132,7 @@ def build_variants(sources, limits, op_variants, geometry):
     for nm, (bspec, ex0) in U.V_DELIMS_ALT.items():
         build_vdelim(bspec, ex0, base_name=nm)
 
-    if LARGE_POLICY == 'source' and 'exa' in fonts:
+    if LARGE_POLICY == "source" and "exa" in fonts:
         # Plain's moustaches are VARCHAR recipes. Their terminal glyphs
         # alone are incomplete; make independent, complete Unicode
         # roots from the raw ends.
@@ -168,17 +168,18 @@ def build_variants(sources, limits, op_variants, geometry):
         vert_assembly[root] = [(rep, 0), (rep, 1), (rep, 0)]
 
         # The broken TFM NEXTLARGER paths for the eight morphed designs
-        # are not followed. Import only their raw outlines/TFM
-        # advances for fixed cv19.
+        # are not followed. Metric references are declared independently
+        # of
+        # raw links; the adopted series is installed below.
         for slot in U.SOURCE_MORPHED_SLOTS:
-            if import_glyph('exa', slot, name=f'exa.morphed{slot}') is None:
-                raise RuntimeError('missing morphed source exa:%d' % slot)
+            if import_glyph("exa", slot, name=f"exa.morphed{slot}") is None:
+                raise RuntimeError("missing morphed source exa:%d" % slot)
 
     vert_variants.update(op_variants)
 
     # Extend variant ladders from the
     # package-selected extension families.
-    EXT_TAGS = ('exe', 'exf', 'exg')
+    EXT_TAGS = ("exe", "exf", "exg")
 
     def chain_slots(tfm, start):
         """Follow the TFM NEXTLARGER chain."""
@@ -186,15 +187,15 @@ def build_variants(sources, limits, op_variants, geometry):
         while s is not None and s in tfm.chars and s not in seen:
             seen.add(s)
             out.append(s)
-            s = tfm.chars[s].get('next')
+            s = tfm.chars[s].get("next")
         if s is not None:
-            raise ValueError('broken NEXTLARGER chain: %s' % s)
+            raise ValueError("broken NEXTLARGER chain: %s" % s)
         return out
 
     def chain_heads(tfm):
         """Return slots with no incoming NEXTLARGER link."""
         targets = {
-            c['next'] for c in tfm.chars.values() if c.get('next') is not None
+            c["next"] for c in tfm.chars.values() if c.get("next") is not None
         }
         return {s for s in tfm.chars if s not in targets}
 
@@ -210,13 +211,13 @@ def build_variants(sources, limits, op_variants, geometry):
             if slot not in tfm.chars or slot not in chain_heads(tfm):
                 continue
             for s in chain_slots(tfm, slot):
-                g = import_glyph(tag, s, name=f'{base_gname}.{tag}{s}')
+                g = import_glyph(tag, s, name=f"{base_gname}.{tag}{s}")
                 if not g:
                     continue
                 bb = out[g].boundingBox()
                 # Compare height for vertical variants and advance
                 # for horizontal variants.
-                if size_key == 'h':
+                if size_key == "h":
                     extent, cap = bb[3] - bb[1], MAXVAR
                 else:
                     extent, cap = out[g].width, MAXWIDTH
@@ -229,7 +230,7 @@ def build_variants(sources, limits, op_variants, geometry):
                     imported.pop((tag, s), None)
                     out.removeGlyph(out[g])
                     continue
-                if size_key == 'h':
+                if size_key == "h":
                     recenter_on_axis(g)
                 added.append(g)
         if added:
@@ -237,7 +238,7 @@ def build_variants(sources, limits, op_variants, geometry):
             # Sort variants by size; equal-size stages may remain.
             key = (
                 (lambda gn: out[gn].width)
-                if size_key == 'w'
+                if size_key == "w"
                 else (
                     lambda gn: out[gn].boundingBox()[3]
                     - out[gn].boundingBox()[1]
@@ -253,7 +254,40 @@ def build_variants(sources, limits, op_variants, geometry):
         if u not in uni_owner:
             continue
         base = uni_owner[u]
-        extend_chain(base, ex0, vert_variants, 'h', identity=u)
+        extend_chain(base, ex0, vert_variants, "h", identity=u)
+
+    if LARGE_POLICY == "source":
+        # Import and measure all declared paths through the same native
+        # geometry machinery. The root copy has no public Unicode alias.
+        for root, choice in sources.growth["choices"].items():
+            base = uni_owner[choice["cp"]]
+            out.createChar(-1, root)
+            out[root].addReference(base)
+            out[root].width = out[base].width
+            out[root].unlinkRef()
+            vals = [root]
+            for tag, slot in choice["refs"]:
+                g = import_glyph(tag, slot)
+                recenter_on_axis(g)
+                # Lua represents MATH ladders as mutable per-glyph next
+                # links. Distinct continuations cannot share finite
+                # GIDs.
+                clone = f"{root}.stage{len(vals)}"
+                out.createChar(-1, clone)
+                out[clone].addReference(g)
+                out[clone].width = out[g].width
+                out[clone].italicCorrection = out[g].italicCorrection
+                out[clone].unlinkRef()
+                sources.variant_sources[clone] = (tag, slot)
+                vals.append(clone)
+            vert_variants[root] = vals
+            vert_assembly[root] = list(vert_assembly[base])
+        for cp in (123, 125):
+            base = uni_owner[cp]
+            vert_variants[base] = [base] + [
+                imported[tuple(ref)]
+                for ref in sources.growth["vertical"][str(cp)][1:]
+            ]
 
     # Horizontal variants and brace assemblies.
     horiz_variants = {}
@@ -280,7 +314,7 @@ def build_variants(sources, limits, op_variants, geometry):
         _bar_chain = list(horiz_variants.get(_bar_base, [_bar_base]))
         if len(_bar_chain) > 1:
             _widebar_cp = 0xE286
-            _widebar_name = 'wideoverbar.compat'
+            _widebar_name = "wideoverbar.compat"
             if _widebar_name not in out:
                 out.createChar(_widebar_cp, _widebar_name)
                 _wg = out[_widebar_name]
@@ -300,27 +334,27 @@ def build_variants(sources, limits, op_variants, geometry):
         chain = U.H_CHAINS.get(u, ())
         if u not in uni_owner:
             continue
-        exa_slots = [slot for (tag, slot) in chain if tag == 'exa']
+        exa_slots = [slot for (tag, slot) in chain if tag == "exa"]
         if exa_slots:
             extend_chain(
-                uni_owner[u], exa_slots[0], horiz_variants, 'w', identity=u
+                uni_owner[u], exa_slots[0], horiz_variants, "w", identity=u
             )
 
     # Use the designated mt2exf overparen
     # continuation at its source scale.
-    if 0x23DC in uni_owner and 'exf' in fonts:
+    if 0x23DC in uni_owner and "exf" in fonts:
         base = uni_owner[0x23DC]
         extra = []
         for slot in U.SOURCE_OVERPAREN_CONTINUATION:
-            g = import_glyph('exf', slot, name=f'{base}.exf{slot}')
+            g = import_glyph("exf", slot, name=f"{base}.exf{slot}")
             if not g:
                 continue
             if (
-                not L.exempt(LARGE_POLICY, 0x23DC, 'w')
+                not L.exempt(LARGE_POLICY, 0x23DC, "w")
                 and MAXWIDTH
                 and out[g].width > MAXWIDTH
             ):
-                imported.pop(('exf', slot), None)
+                imported.pop(("exf", slot), None)
                 out.removeGlyph(out[g])
                 continue
             extra.append(g)
@@ -342,38 +376,38 @@ def build_variants(sources, limits, op_variants, geometry):
         # from the local outline.
 
         def _make_overparen_parts():
-            left = 'overparen.left.mt2'
-            ext = 'overparen.ext.mt2'
-            right = 'overparen.right.mt2'
+            left = "overparen.left.mt2"
+            ext = "overparen.ext.mt2"
+            right = "overparen.right.mt2"
 
             try:
-                tpl = geometry['overparen_template']
-                ops = tpl['path']
+                tpl = geometry["overparen_template"]
+                ops = tpl["path"]
             except Exception as exc:
                 raise RuntimeError(
-                    'local overparen source geometry is missing'
+                    "local overparen source geometry is missing"
                 ) from exc
             expected_ops = (
-                'moveTo',
-                'lineTo',
-                'curveTo',
-                'curveTo',
-                'lineTo',
-                'curveTo',
-                'curveTo',
-                'closePath',
+                "moveTo",
+                "lineTo",
+                "curveTo",
+                "curveTo",
+                "lineTo",
+                "curveTo",
+                "curveTo",
+                "closePath",
             )
-            if tuple(rec.get('op') for rec in ops) != expected_ops:
+            if tuple(rec.get("op") for rec in ops) != expected_ops:
                 raise RuntimeError(
-                    'unexpected local MTPro2 overparen contour topology'
+                    "unexpected local MTPro2 overparen contour topology"
                 )
 
             def ipoints(i):
                 pts = []
-                for x, y in ops[i]['points']:
+                for x, y in ops[i]["points"]:
                     if round(x) != x or round(y) != y:
                         raise RuntimeError(
-                            'non-integral local Type1 overparen coordinate'
+                            "non-integral local Type1 overparen coordinate"
                         )
                     pts.append((int(x), int(y)))
                 return pts
@@ -389,12 +423,12 @@ def build_variants(sources, limits, op_variants, geometry):
             mid_upper = upper_right[-1]
             if mid_lower[0] != mid_upper[0] or start_pt != upper_left[-1]:
                 raise RuntimeError(
-                    'local overparen source contour is not the expected '
-                    'symmetric-cap topology'
+                    "local overparen source contour is not the expected "
+                    "symmetric-cap topology"
                 )
             span = right_edge[0] - start_pt[0]
             if span <= 0:
-                raise RuntimeError('invalid local overparen source span')
+                raise RuntimeError("invalid local overparen source span")
 
             # Derive connector proportions from the local span.
             connector = round(span / 15)
@@ -449,21 +483,21 @@ def build_variants(sources, limits, op_variants, geometry):
             return left, ext, right
 
         _opl, _ope, _opr = _make_overparen_parts()
-        vert_assembly[('H', base)] = [(_opl, 0), (_ope, 1), (_opr, 0)]
+        vert_assembly[("H", base)] = [(_opl, 0), (_ope, 1), (_opr, 0)]
 
     # widearc switches to exe:208 and exf/exg:177 in the original
     # package. The old overparen continuation is retained;
     # equal sizes stay distinct.
-    if LARGE_POLICY == 'source' and 0x23DC in uni_owner:
+    if LARGE_POLICY == "source" and 0x23DC in uni_owner:
         # Standalone \arc uses exa:195. Keep it outside the automatic
-        # widearc construction; fixed_selectors exposes it as
-        # the appended cv15 stage.
-        if import_glyph('exa', 195, name='exa.arc195') is None:
-            raise RuntimeError('source exa:195 missing')
+        # widearc construction. It remains a compatibility measurement
+        # input and does not introduce a public selector.
+        if import_glyph("exa", 195, name="exa.arc195") is None:
+            raise RuntimeError("source exa:195 missing")
         _base = uni_owner[0x23DC]
         for _tag, _head in U.SOURCE_WIDEARC_CHAINS:
             for _slot in chain_slots(fonts[_tag][1], _head):
-                _g = import_glyph(_tag, _slot, name=f'{_base}.{_tag}{_slot}')
+                _g = import_glyph(_tag, _slot, name=f"{_base}.{_tag}{_slot}")
                 if _g not in horiz_variants[_base]:
                     horiz_variants[_base].append(_g)
     return Variants(
@@ -485,23 +519,23 @@ def build_accents_and_dots(sources):
     out = sources.font
     uni_owner = sources.uni_owner
     _NORMALIZED_ACCENT_MACROS = (
-        'grave',
-        'acute',
-        'check',
-        'breve',
-        'bar',
-        'hat',
-        'dot',
-        'tilde',
-        'ddot',
-        'mathring',
-        'vec',
-        'dotup',
-        'ddotup',
-        'dddot',
-        'ddddot',
-        'dddotup',
-        'ddddotup',
+        "grave",
+        "acute",
+        "check",
+        "breve",
+        "bar",
+        "hat",
+        "dot",
+        "tilde",
+        "ddot",
+        "mathring",
+        "vec",
+        "dotup",
+        "ddotup",
+        "dddot",
+        "ddddot",
+        "dddotup",
+        "ddddotup",
     )
     try:
         ACCENT_SLOTS = [
@@ -510,15 +544,15 @@ def build_accents_and_dots(sources):
         ]
     except KeyError as exc:
         raise RuntimeError(
-            'required local MTPro2 accent declaration missing: %s'
+            "required local MTPro2 accent declaration missing: %s"
             % exc.args[0]
         )
     accent_glyphs = set()
     ACC_CENTER = -(
-        _axis_height() + round((fonts['exa'][1].fontdimen[8] * out.em) / 4)
+        _axis_height() + round((fonts["exa"][1].fontdimen[8] * out.em) / 4)
     )
     for slot in ACCENT_SLOTS:
-        key = ('syt', slot)
+        key = ("syt", slot)
         if key not in imported:
             continue
         g = out[imported[key]]
@@ -528,14 +562,14 @@ def build_accents_and_dots(sources):
         g.width = 0
         accent_glyphs.add(g.glyphname)
 
-    if ('mit', 0x3A) in imported and ('syt', 0x01) in imported:
+    if ("mit", 0x3A) in imported and ("syt", 0x01) in imported:
         # Read dot geometry from the local package; horizontal
         # spacing uses math units.
-        P = out[imported[('mit', 0x3A)]].width
-        Cw = out[imported[('syt', 0x01)]].width
-        per = imported[('mit', 0x3A)]
-        cdo = imported[('syt', 0x01)]
-        tfm_symbols = fonts['syt'][1]
+        P = out[imported[("mit", 0x3A)]].width
+        Cw = out[imported[("syt", 0x01)]].width
+        per = imported[("mit", 0x3A)]
+        cdo = imported[("syt", 0x01)]
+        tfm_symbols = fonts["syt"][1]
         ellipsis_gap = _mu_to_units(Fraction(3, 1))
         compose(
             0x2026,
@@ -563,7 +597,7 @@ def build_accents_and_dots(sources):
             for x in SOURCE_POLICY.dot_macros.ddots_raises_pt
         )
         if len(raises) != 3:
-            raise RuntimeError('local ddots policy must contain three raises')
+            raise RuntimeError("local ddots policy must contain three raises")
         xs = [0, P + diagonal_gap, 2 * (P + diagonal_gap)]
         dadv = 3 * P + 2 * diagonal_gap
         compose(0x22F1, None, per, list(zip(xs, raises)), dadv)
@@ -599,8 +633,8 @@ def build_arrows_and_braces(sources, limits, variants, accents):
         """Create an unencoded assembly-only copy with connector
         sidebearings removed.
         """
-        bits = ('L' if connect_left else '') + ('R' if connect_right else '')
-        nm = f'{src}.hconn{bits}.{suffix}'
+        bits = ("L" if connect_left else "") + ("R" if connect_right else "")
+        nm = f"{src}.hconn{bits}.{suffix}"
         if nm in out:
             return nm
         out.createChar(-1, nm)
@@ -630,8 +664,8 @@ def build_arrows_and_braces(sources, limits, variants, accents):
         return nm
 
     def _resolve_harrow_ref(ref):
-        if ref == 'Relbar':
-            return imported.get(('syt', 0x48))
+        if ref == "Relbar":
+            return imported.get(("syt", 0x48))
         if isinstance(ref, int):
             return uni_owner.get(ref)
         return None
@@ -659,7 +693,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
             gn = _resolve_harrow_ref(ref)
             if gn is None:
                 return None
-            raw.append((gn, kind == 'E'))
+            raw.append((gn, kind == "E"))
         return [
             _arrow_component(gn, i, len(raw), ext, suffix)
             for i, (gn, ext) in enumerate(raw)
@@ -668,19 +702,19 @@ def build_arrows_and_braces(sources, limits, variants, accents):
     def harrow_assembly(base_uni, part_spec):
         if base_uni not in uni_owner:
             return
-        tups = _resolve_arrow_parts(part_spec, f'U{base_uni:04X}')
+        tups = _resolve_arrow_parts(part_spec, f"U{base_uni:04X}")
         if tups:
             out[uni_owner[base_uni]].horizontalComponents = tuple(tups)
 
     # Arrow fills use fixed ends and an extender
     # from the MTPro2 outlines.
     _ARROW_SPECS = {
-        0x2190: [('G', 0x2190), ('E', 0x2212), ('G', 0x2212)],
-        0x2192: [('G', 0x2212), ('E', 0x2212), ('G', 0x2192)],
-        0x2194: [('G', 0x2190), ('E', 0x2212), ('G', 0x2192)],
-        0x21D0: [('G', 0x21D0), ('E', 'Relbar'), ('G', 'Relbar')],
-        0x21D2: [('G', 'Relbar'), ('E', 'Relbar'), ('G', 0x21D2)],
-        0x21D4: [('G', 0x21D0), ('E', 'Relbar'), ('G', 0x21D2)],
+        0x2190: [("G", 0x2190), ("E", 0x2212), ("G", 0x2212)],
+        0x2192: [("G", 0x2212), ("E", 0x2212), ("G", 0x2192)],
+        0x2194: [("G", 0x2190), ("E", 0x2212), ("G", 0x2192)],
+        0x21D0: [("G", 0x21D0), ("E", "Relbar"), ("G", "Relbar")],
+        0x21D2: [("G", "Relbar"), ("E", "Relbar"), ("G", 0x21D2)],
+        0x21D4: [("G", 0x21D0), ("E", "Relbar"), ("G", 0x21D2)],
     }
     for _u, _spec in _ARROW_SPECS.items():
         harrow_assembly(_u, _spec)
@@ -693,7 +727,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
         dy = round((vb[1] + vb[3]) / 2 - (ab[1] + ab[3]) / 2) + 25
 
         def accent_copy(src, suffix):
-            nm = f'{src}.{suffix}'
+            nm = f"{src}.{suffix}"
             if nm in out:
                 return nm
             out.createChar(-1, nm)
@@ -718,15 +752,15 @@ def build_arrows_and_braces(sources, limits, variants, accents):
             accent_glyphs.add(nm)
 
         shaft_src = uni_owner[0x2212]
-        shaft = _trim_hconnector(shaft_src, 'vector.ex', True, True)
-        shaft_acc = accent_copy(shaft, 'acc')
+        shaft = _trim_hconnector(shaft_src, "vector.ex", True, True)
+        shaft_acc = accent_copy(shaft, "acc")
         shaft_conn = min(ARROW_CONNECTOR, max(100, out[shaft].width // 3))
 
         # Keep public U+20D7 fixed; private U+E287 carries the
         # accent-height assembly. Standard commands are not remapped
         # to the private adapter.
         _widevec_cp = 0xE287
-        _widevec_name = 'widevector.compat'
+        _widevec_name = "widevector.compat"
         if _widevec_name not in out:
             out.createChar(_widevec_cp, _widevec_name)
             _wg = out[_widevec_name]
@@ -738,7 +772,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
 
         # The right vector starts with its endpoint;
         # shaft_acc supplies extra width.
-        rend = accent_copy(uni_owner[0x2192], 'vector.end.acc')
+        rend = accent_copy(uni_owner[0x2192], "vector.end.acc")
         rconn = min(ARROW_CONNECTOR, max(100, out[rend].width // 3))
         out[_widevec_name].horizontalComponents = (
             (shaft_acc, 1, shaft_conn, shaft_conn, out[shaft_acc].width),
@@ -746,7 +780,10 @@ def build_arrows_and_braces(sources, limits, variants, accents):
         )
 
         # Left vector: same minimum width, mirrored assembly order.
-        lend = accent_copy(uni_owner[0x2190], 'vector.end.acc')
+        lend = accent_copy(uni_owner[0x2190], "vector.end.acc")
+        # End the assembly connector at actual ink, retaining the
+        # original outline and its non-connecting left sidebearing.
+        out[lend].width = round(out[lend].boundingBox()[2])
         lconn = min(ARROW_CONNECTOR, max(100, out[lend].width // 3))
         out[uni_owner[0x20D6]].horizontalComponents = (
             (lend, 0, 0, lconn, out[lend].width),
@@ -767,15 +804,15 @@ def build_arrows_and_braces(sources, limits, variants, accents):
         g.width = w
         return name
 
-    if 'exa' in fonts:
-        _, exatfm, _ = fonts['exa']
+    if "exa" in fonts:
+        _, exatfm, _ = fonts["exa"]
         bld, brd, blu, bru = (piece(130), piece(131), piece(132), piece(133))
         if all([bld, brd, blu, bru]):
             # Standard braces use mt2exa corners and rules, separate
             # from overcbrace designs. Read the rule band from the
             # local braceld TFM height.
-            brace_rule_h = round(exatfm.chars[130]['ht'] * 1000)
-            ext = make_rule('brace.hext', 0, brace_rule_h)
+            brace_rule_h = round(exatfm.chars[130]["ht"] * 1000)
+            ext = make_rule("brace.hext", 0, brace_rule_h)
 
             def merge_hparts(left, right, name):
                 if name in out:
@@ -789,8 +826,8 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                 g.unlinkRef()
                 return name
 
-            over_center = merge_hparts(bru, blu, 'brace.over.center')
-            under_center = merge_hparts(brd, bld, 'brace.under.center')
+            over_center = merge_hparts(bru, blu, "brace.over.center")
+            under_center = merge_hparts(brd, bld, "brace.under.center")
 
             def shifted_copy(src, name, dy):
                 if name in out:
@@ -802,17 +839,18 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                 g.unlinkRef()
                 return name
 
-            _OVERBRACE_TARGET_YMIN = 539  # OpenType/Word migration policy
+            # OpenType/Word migration policy
+            _OVERBRACE_TARGET_YMIN = 539
             over_ymin = min(
                 out[q].boundingBox()[1] for q in (bld, ext, over_center, brd)
             )
             over_dy = round(_OVERBRACE_TARGET_YMIN - over_ymin)
-            over_left = shifted_copy(bld, 'brace.over.left', over_dy)
-            over_ext = shifted_copy(ext, 'brace.over.ext', over_dy)
+            over_left = shifted_copy(bld, "brace.over.left", over_dy)
+            over_ext = shifted_copy(ext, "brace.over.ext", over_dy)
             over_center_shift = shifted_copy(
-                over_center, 'brace.over.center.shift', over_dy
+                over_center, "brace.over.center.shift", over_dy
             )
-            over_right = shifted_copy(brd, 'brace.over.right', over_dy)
+            over_right = shifted_copy(brd, "brace.over.right", over_dy)
 
             # Cap curved-part connectors at the local straight rule band
             # minus tolerance. Extenders expose their full rule width.
@@ -862,11 +900,11 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                 g.width = x
                 uni_owner[u] = gn
                 horiz_variants[gn] = [gn]
-                vert_assembly[('H', gn)] = [
+                vert_assembly[("H", gn)] = [
                     (q, 1 if q in brace_extenders else 0) for q in parts
                 ]
 
-            if LARGE_POLICY == 'source':
+            if LARGE_POLICY == "source":
                 # Plain's dedicated middle pieces have a different
                 # advance from the ordinary two-half cusp. Keep the
                 # new assemblies isolated.
@@ -877,9 +915,9 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                     middle = piece(middle_slot)
                     if middle is None:
                         raise RuntimeError(
-                            'missing plain brace middle exa:%d' % middle_slot
+                            "missing plain brace middle exa:%d" % middle_slot
                         )
-                    label = 'over' if cp == 0x23DE else 'under'
+                    label = "over" if cp == 0x23DE else "under"
                     # Translate each overbrace part by the ordinary
                     # brace's documented baseline offset;
                     # no contour is reshaped.
@@ -887,7 +925,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                     def plain_part(source, suffix):
                         return shifted_copy(
                             source,
-                            'brace.plain.' + label + '.' + suffix,
+                            "brace.plain." + label + "." + suffix,
                             shift,
                         )
 
@@ -895,21 +933,23 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                         plain_part(
                             q,
                             (
-                                'left'
+                                "left"
                                 if i == 0
                                 else (
-                                    'right'
+                                    "right"
                                     if i == 4
-                                    else 'middle' if i == 2 else 'ext'
+                                    else "middle"
+                                    if i == 2
+                                    else "ext"
                                 )
                             ),
                         )
                         for i, q in enumerate(source_parts)
                         if q is not None
                     ]
-                    center = plain_part(middle, 'middle')
+                    center = plain_part(middle, "middle")
                     left, rule, right = parts[0], parts[1], parts[-1]
-                    root = 'brace.plain.' + label
+                    root = "brace.plain." + label
                     out.createChar(-1, root)
                     g = out[root]
                     x = 0
@@ -925,7 +965,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
                             0, brace_rule_h - CONNECTOR_PROFILE_TOLERANCE
                         )
                     connector_limits[rule] = out[rule].width
-                    vert_assembly[('H', root)] = [
+                    vert_assembly[("H", root)] = [
                         (left, 0),
                         (rule, 1),
                         (center, 0),
@@ -939,17 +979,17 @@ def build_arrows_and_braces(sources, limits, variants, accents):
     # fallback cannot exceed the first fixed variant. Names continue to
     # identify the original source import.
     _source_brace_fallbacks = set()
-    if LARGE_POLICY == 'source':
+    if LARGE_POLICY == "source":
         for _cp, _series in U.SOURCE_BRACE_SERIES:
             _base = uni_owner[_cp]
             for _tag, _first, _last in _series:
                 for _slot in range(_first, _last + 1):
                     _gn = import_glyph(
-                        _tag, _slot, name=f'{_base}.curly.{_tag}{_slot}'
+                        _tag, _slot, name=f"{_base}.curly.{_tag}{_slot}"
                     )
                     if _gn is None:
                         raise ValueError(
-                            'missing dedicated curly brace %s:%d'
+                            "missing dedicated curly brace %s:%d"
                             % (_tag, _slot)
                         )
                     # Adopt the existing public overbrace baseline
@@ -967,7 +1007,7 @@ def build_arrows_and_braces(sources, limits, variants, accents):
             out[_new_base].unicode = _cp
             uni_owner[_cp] = _new_base
             horiz_variants[_new_base] = horiz_variants[_base][1:]
-            vert_assembly[('H', _new_base)] = list(vert_assembly[('H', _base)])
+            vert_assembly[("H", _new_base)] = list(vert_assembly[("H", _base)])
     variants.brace_fallbacks = _source_brace_fallbacks
 
 
@@ -986,16 +1026,21 @@ def install_variant_geometry(sources, limits, variants):
         bb = out[gname].boundingBox()
         return bb[3] - bb[1]
 
+    extended_source_variants = {
+        g for values in vert_variants.values() for g in values[1:]
+    }
+    if LARGE_POLICY == "source":
+        select_growth(sources, variants)
     for base, var in vert_variants.items():
         var2 = sorted(dict.fromkeys(var), key=glyph_size)
         if len(var2) > 1 or base in vert_assembly:
-            out[base].verticalVariants = ' '.join(var2)
+            out[base].verticalVariants = " ".join(var2)
     for base, var in horiz_variants.items():
         var2 = sorted(
             dict.fromkeys(var),
             key=(
                 (lambda g: out[g].boundingBox()[2] - out[g].boundingBox()[0])
-                if LARGE_POLICY == 'source'
+                if LARGE_POLICY == "source"
                 else (lambda g: out[g].width)
             ),
         )
@@ -1005,7 +1050,7 @@ def install_variant_geometry(sources, limits, variants):
             # generic design with curly forms.
             var2 = [g for g in var2 if g != base]
         if len(var2) > 1:
-            out[base].horizontalVariants = ' '.join(var2)
+            out[base].horizontalVariants = " ".join(var2)
 
     # Measure stable connector runs from flattened outline
     # cross-sections. TFM recipes provide no overlap lengths.
@@ -1120,7 +1165,7 @@ def install_variant_geometry(sources, limits, variants):
 
     def _norm_vpart(p):
         """Align vertical assembly parts to their ink bottom."""
-        nm = f'{p}.vn'
+        nm = f"{p}.vn"
         if nm not in out:
             bb = out[p].boundingBox()
             out.createChar(-1, nm)
@@ -1150,7 +1195,7 @@ def install_variant_geometry(sources, limits, variants):
                 _runs.append(connector_run(p, vert, False))
             if i < n - 1 or e:
                 _runs.append(connector_run(p, vert, True))
-    _ov = int(getattr(out.math, 'MinConnectorOverlap', 100) or 100)
+    _ov = int(getattr(out.math, "MinConnectorOverlap", 100) or 100)
     if _runs and min(_runs) < _ov:
         out.math.MinConnectorOverlap = max(0, int(min(_runs)))
 
@@ -1189,7 +1234,7 @@ def install_variant_geometry(sources, limits, variants):
 
     # Extended shapes include larger variants, assembly parts,
     # and display operators.
-    extended = set()
+    extended = set(extended_source_variants)
     for base, var in vert_variants.items():
         extended.update(var[1:])
     for base, parts in vert_assembly.items():
@@ -1204,4 +1249,55 @@ def install_variant_geometry(sources, limits, variants):
         try:
             out[gname].isExtendedShape = True
         except Exception as exc:
-            raise ValueError(f'ExtendedShape {gname}: {exc}') from exc
+            raise ValueError(f"ExtendedShape {gname}: {exc}") from exc
+
+
+def select_growth(sources, variants):
+    """Only final ready-made series enter MATH; measurement outlines
+    stay
+    separate.
+    """
+    provenance = {}
+    for identity, glyph in sources.imported.items():
+        provenance.setdefault(glyph, set()).add(identity)
+    for glyph, identity in sources.variant_sources.items():
+        provenance[glyph] = {identity}
+    plan = sources.growth
+    for direction, table in (
+        ("vertical", variants.vertical),
+        ("horizontal", variants.horizontal),
+    ):
+        allowed_roots = {
+            sources.uni_owner.get(int(cp)): {tuple(r) for r in refs}
+            for cp, refs in plan[direction].items()
+        }
+        if direction == "vertical":
+            allowed_roots.update(
+                {
+                    root: {tuple(ref) for ref in choice["refs"]}
+                    for root, choice in plan["choices"].items()
+                }
+            )
+            for slot, (cp, name, display) in U.EXA_OPS.items():
+                root = sources.uni_owner.get(cp) if cp is not None else name
+                allowed_roots[root] = {
+                    tuple(r) for r in plan["operators"][name]
+                }
+        for root, allowed in allowed_roots.items():
+            if root not in table:
+                continue
+            old = table[root]
+            selected = [g for g in old if provenance.get(g, set()) & allowed]
+            if (
+                direction == "vertical"
+                and old
+                and old[0] == root
+                and root not in selected
+            ):
+                selected.insert(0, root)
+            if not selected:
+                raise ValueError("empty planned growth: " + str(root))
+            table[root] = selected
+    for root in U.EXCLUDED_GLYPHS:
+        variants.vertical.pop(root, None)
+        variants.horizontal.pop(root, None)

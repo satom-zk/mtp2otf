@@ -5,9 +5,10 @@
 \setmainfont{Nimbus Roman}
 \setsansfont{Nimbus Sans}
 \setmonofont{Nimbus Mono PS}
-\usepackage{mtpro2}
+\usepackage{unicode-math}
+\setmathfont{MTPro2Math.otf}[Path=../out/]
 \usepackage{booktabs,tabularx,longtable,enumitem}
-\usepackage[hidelinks,pdftitle={mtp2otf: User guide and font reference},pdfauthor={}]{hyperref}
+\usepackage[hidelinks,pdftitle={mtp2otf: Build guide and technical reference},pdfauthor={}]{hyperref}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{4pt}
 \emergencystretch=2em
@@ -16,7 +17,7 @@
 \widowpenalty=10000
 \newcommand{\file}[1]{{\small\texttt{\detokenize{#1}}}}
 \AddToHook{env/verbatim/begin}{\small}
-\title{mtp2otf\\\large User guide and font reference}
+\title{mtp2otf\\\large Build guide and technical reference}
 \author{}
 \date{}
 \begin{document}
@@ -26,7 +27,7 @@
 \section{Overview}
 mtp2otf converts MathTime\texttrademark{} Professional 2 (MTPro2) Type~1
 fonts and TeX metrics to OpenType MATH. It preserves the source designs,
-including optical script sizes and large symbols, and supplies the layout
+including optical script sizes, and supplies the layout
 data used by Unicode math engines. Upright Latin letters and additional
 text characters come from a separate Roman font pair.
 
@@ -36,8 +37,8 @@ The selected edition requires the corresponding MTPro2 source files.
 
 No additional mtp2otf package is needed to use the generated fonts.
 Unicode characters and OpenType features provide access to the designs.
-The original \file{mtpro2} package's custom commands are not included;
-Section~\ref{sec:macro-equivalents} relates them to the available inputs.
+The original \file{mtpro2} package's custom commands are not included.
+See \file{font-guide.pdf} for illustrated font usage and character variants.
 
 \section{Building the fonts}\label{sec:build}
 \subsection{Requirements}
@@ -110,12 +111,13 @@ files in place. Do not run concurrent builds of the same edition.
 Install the TTF and select \file{MTPro2 Math} or
 \file{MTPro2 Math Lite} as the equation font. For the equation text,
 enable \emph{Kerning for fonts} at 1~pt and above in the Font dialog.
-In Word, ordinary character spacing can be tighter than in the original Type~1 package.
+In Microsoft 365 Word for Windows, as tested on 22 October 2026,
+italic correction is not applied to ordinary character spacing, so spacing
+may differ slightly from the original Type~1 output.
 
 Use Word's equation editor for mathematical alphabets, accents, delimiters
 and operators. It does not expose the same OpenType feature controls as
-LuaLaTeX. The explicit feature and private-use examples in this manual
-are for LuaLaTeX.
+LuaLaTeX. The explicit feature examples in \file{font-guide.pdf} are for LuaLaTeX.
 
 \subsection{LuaLaTeX}
 Load the OTF with \file{unicode-math}:
@@ -130,104 +132,12 @@ specify its directory with the \file{Path} option.
 
 Use \file{unicode-math} commands for alphabets and symbols, and the usual
 math structures for scripts, fractions, accents and delimiters.
-OpenType feature selection is described in Section~\ref{sec:selection}.
+See \file{font-guide.pdf} for input examples and visual comparisons;
+Appendix~\ref{sec:alphabets} lists the exact feature inputs.
 
 Luaotfload 3.29 can omit pair kerning between script-size variants.
 
 The font can also be used with \file{lua-unicode-math}.
-
-\subsection{Samples}
-\file{doc/word.pdf} and \file{doc/lualatex.pdf} show matching Full-edition
-examples. Their editable sources are \file{doc/word.docx} and
-\file{doc/lualatex.tex}.
-
-Open the Word source in Word and export its PDF there. To typeset the
-LuaLaTeX source, build Full and run \file{lualatex lualatex.tex} from
-\file{doc/}. The source uses \file{mathtools}, \file{unicode-math},
-and Nimbus Roman Regular, Bold, Italic and BoldItalic.
-
-\section{Alphabets and symbol selection}\label{sec:selection}
-\subsection{Mathematical alphabets}
-Use the mathematical Unicode characters or the corresponding
-\file{unicode-math} commands. The following commands select the principal
-Latin alphabets:
-\begin{center}
-\begin{tabular}{@{}lll@{}}
-\toprule
-Alphabet & Command & Edition \\
-\midrule
-Upright & \file{\symup{ABCxyz}} & Full, Lite \\
-Italic & \file{\symit{ABCxyz}} & Full, Lite \\
-Bold upright & \file{\symbfup{ABCxyz}} & Full, Lite \\
-Bold italic & \file{\symbfit{ABCxyz}} & Full \\
-Script & \file{\symscr{ABCxyz}} & Full \\
-Bold Script & \file{\symbfscr{ABCxyz}} & Full \\
-Fraktur & \file{\symfrak{ABCxyz}} & Full \\
-Bold Fraktur & \file{\symbffrak{ABCxyz}} & Full \\
-Blackboard bold & \file{\symbb{ABCxyz}} & Full \\
-\bottomrule
-\end{tabular}
-\end{center}
-Mathematical sans and monospace alphabets are not included.
-Blackboard bold uses the original mtpbb design by default.
-
-Roman donors supply upright Latin and mathematical bold upright Latin
-and digits. Mathematical italic, bold italic and non-Latin-shaped Greek
-come from MTPro2. Character variants provide alternative designs,
-including original MTPro2 bold and other Blackboard styles.
-
-\subsection{Alternative designs}
-Character variants (CVs) select alternatives to the default glyphs.
-Appendix~\ref{sec:alphabets} lists their tags and input characters.
-In LuaLaTeX, select a feature through \file{RawFeature}:
-\begin{samepage}
-\begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv01}]
-\end{verbatim}
-\end{samepage}
-This selects swash z wherever its input character occurs.
-For a local choice, define a named math version in the preamble and
-select it outside the formula:
-\begin{samepage}
-\begin{verbatim}
-\setmathfont{MTPro2Math.otf}
-\setmathfont{MTPro2Math.otf}[version=swash,
-                          RawFeature={+cv01}]
-\begingroup\mathversion{swash}
-\[ z \]
-\endgroup
-\end{verbatim}
-\end{samepage}
-A group restores the previous version. Numbered \file{RawFeature}
-choices start at 1; for example, \file{cv15=27} selects a particular
-arc design. Enable only one of the competing variants for a given input.
-
-The \file{ssty} feature supplies optical script designs to the math
-engine. In Full, \file{salt} selects Curly alternatives from Script
-inputs: add \file{RawFeature={+salt}} to \file{\setmathfont} and
-use \file{\symscr{ABC}}. A named math version limits the selection
-to a group.
-
-\subsection{Growing and fixed symbols}
-Delimiters, radicals and wide accents select sizes through OpenType MATH.
-For example:
-\begin{samepage}
-\begin{verbatim}
-\[ \left(\frac{a+b}{c+d}\right)
-   \qquad \sqrt{x^2+y^2}
-   \qquad \widehat{ABC} \]
-\end{verbatim}
-\end{samepage}
-The font supplies prebuilt designs and, for some symbols, assemblies
-that extend them with repeated parts. The engine selects a size from the
-formula's dimensions and math style. Large operators use a finite series
-of prebuilt designs.
-
-Fixed CV choices select individual designs for custom constructions.
-Their measurement, centering and spacing are the responsibility of the
-calling macro. Accent glyphs require accent syntax to attach them to a
-nucleus. Appendix~\ref{sec:large} gives the automatic inputs, fixed
-choices and private-use entries.
 
 \section{License and project}
 Project-authored code and documentation use 0BSD (\file{LICENSE}).
@@ -239,415 +149,193 @@ TeX, Inc., or Artifex Software.
 Repository: \url{https://github.com/satom-zk/mtp2otf}\\
 Issues: \url{https://github.com/satom-zk/mtp2otf/issues}
 
+\section{Release history}
+\begin{description}
+\item[v1.0] Initial release.
+\item[v1.1] Added large glyphs, missing mathematical alphabets, and
+  character-variant access.
+\item[v1.2] Corrected TFM kern interpretation and removed supplemental
+  Word-oriented spacing adjustments, improving LuaLaTeX output.
+\item[v1.3] Revised MATH constants and prime conversion against the original
+  sources, and reorganized the build tools.
+\item[v1.4] Revised Unicode mappings and standard input routes, reorganized
+  character variants, and separated ordinary delimiter growth from optional
+  large ready-made forms. Removed unused private-use entries.
+\end{description}
+
+\newpage
 \appendix
 
 \section{Character variants}\label{sec:alphabets}
-The table lists CV tags, their standard Unicode inputs and edition
-availability. Tags with multiple choices use the numbered values in
-Appendix~\ref{sec:large}. Selection syntax is given in
-Section~\ref{sec:selection}. AMS denotes MTPro2's own AMS symbol sources.
+The inputs below are the standard Unicode characters selected by the
+mathematical alphabet or symbol command. Features also follow the
+corresponding script-size designs. F = Full; L = Lite.
 
-\begingroup\small\setlength\tabcolsep{4pt}\renewcommand\arraystretch{1.12}
-\begin{longtable}{@{}p{0.14\linewidth}p{0.66\linewidth}p{0.13\linewidth}@{}}
+\begingroup\small\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.12}
+\begin{longtable}{@{}p{0.12\linewidth}p{0.34\linewidth}p{0.39\linewidth}p{0.09\linewidth}@{}}
 \toprule
-Feature & Meaning and standard Unicode targets & Edition \\ \midrule \endfirsthead
+Feature & Design & Standard inputs & Edition \\ \midrule \endfirsthead
 \toprule
-Feature & Meaning and standard Unicode targets & Edition \\ \midrule \endhead
+Feature & Design & Standard inputs & Edition \\ \midrule \endhead
 \bottomrule\endfoot
-\texttt{cv01} & swash z\newline U+1D467 & both \\
-\texttt{cv02} & Full empty-set alternate\newline U+2205 & Full \\
-\texttt{cv03} & mtpbbd (mt2bb / b / n)\newline Blackboard inputs & Full \\
-\texttt{cv04} & mtpbbi (mt2bb / m / it)\newline Blackboard inputs & Full \\
-\texttt{cv05} & mtphrb (Holey Roman Bold family mt2hrb / m / n)\newline Blackboard inputs & Full \\
-\texttt{cv06} & mtphrd (Holey Roman Bold family mt2hrb / b / n)\newline Blackboard inputs & Full \\
-\texttt{cv07} & mtphbi (Holey Roman Bold family mt2hrb / m / it)\newline Blackboard inputs & Full \\
-\texttt{cv08} & straight braces\newline U+007B, U+007D & both \\
-\texttt{cv09} & MTPro2 AMS negated-relation alternates\newline U+2241, U+2288--2289 & Full \\
-\texttt{cv10} & variant subsetneq/supsetneq\newline U+228A--228B & Full \\
-\texttt{cv11} & hbar alternate\newline U+210F & both \\
-\texttt{cv12} & slanted large operators\newline U+220F--2211 & both \\
-\texttt{cv13} & fixed overbrace designs\newline U+23DE & both \\
-\texttt{cv14} & fixed underbrace designs\newline U+23DF & both \\
-\texttt{cv15} & fixed overparen designs\newline U+23DC & both \\
-\texttt{cv16} & fixed delimiter designs\newline U+0028--0029, U+005C, U+007B, U+007D, U+27E8--27E9 & both \\
-\texttt{cv17} & fixed radical designs\newline U+221A & both \\
-\texttt{cv18} & fixed accent designs\newline U+0302--0303, U+030C & both \\
-\texttt{cv19} & fixed brace designs\newline U+007B, U+007D & both \\
-\texttt{cv20} & plain stretchable brace construction\newline U+23DE--23DF & both \\
-\texttt{cv21} & original curly brace variant/assembly construction\newline U+23DE--23DF & both \\
-\texttt{cv89} & original MTPro2 bold Latin and digits\newline U+1D400--1D433, U+1D7CE--1D7D7 & both \\
-\texttt{cv89} & Latin-shaped Greek aliases of those bold glyphs\newline U+1D6A8--1D6A9, U+1D6AC--1D6AE, U+1D6B0--1D6B1, U+1D6B3--1D6B4, U+1D6B6, U+1D6B8, U+1D6BB, U+1D6BE, U+1D6D0 & Full \\
-\texttt{cv90} & Script/Fraktur source alternates and Fraktur reuse, text design\newline Script/Fraktur inputs & Full \\
-\texttt{cv91} & Script/Fraktur source alternates and Fraktur reuse, script design\newline Script/Fraktur inputs & Full \\
-\texttt{cv92} & Script/Fraktur source alternates and Fraktur reuse, scriptscript design\newline Script/Fraktur inputs & Full \\
-\texttt{cv93} & Curly source alternates, text design\newline U+2133, U+1D4A2, U+1D4A9, U+1D4AC, U+1D4B4 & Full \\
-\texttt{cv94} & Curly source alternates, script design\newline U+2133, U+1D4A2, U+1D4A9, U+1D4AC, U+1D4B4 & Full \\
-\texttt{cv95} & Curly source alternates, scriptscript design\newline U+2133, U+1D4A2, U+1D4A9, U+1D4AC, U+1D4B4 & Full \\
-\texttt{cv96} & original MTPro2 AMS yen/registered alternates\newline U+00A5, U+00AE & Full \\
+\texttt{cv01} & Swash z & \texttt{U+1D467} & F/L \\*
+ & & \texttt{U+1D49B} & F \\
+\texttt{cv02} & Alternative beta and delta, upright and italic & \texttt{U+03B2}; \texttt{U+03B4}; \texttt{U+1D6FD}; \texttt{U+1D6FF} & F/L \\*
+ & & \texttt{U+1D6C3}; \texttt{U+1D6C5}; \texttt{U+1D737}; \texttt{U+1D739} & F \\
+\texttt{cv03} & Alternative hbar (original hslash) & \texttt{U+210F} & F/L \\
+\texttt{cv11} & Slanted product, coproduct and sum & \texttt{U+220F--U+2211} & F/L \\
+\texttt{cv12} & Alternative small and large conjunction signs & \texttt{U+2227}; \texttt{U+22C0} & F/L \\
+\texttt{cv21} & Straight braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
+\texttt{cv22} & Large prebuilt parentheses & \texttt{U+0028--U+0029} & F/L \\
+\texttt{cv23} & Large prebuilt curly braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
+\texttt{cv24=1} & Plain overbrace and underbrace & \texttt{U+23DE--U+23DF} & F/L \\
+\texttt{cv24=2} & Curly overbrace and underbrace & \texttt{U+23DE--U+23DF} & F/L \\
+\texttt{cv31} & Script alternatives, regular and bold & Script alternate inputs listed below & F \\
+\texttt{cv32} & Fraktur alternatives, regular and bold & Fraktur alternate inputs listed below & F \\
+\texttt{cv33} & Heavier upright Blackboard & Upright Blackboard Latin and digits & F \\
+\texttt{cv34} & Holey Blackboard, including the standard italic forms & Upright Blackboard Latin and digits; \texttt{U+213C--213F}; \texttt{U+2145--2149} & F \\
+\texttt{cv41} & Alternative proper-subset and proper-superset signs & \texttt{U+228A--U+228B}; \texttt{U+2ACB--U+2ACC} & F \\
+\texttt{cv42} & Alternative less/greater-than-but-not-equal signs & \texttt{U+2268--U+2269} & F \\
+\texttt{cv43} & Short divides and parallel signs, including their negations & \texttt{U+2223--U+2226} & F \\
+\texttt{cv44} & Thick similar and approximately-equal signs & \texttt{U+223C}; \texttt{U+2248} & F \\
+\texttt{cv45} & Alternative proportional-to, smile and frown signs & \texttt{U+221D}; \texttt{U+2322--U+2323} & F \\
+\texttt{cv46=1} & Slanted-equality negated comparisons; alternative negated inclusions & \texttt{U+2270--U+2271}; \texttt{U+2288--U+2289} & F \\
+\texttt{cv46=2} & Double-equality negated comparisons and inclusions & \texttt{U+2270--U+2271}; \texttt{U+2288--U+2289} & F \\
+\texttt{cv47} & Alternative not-similar sign & \texttt{U+2241} & F \\
+\texttt{cv51} & Alternative empty set & \texttt{U+2205} & F \\
+\texttt{cv52} & Shaded spade and club & \texttt{U+2660}; \texttt{U+2663} & F/L \\
+\texttt{cv53} & Alternative yen and registered signs & \texttt{U+00A5}; \texttt{U+00AE} & F \\
+\texttt{ss01} & Curly Script & Regular Script alphabet & F \\
+\texttt{ss02} & Curly Script alternate series & Regular Script alphabet & F \\
 \end{longtable}\endgroup
 
-\begingroup\raggedright
-\textbf{Blackboard inputs:} U+2102, U+210D, U+2115, U+2119--211A, U+211D, U+2124, U+1D538--1D539, U+1D53B--1D53E, U+1D540--1D544, U+1D546, U+1D54A--1D550, U+1D552--1D56B, U+1D7D8--1D7E1.\par
-\textbf{Script/Fraktur inputs:} U+2110--2112, U+211C, U+1D49E, U+1D4A2, U+1D4AC, U+1D4AE, U+1D4B4--1D4B5, U+1D4C7, U+1D4CF, U+1D4D2, U+1D4D6, U+1D4D8, U+1D4DB, U+1D4E0, U+1D4E2, U+1D4E8--1D4E9, U+1D4FB, U+1D503, U+1D51C, U+1D535--1D536, U+1D584, U+1D59D--1D59E.\par
-\endgroup
+\file{cv33} and \file{cv34} together select the heavier Holey upright
+Blackboard design. \file{cv33} leaves the Greek and standard italic
+Blackboard characters unchanged. \file{cv34} selects their corresponding
+Holey designs.
 
-\subsection{Additional source letters and fixed accents}
-The following private-use characters select source letter and
-fixed-accent designs in both editions. Letter inputs use an explicit
-math character; fixed accents use an accent primitive:
-\begin{samepage}
-\begin{verbatim}
-\[ \Umathchar 0 \symoperators "E240\relax \]
-\[ \Umathaccent fixed 0 \symoperators "E24C {x} \]
-\end{verbatim}
-\end{samepage}
+\file{ss01} and \file{cv31} can be combined. \file{ss02} selects the Curly
+alternate series without requiring \file{ss01}; it overrides the regular
+Script choices of \file{ss01} and \file{cv31}. \file{cv32} remains independent.
 
-\begin{center}
-\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
-\toprule
-Input & Design \\
-\midrule
-U+E240 & Italic beta variant \\
-U+E241, U+E242 & Italic and upright delta variants \\
-U+E243, U+E244 & Italic and upright barred d \\
-U+E24E, U+E24A & Fixed bar designs: wbar and wwbar \\
-U+E24F, U+E250, U+E251 & Fixed wide hat, tilde and check \\
-U+E24B, U+E24C & Raised dot and double-dot accents \\
-U+E254, U+E255 & Raised triple-dot and quadruple-dot accents \\
-\bottomrule
-\end{tabularx}
-\end{center}
+For \file{cv24} and \file{cv46}, choose one numbered value per tag;
+disabling the feature restores the default. \file{cv47} affects only
+U+2241 and can be combined with either \file{cv46} choice.
 
-\section{Large-symbol inputs}\label{sec:large}
-\subsection{Automatic size selection}
-The table lists the input, direction of growth (V: vertical; H:
-horizontal), number of prebuilt variants, and availability of assembly.
-The input examples use LuaLaTeX. Pair \file{\left} and \file{\right}
-around a formula; a dot gives an invisible delimiter. Use \file{\sqrt[n]}
-for a radical with a degree.
+\begingroup\small\raggedright\textbf{Script alternate inputs:} \texttt{U+2110}; \texttt{U+2112}; \texttt{U+1D49E}; \texttt{U+1D4A2}; \texttt{U+1D4AC}; \texttt{U+1D4AE}; \texttt{U+1D4B4--U+1D4B5}; \texttt{U+1D4C7}; \texttt{U+1D4CF}; \texttt{U+1D4D2}; \texttt{U+1D4D6}; \texttt{U+1D4D8}; \texttt{U+1D4DB}; \texttt{U+1D4E0}; \texttt{U+1D4E2}; \texttt{U+1D4E8--U+1D4E9}; \texttt{U+1D4FB}; \texttt{U+1D503}.\par\endgroup
+
+\begingroup\small\raggedright\textbf{Fraktur alternate inputs:} \texttt{U+2111}; \texttt{U+211C}; \texttt{U+1D51C}; \texttt{U+1D535--U+1D536}; \texttt{U+1D584}; \texttt{U+1D59D--U+1D59E}.\par\endgroup
+
+\section{Growing symbols}\label{sec:large}
+The table lists standard inputs with MATH size data in both editions.
+V and H denote vertical and horizontal growth. Var. counts the records
+in the prebuilt variant list; Asm. indicates an assembly. Zero variants
+with an assembly means that growth uses repeatable parts.
+
+Use paired \file{\left} and \file{\right} for delimiters, \file{\sqrt}
+for radicals, and accent or over/under commands for horizontal constructions.
+The table describes font data; a symbol command alone need not request growth.
+For U+20D7, \file{\vec} selects a fixed accent and \file{\overrightarrow}
+requests a wide accent. \file{\bar} and \file{\overbar} use the fixed
+U+0304 accent; \file{\wideoverbar} uses U+0305.
 
 \begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
-\begin{longtable}{@{}p{0.18\linewidth}p{0.085\linewidth}p{0.235\linewidth}p{0.035\linewidth}p{0.045\linewidth}p{0.07\linewidth}p{0.12\linewidth}p{0.065\linewidth}@{}}
+\begin{longtable}{@{}p{0.12\linewidth}p{0.38\linewidth}p{0.16\linewidth}p{0.06\linewidth}p{0.08\linewidth}p{0.08\linewidth}@{}}
 \toprule
-Meaning & Unicode & Input & V/H & Var. & Asm. & Control & Edition \\ \midrule \endfirsthead
+Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endfirsthead
 \toprule
-Meaning & Unicode & Input & V/H & Var. & Asm. & Control & Edition \\ \midrule \endhead
+Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endhead
 \bottomrule\endfoot
-left parenthesis & \texttt{U+\allowbreak{}0028} & \texttt{\textbackslash{}left(} & V & 26 & yes & body height & both \\
-right parenthesis & \texttt{U+\allowbreak{}0029} & \texttt{\textbackslash{}right)} & V & 26 & yes & body height & both \\
-solidus & \texttt{U+\allowbreak{}002F} & \texttt{\textbackslash{}left/\allowbreak{}} & V & 26 & no & body height & both \\
-left square bracket & \texttt{U+\allowbreak{}005B} & \texttt{\textbackslash{}left\textbackslash{}lbrack} & V & 5 & yes & body height & both \\
-reverse solidus & \texttt{U+\allowbreak{}005C} & \texttt{\textbackslash{}left\textbackslash{}backslash} & V & 26 & no & body height & both \\
-right square bracket & \texttt{U+\allowbreak{}005D} & \texttt{\textbackslash{}right\textbackslash{}rbrack} & V & 5 & yes & body height & both \\
-left curly bracket & \texttt{U+\allowbreak{}007B} & \texttt{\textbackslash{}left\textbackslash{}\textbraceleft{}} & V & 26 & yes & body height & both \\
-vertical line & \texttt{U+\allowbreak{}007C} & \texttt{\textbackslash{}left\textbackslash{}vert} & V & 2 & yes & body height & both \\
-right curly bracket & \texttt{U+\allowbreak{}007D} & \texttt{\textbackslash{}right\textbackslash{}\textbraceright{}} & V & 26 & yes & body height & both \\
-combining circumflex accent & \texttt{U+\allowbreak{}0302} & \texttt{\textbackslash{}widehat} & H & 40 & no & body width & both \\
-combining tilde & \texttt{U+\allowbreak{}0303} & \texttt{\textbackslash{}widetilde} & H & 40 & no & body width & both \\
-combining caron & \texttt{U+\allowbreak{}030C} & \texttt{\textbackslash{}widecheck} & H & 40 & no & body width & both \\
-double vertical line & \texttt{U+\allowbreak{}2016} & \texttt{\textbackslash{}left\textbackslash{}Vert} & V & 2 & yes & body height & both \\
-n-ary product & \texttt{U+\allowbreak{}220F} & \texttt{\textbackslash{}prod} & V & 6 & no & operator size & both \\
-n-ary coproduct & \texttt{U+\allowbreak{}2210} & \texttt{\textbackslash{}coprod} & V & 6 & no & operator size & both \\
-n-ary summation & \texttt{U+\allowbreak{}2211} & \texttt{\textbackslash{}sum} & V & 6 & no & operator size & both \\
-square root & \texttt{U+\allowbreak{}221A} & \texttt{\textbackslash{}sqrt} & V & 26 & yes & body height & both \\
-integral & \texttt{U+\allowbreak{}222B} & \texttt{\textbackslash{}int} & V & 6 & no & operator size & both \\
-double integral & \texttt{U+\allowbreak{}222C} & \texttt{\textbackslash{}iint} & V & 6 & no & operator size & both \\
-triple integral & \texttt{U+\allowbreak{}222D} & \texttt{\textbackslash{}iiint} & V & 6 & no & operator size & both \\
-contour integral & \texttt{U+\allowbreak{}222E} & \texttt{\textbackslash{}oint} & V & 6 & no & operator size & both \\
-surface integral & \texttt{U+\allowbreak{}222F} & \texttt{\textbackslash{}oiint} & V & 6 & no & operator size & both \\
-volume integral & \texttt{U+\allowbreak{}2230} & \texttt{\textbackslash{}oiiint} & V & 6 & no & operator size & both \\
-clockwise integral & \texttt{U+\allowbreak{}2231} & \texttt{\textbackslash{}intclockwise} & V & 6 & no & operator size & both \\
-clockwise contour integral & \texttt{U+\allowbreak{}2232} & \texttt{\textbackslash{}varointclockwise} & V & 6 & no & operator size & both \\
-anticlockwise contour integral & \texttt{U+\allowbreak{}2233} & \texttt{\textbackslash{}ointctrclockwise} & V & 6 & no & operator size & both \\
-n-ary logical and & \texttt{U+\allowbreak{}22C0} & \texttt{\textbackslash{}bigwedge} & V & 6 & no & operator size & both \\
-n-ary logical or & \texttt{U+\allowbreak{}22C1} & \texttt{\textbackslash{}bigvee} & V & 6 & no & operator size & both \\
-n-ary intersection & \texttt{U+\allowbreak{}22C2} & \texttt{\textbackslash{}bigcap} & V & 6 & no & operator size & both \\
-n-ary union & \texttt{U+\allowbreak{}22C3} & \texttt{\textbackslash{}bigcup} & V & 6 & no & operator size & both \\
-left ceiling & \texttt{U+\allowbreak{}2308} & \texttt{\textbackslash{}left\textbackslash{}lceil} & V & 5 & yes & body height & both \\
-right ceiling & \texttt{U+\allowbreak{}2309} & \texttt{\textbackslash{}right\textbackslash{}rceil} & V & 5 & yes & body height & both \\
-left floor & \texttt{U+\allowbreak{}230A} & \texttt{\textbackslash{}left\textbackslash{}lfloor} & V & 5 & yes & body height & both \\
-right floor & \texttt{U+\allowbreak{}230B} & \texttt{\textbackslash{}right\textbackslash{}rfloor} & V & 5 & yes & body height & both \\
-top parenthesis & \texttt{U+\allowbreak{}23DC} & \texttt{\textbackslash{}overparen} & H & 26 & yes & body width & both \\
-top curly bracket & \texttt{U+\allowbreak{}23DE} & \texttt{\textbackslash{}overbrace} & H & 0 & yes & body width & both \\
-bottom curly bracket & \texttt{U+\allowbreak{}23DF} & \texttt{\textbackslash{}underbrace} & H & 0 & yes & body width & both \\
-mathematical left angle bracket & \texttt{U+\allowbreak{}27E8} & \texttt{\textbackslash{}left\textbackslash{}langle} & V & 26 & no & body height & both \\
-mathematical right angle bracket & \texttt{U+\allowbreak{}27E9} & \texttt{\textbackslash{}right\textbackslash{}rangle} & V & 26 & no & body height & both \\
-n-ary circled dot operator & \texttt{U+\allowbreak{}2A00} & \texttt{\textbackslash{}bigodot} & V & 6 & no & operator size & both \\
-n-ary circled plus operator & \texttt{U+\allowbreak{}2A01} & \texttt{\textbackslash{}bigoplus} & V & 6 & no & operator size & both \\
-n-ary circled times operator & \texttt{U+\allowbreak{}2A02} & \texttt{\textbackslash{}bigotimes} & V & 6 & no & operator size & both \\
-n-ary union operator with dot & \texttt{U+\allowbreak{}2A03} & \texttt{\textbackslash{}bigcupdot} & V & 6 & no & operator size & both \\
-n-ary union operator with plus & \texttt{U+\allowbreak{}2A04} & \texttt{\textbackslash{}biguplus} & V & 6 & no & operator size & both \\
-n-ary square union operator & \texttt{U+\allowbreak{}2A06} & \texttt{\textbackslash{}bigsqcup} & V & 6 & no & operator size & both \\
-finite part integral & \texttt{U+\allowbreak{}2A0D} & \texttt{\textbackslash{}intbar} & V & 6 & no & operator size & both \\
-integral average with slash & \texttt{U+\allowbreak{}2A0F} & \texttt{\textbackslash{}fint} & V & 6 & no & operator size & both \\
-cap product & \texttt{U+\allowbreak{}E280} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E280} & V & 6 & no & operator size & both \\
-slanted sum & \texttt{U+\allowbreak{}E281} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E281} & V & 6 & no & operator size & both \\
-slanted product & \texttt{U+\allowbreak{}E282} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E282} & V & 6 & no & operator size & both \\
-slanted coproduct & \texttt{U+\allowbreak{}E283} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E283} & V & 6 & no & operator size & both \\
-variant large land & \texttt{U+\allowbreak{}E284} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E284} & V & 6 & no & operator size & both \\
-large asterisk & \texttt{U+\allowbreak{}E285} & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E285} & V & 6 & no & operator size & both \\
-finite wide overbar & \texttt{U+\allowbreak{}E286} & accent input; see \ref{sec:pua-accents} & H & 3 & no & body width & both \\
-assembled wide vector & \texttt{U+\allowbreak{}E287} & accent input; see \ref{sec:pua-accents} & H & 0 & yes & body width & both \\
+\texttt{U+0028} & \texttt{\detokenize{\lparen}} & default & V & 5 & yes \\
+\texttt{U+0028} & \texttt{\detokenize{\lparen}} & \texttt{cv22=1} & V & 24 & yes \\
+\texttt{U+0029} & \texttt{\detokenize{\rparen}} & default & V & 5 & yes \\
+\texttt{U+0029} & \texttt{\detokenize{\rparen}} & \texttt{cv22=1} & V & 24 & yes \\
+\texttt{U+002F} & \texttt{\detokenize{\mathslash}} & default & V & 5 & no \\
+\texttt{U+005B} & \texttt{\detokenize{\lbrack}} & default & V & 5 & yes \\
+\texttt{U+005C} & \texttt{\detokenize{\backslash}} & default & V & 5 & no \\
+\texttt{U+005D} & \texttt{\detokenize{\rbrack}} & default & V & 5 & yes \\
+\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & default & V & 5 & yes \\
+\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & \texttt{cv23=1} & V & 24 & yes \\
+\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & \texttt{cv21=1} & V & 5 & yes \\
+\texttt{U+007C} & \texttt{\detokenize{\vert}} & default & V & 1 & yes \\
+\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & default & V & 5 & yes \\
+\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & \texttt{cv23=1} & V & 24 & yes \\
+\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & \texttt{cv21=1} & V & 5 & yes \\
+\texttt{U+0302} & \texttt{\detokenize{\widehat{...}}} & default & H & 37 & no \\
+\texttt{U+0303} & \texttt{\detokenize{\widetilde{...}}} & default & H & 37 & no \\
+\texttt{U+0305} & \texttt{\detokenize{\wideoverbar{...}}} & default & H & 3 & yes \\
+\texttt{U+030C} & \texttt{\detokenize{\widecheck{...}}} & default & H & 35 & no \\
+\texttt{U+2016} & \texttt{\detokenize{\Vert}} & default & V & 1 & yes \\
+\texttt{U+20D6} & \texttt{\detokenize{\overleftarrow{...}}} & default & H & 0 & yes \\
+\texttt{U+20D7} & \texttt{\detokenize{\overrightarrow{...}}} & default & H & 2 & yes \\
+\texttt{U+2190} & \texttt{\detokenize{\leftarrow}} & default & H & 2 & yes \\
+\texttt{U+2191} & \texttt{\detokenize{\uparrow}} & default & V & 1 & yes \\
+\texttt{U+2192} & \texttt{\detokenize{\rightarrow}} & default & H & 2 & yes \\
+\texttt{U+2193} & \texttt{\detokenize{\downarrow}} & default & V & 1 & yes \\
+\texttt{U+2194} & \texttt{\detokenize{\leftrightarrow}} & default & H & 2 & yes \\
+\texttt{U+2195} & \texttt{\detokenize{\updownarrow}} & default & V & 1 & yes \\
+\texttt{U+21A6} & \texttt{\detokenize{\mapsto}} & default & H & 2 & no \\
+\texttt{U+21D0} & \texttt{\detokenize{\Leftarrow}} & default & H & 2 & yes \\
+\texttt{U+21D1} & \texttt{\detokenize{\Uparrow}} & default & V & 1 & yes \\
+\texttt{U+21D2} & \texttt{\detokenize{\Rightarrow}} & default & H & 2 & yes \\
+\texttt{U+21D3} & \texttt{\detokenize{\Downarrow}} & default & V & 1 & yes \\
+\texttt{U+21D4} & \texttt{\detokenize{\Leftrightarrow}} & default & H & 2 & yes \\
+\texttt{U+21D5} & \texttt{\detokenize{\Updownarrow}} & default & V & 1 & yes \\
+\texttt{U+220F} & \texttt{\detokenize{\prod}} & default & V & 2 & no \\
+\texttt{U+220F} & \texttt{\detokenize{\prod}} & \texttt{cv11=1} & V & 2 & no \\
+\texttt{U+2210} & \texttt{\detokenize{\coprod}} & default & V & 2 & no \\
+\texttt{U+2210} & \texttt{\detokenize{\coprod}} & \texttt{cv11=1} & V & 2 & no \\
+\texttt{U+2211} & \texttt{\detokenize{\sum}} & default & V & 2 & no \\
+\texttt{U+2211} & \texttt{\detokenize{\sum}} & \texttt{cv11=1} & V & 2 & no \\
+\texttt{U+221A} & \texttt{\detokenize{\sqrt{...}}} & default & V & 5 & yes \\
+\texttt{U+2223} & \texttt{\detokenize{\mid}} & default & V & 1 & yes \\
+\texttt{U+2225} & \texttt{\detokenize{\parallel}} & default & V & 1 & yes \\
+\texttt{U+222B} & \texttt{\detokenize{\int}} & default & V & 2 & no \\
+\texttt{U+222C} & \texttt{\detokenize{\iint}} & default & V & 2 & no \\
+\texttt{U+222D} & \texttt{\detokenize{\iiint}} & default & V & 2 & no \\
+\texttt{U+222E} & \texttt{\detokenize{\oint}} & default & V & 2 & no \\
+\texttt{U+222F} & \texttt{\detokenize{\oiint}} & default & V & 2 & no \\
+\texttt{U+2230} & \texttt{\detokenize{\oiiint}} & default & V & 2 & no \\
+\texttt{U+2231} & \texttt{\detokenize{\intclockwise}} & default & V & 2 & no \\
+\texttt{U+2232} & \texttt{\detokenize{\varointclockwise}} & default & V & 2 & no \\
+\texttt{U+2233} & \texttt{\detokenize{\ointctrclockwise}} & default & V & 2 & no \\
+\texttt{U+22C0} & \texttt{\detokenize{\bigwedge}} & default & V & 2 & no \\
+\texttt{U+22C0} & \texttt{\detokenize{\bigwedge}} & \texttt{cv12=1} & V & 2 & no \\
+\texttt{U+22C1} & \texttt{\detokenize{\bigvee}} & default & V & 2 & no \\
+\texttt{U+22C2} & \texttt{\detokenize{\bigcap}} & default & V & 2 & no \\
+\texttt{U+22C3} & \texttt{\detokenize{\bigcup}} & default & V & 2 & no \\
+\texttt{U+2308} & \texttt{\detokenize{\lceil}} & default & V & 5 & yes \\
+\texttt{U+2309} & \texttt{\detokenize{\rceil}} & default & V & 5 & yes \\
+\texttt{U+230A} & \texttt{\detokenize{\lfloor}} & default & V & 5 & yes \\
+\texttt{U+230B} & \texttt{\detokenize{\rfloor}} & default & V & 5 & yes \\
+\texttt{U+23AA} & \texttt{\detokenize{\vbraceextender}} & default & V & 1 & yes \\
+\texttt{U+23B0} & \texttt{\detokenize{\lmoustache}} & default & V & 1 & yes \\
+\texttt{U+23B1} & \texttt{\detokenize{\rmoustache}} & default & V & 1 & yes \\
+\texttt{U+23DC} & \texttt{\detokenize{\overparen{...}}} & default & H & 24 & yes \\
+\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & default & H & 0 & yes \\
+\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & \texttt{cv24=1} & H & 0 & yes \\
+\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & \texttt{cv24=2} & H & 35 & yes \\
+\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & default & H & 0 & yes \\
+\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & \texttt{cv24=1} & H & 0 & yes \\
+\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & \texttt{cv24=2} & H & 35 & yes \\
+\texttt{U+27E8} & \texttt{\detokenize{\langle}} & default & V & 5 & no \\
+\texttt{U+27E9} & \texttt{\detokenize{\rangle}} & default & V & 5 & no \\
+\texttt{U+27EE} & \texttt{\detokenize{\lgroup}} & default & V & 1 & yes \\
+\texttt{U+27EF} & \texttt{\detokenize{\rgroup}} & default & V & 1 & yes \\
+\texttt{U+2A00} & \texttt{\detokenize{\bigodot}} & default & V & 2 & no \\
+\texttt{U+2A01} & \texttt{\detokenize{\bigoplus}} & default & V & 2 & no \\
+\texttt{U+2A02} & \texttt{\detokenize{\bigotimes}} & default & V & 2 & no \\
+\texttt{U+2A03} & \texttt{\detokenize{\bigcupdot}} & default & V & 2 & no \\
+\texttt{U+2A04} & \texttt{\detokenize{\biguplus}} & default & V & 2 & no \\
+\texttt{U+2A06} & \texttt{\detokenize{\bigsqcup}} & default & V & 2 & no \\
+\texttt{U+2A0D} & \texttt{\detokenize{\intbar}} & default & V & 2 & no \\
+\texttt{U+2A0F} & \texttt{\detokenize{\fint}} & default & V & 2 & no \\
 \end{longtable}\endgroup
 
-\begin{samepage}
-\subsection{Size requests}
-The engine selects variants using MATH AdvanceMeasurement, formula dimensions,
-style, delimiter factor and shortfall. AdvanceMeasurement is a selection
-dimension, not an ink measurement. Operators have finite size series.
-Lua can request a larger operator with \file{\Umathoperatorsize}:
-
-\begin{verbatim}
-\begingroup
-\[ \Umathoperatorsize\displaystyle=72pt
-   \sum_{n=0}^{N} a_n \]
-\endgroup
-\end{verbatim}
-The request selects an available operator design; its ink height may
-differ from 72pt.
-
-\end{samepage}
-
-\subsection{Fixed character-variant choices}
-The table lists 121 choices in their parameter order. cv15=27 selects the
-alternate arc design. cv13--cv16 and cv18--cv19 select glyphs without growing
-constructions. Each cv17 choice selects a single terminal radical design
-without assembly.
-Use the Input and RawFeature columns to select a design; the last column
-names the stored glyph.
-
-For a fixed design, select the feature and use an explicit math class.
-This example displays the alternate arc as a standalone class-0 symbol:
-\begin{samepage}
-\begin{verbatim}
-\setmathfont{MTPro2Math.otf}[version=fixedarc,
-                          RawFeature={cv15=27}]
-\begingroup\mathversion{fixedarc}
-\[ \Umathchar 0 \symoperators "23DC \]
-\endgroup
-\end{verbatim}
-\end{samepage}
-Fixed accents require accent syntax; use the ordinary radical for
-automatic \file{\sqrt} growth.
-
-\begingroup\small\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
-\begin{longtable}{@{}p{0.16\linewidth}p{0.20\linewidth}p{0.56\linewidth}@{}}
-\toprule
-Input & RawFeature & Glyph identifier \\ \midrule \endfirsthead
-\toprule
-Input & RawFeature & Glyph identifier \\ \midrule \endhead
-\bottomrule\endfoot
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=1} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe176.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=2} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe177.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=3} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe178.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=4} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe179.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=5} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe180.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=6} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe181.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=7} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe182.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=8} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe183.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=9} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe184.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=10} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe185.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=11} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe186.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=12} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe187.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=13} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe188.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=14} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe189.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=15} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe190.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=16} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe191.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=17} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe192.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=18} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf160.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=19} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf161.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=20} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf162.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=21} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf163.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=22} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf164.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=23} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf165.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=24} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf166.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=25} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf167.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=26} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf168.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=27} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf169.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=28} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf170.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=29} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exf171.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=30} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg160.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=31} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg161.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=32} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg162.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=33} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg163.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=34} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg164.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DE} & \texttt{cv13=35} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exg165.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=1} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe144.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=2} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe145.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=3} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe146.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=4} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe147.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=5} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe148.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=6} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe149.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=7} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe150.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=8} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe151.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=9} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe152.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=10} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe153.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=11} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe154.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=12} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe155.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=13} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe156.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=14} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe157.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=15} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe158.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=16} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe159.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=17} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe160.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=18} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf144.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=19} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf145.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=20} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf146.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=21} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf147.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=22} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf148.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=23} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf149.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=24} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf150.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=25} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf151.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=26} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf152.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=27} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf153.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=28} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf154.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=29} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exf155.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=30} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg144.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=31} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg145.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=32} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg146.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=33} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg147.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=34} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg148.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DF} & \texttt{cv14=35} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exg149.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=1} & \texttt{uni23DC.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=2} & \texttt{exa.\allowbreak{}191.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=3} & \texttt{exa.\allowbreak{}192.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=4} & \texttt{exa.\allowbreak{}193.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=5} & \texttt{exa.\allowbreak{}194.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=6} & \texttt{uni23DC.\allowbreak{}exe208.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=7} & \texttt{uni23DC.\allowbreak{}exe209.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=8} & \texttt{uni23DC.\allowbreak{}exe210.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=9} & \texttt{uni23DC.\allowbreak{}exe211.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=10} & \texttt{uni23DC.\allowbreak{}exe212.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=11} & \texttt{uni23DC.\allowbreak{}exe213.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=12} & \texttt{uni23DC.\allowbreak{}exe214.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=13} & \texttt{uni23DC.\allowbreak{}exf177.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=14} & \texttt{uni23DC.\allowbreak{}exf178.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=15} & \texttt{uni23DC.\allowbreak{}exf179.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=16} & \texttt{uni23DC.\allowbreak{}exf180.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=17} & \texttt{uni23DC.\allowbreak{}exf181.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=18} & \texttt{uni23DC.\allowbreak{}exf182.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=19} & \texttt{uni23DC.\allowbreak{}exf183.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=20} & \texttt{uni23DC.\allowbreak{}exg177.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=21} & \texttt{uni23DC.\allowbreak{}exg178.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=22} & \texttt{uni23DC.\allowbreak{}exg179.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=23} & \texttt{uni23DC.\allowbreak{}exg180.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=24} & \texttt{uni23DC.\allowbreak{}exg181.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=25} & \texttt{uni23DC.\allowbreak{}exg182.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=26} & \texttt{uni23DC.\allowbreak{}exg183.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}23DC} & \texttt{cv15=27} & \texttt{exa.\allowbreak{}arc195.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}0028} & \texttt{cv16=1} & \texttt{uni0028.\allowbreak{}exg0.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}0029} & \texttt{cv16=1} & \texttt{uni0029.\allowbreak{}exg1.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007B} & \texttt{cv16=1} & \texttt{uni007B.\allowbreak{}exf8.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007B} & \texttt{cv16=2} & \texttt{uni007B.\allowbreak{}exg8.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007D} & \texttt{cv16=1} & \texttt{uni007D.\allowbreak{}exf9.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007D} & \texttt{cv16=2} & \texttt{uni007D.\allowbreak{}exg9.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}27E8} & \texttt{cv16=1} & \texttt{uni27E8.\allowbreak{}exg10.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}27E9} & \texttt{cv16=1} & \texttt{uni27E9.\allowbreak{}exg11.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}005C} & \texttt{cv16=1} & \texttt{uni005C.\allowbreak{}exg15.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}221A} & \texttt{cv17=1} & \texttt{uni221A.\allowbreak{}exf112.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}221A} & \texttt{cv17=2} & \texttt{uni221A.\allowbreak{}exg112.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}0302} & \texttt{cv18=1} & \texttt{uni0302.\allowbreak{}exe57.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}0302} & \texttt{cv18=2} & \texttt{uni0302.\allowbreak{}exf59.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}0303} & \texttt{cv18=1} & \texttt{exa.\allowbreak{}103.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}030C} & \texttt{cv18=1} & \texttt{uni030C.\allowbreak{}exe89.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}030C} & \texttt{cv18=2} & \texttt{uni030C.\allowbreak{}exf91.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007B} & \texttt{cv19=1} & \texttt{exa.\allowbreak{}morphed182.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007B} & \texttt{cv19=2} & \texttt{exa.\allowbreak{}morphed184.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007B} & \texttt{cv19=3} & \texttt{exa.\allowbreak{}morphed186.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007B} & \texttt{cv19=4} & \texttt{exa.\allowbreak{}morphed188.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007D} & \texttt{cv19=1} & \texttt{exa.\allowbreak{}morphed183.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007D} & \texttt{cv19=2} & \texttt{exa.\allowbreak{}morphed185.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007D} & \texttt{cv19=3} & \texttt{exa.\allowbreak{}morphed187.\allowbreak{}fixed} \\
-\texttt{U+\allowbreak{}007D} & \texttt{cv19=4} & \texttt{exa.\allowbreak{}morphed189.\allowbreak{}fixed} \\
-\end{longtable}\endgroup
-
-
-\subsection{Alternative growing constructions}
-cv08 selects straight vertical braces; cv12 selects slanted large operators.
-For horizontal braces, cv20 selects plain assemblies and cv21 selects Curly
-variants with assembly.
-
-\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
-\begin{longtable}{@{}p{0.13\linewidth}p{0.16\linewidth}p{0.4\linewidth}p{0.1\linewidth}p{0.1\linewidth}@{}}
-\toprule
-Input & RawFeature & Construction root & Variants & Assembly \\ \midrule \endfirsthead
-\toprule
-Input & RawFeature & Construction root & Variants & Assembly \\ \midrule \endhead
-\bottomrule\endfoot
-\texttt{U+\allowbreak{}007B} & \texttt{+\allowbreak{}cv08} & \texttt{braceleft.\allowbreak{}straight} & 5 & yes \\
-\texttt{U+\allowbreak{}007D} & \texttt{+\allowbreak{}cv08} & \texttt{braceright.\allowbreak{}straight} & 5 & yes \\
-\texttt{U+\allowbreak{}2211} & \texttt{+\allowbreak{}cv12} & \texttt{slsum} & 6 & no \\
-\texttt{U+\allowbreak{}220F} & \texttt{+\allowbreak{}cv12} & \texttt{slprod} & 6 & no \\
-\texttt{U+\allowbreak{}2210} & \texttt{+\allowbreak{}cv12} & \texttt{slcoprod} & 6 & no \\
-\texttt{U+\allowbreak{}23DE} & \texttt{+\allowbreak{}cv20} & \texttt{brace.\allowbreak{}plain.\allowbreak{}over} & 0 & yes \\
-\texttt{U+\allowbreak{}23DF} & \texttt{+\allowbreak{}cv20} & \texttt{brace.\allowbreak{}plain.\allowbreak{}under} & 0 & yes \\
-\texttt{U+\allowbreak{}23DE} & \texttt{+\allowbreak{}cv21} & \texttt{uni23DE.\allowbreak{}curly.\allowbreak{}exe176} & 35 & yes \\
-\texttt{U+\allowbreak{}23DF} & \texttt{+\allowbreak{}cv21} & \texttt{uni23DF.\allowbreak{}curly.\allowbreak{}exe144} & 35 & yes \\
-\end{longtable}\endgroup
-
-For example, select the curly construction in the preamble and use
-ordinary overbrace and underbrace commands:
-\begin{samepage}
-\begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv21}]
-\end{verbatim}
-\end{samepage}
-\begin{samepage}
-\begin{verbatim}
-\[ \overbrace{a+b+c+d}^{n} \qquad \underbrace{a+b+c+d}_{n} \]
-\end{verbatim}
-\end{samepage}
-
-\subsection{Private-use operators and accents}\label{sec:pua-accents}
-These private-use entries provide explicit access to large operators
-and extensible accents. U+E280--\allowbreak{}E285 have class~1 and six vertical
-variants; U+E286 and U+E287 use accent primitives.
-For the operators, choose \texttt{\textbackslash{}limits} or \texttt{\textbackslash{}nolimits} according to the intended macro.
-\begin{samepage}
-\begin{verbatim}
-% A cap-product operator, with an explicit size request:
-\[ \Umathoperatorsize\displaystyle=72pt
-   \Umathchar 1 \symoperators "E280\limits_{i=1}^{n}a_i \]
-\end{verbatim}
-\end{samepage}
-
-\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
-\begin{longtable}{@{}p{0.12\linewidth}p{0.22\linewidth}p{0.15\linewidth}p{0.43\linewidth}@{}}
-\toprule
-Input & Meaning & Class / structure & Concrete input \\ \midrule \endfirsthead
-\toprule
-Input & Meaning & Class / structure & Concrete input \\ \midrule \endhead
-\bottomrule\endfoot
-\texttt{U+\allowbreak{}E280} & cap product & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E280} \\
-\texttt{U+\allowbreak{}E281} & slanted sum & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E281} \\
-\texttt{U+\allowbreak{}E282} & slanted product & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E282} \\
-\texttt{U+\allowbreak{}E283} & slanted coproduct & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E283} \\
-\texttt{U+\allowbreak{}E284} & variant large land & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E284} \\
-\texttt{U+\allowbreak{}E285} & large asterisk & 1 (operator) & \texttt{\textbackslash{}Umathchar 1 \textbackslash{}symoperators "E285} \\
-\texttt{U+\allowbreak{}E286} & finite wide overbar & accent primitive & \texttt{\textbackslash{}Umathaccent 0 \textbackslash{}symoperators "E286 \textbraceleft{}a+\allowbreak{}b+\allowbreak{}c\textbraceright{}} \\
-\texttt{U+\allowbreak{}E287} & assembled wide vector & accent primitive & \texttt{\textbackslash{}Umathaccent 0 \textbackslash{}symoperators "E287 \textbraceleft{}a+\allowbreak{}b+\allowbreak{}c\textbraceright{}} \\
-\end{longtable}\endgroup
-
-\subsection{Correspondence with Type~1 commands}\label{sec:macro-equivalents}
-The font provides glyphs and MATH data; the original package's custom
-measurements and placement remain macro responsibilities. The following
-table gives the corresponding OpenType inputs.
-
-\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
-\begin{longtable}{@{}p{0.24\linewidth}p{0.24\linewidth}p{0.43\linewidth}@{}}
-\toprule
-Original name & OpenType input & Usage \\ \midrule \endfirsthead
-\toprule
-Original name & OpenType input & Usage \\ \midrule \endhead
-\bottomrule\endfoot
-\texttt{\textbackslash{}PARENS /\allowbreak{} \textbackslash{}LEFTRIGHT} & \texttt{\textbackslash{}left /\allowbreak{} \textbackslash{}right} & Choose delimiter inputs; the engine measures body height and centers using the math axis. Preserve custom side-space policy in a macro. \\
-\texttt{\textbackslash{}SQRT /\allowbreak{} \textbackslash{}ROOT .\allowbreak{}.\allowbreak{}.\allowbreak{} \textbackslash{}OF} & \texttt{\textbackslash{}sqrt /\allowbreak{} \textbackslash{}sqrt[n]} & MATH handles radical growth and ordinary degree placement; original manual offsets remain a macro policy. \\
-\texttt{\textbackslash{}XL /\allowbreak{} \textbackslash{}XXL /\allowbreak{} \textbackslash{}XXXL} & \texttt{\textbackslash{}Umathoperatorsize} & Request size for standard/PUA or cv12 operator families; source names are not exact size presets. Class and limits are explicit. \\
-\texttt{\textbackslash{}overcbrace /\allowbreak{} \textbackslash{}undercbrace} & \texttt{cv21 /\allowbreak{} cv13 /\allowbreak{} cv14} & cv21 grows over/under a nucleus. cv13/cv14 select fixed designs whose placement and width policy are supplied by the macro. \\
-\texttt{\textbackslash{}arc /\allowbreak{} \textbackslash{}Arc /\allowbreak{} \textbackslash{}widearc} & \texttt{\textbackslash{}overparen /\allowbreak{} cv15} & Automatic width selection or fixed parameter. cv15=27 preserves the alternate arc design. \\
-\texttt{\textbackslash{}widehat /\allowbreak{} \textbackslash{}widecheck /\allowbreak{} \textbackslash{}widetilde} & \texttt{automatic /\allowbreak{} cv18} & Automatic width selection or fixed choices; accent syntax supplies nucleus attachment. \\
-\texttt{\textbackslash{}straightbraces /\allowbreak{} \textbackslash{}morphedbraces} & \texttt{cv08 /\allowbreak{} cv19} & cv08 selects growing straight braces; cv19 selects fixed morphed designs. \\
-\end{longtable}\endgroup
-
+The engine compares its size request with MATH AdvanceMeasurement.
+This is a selection dimension and need not equal the glyph's ink extent.
+Default delimiters and radicals use the ordinary source sequence;
+\file{cv22}/\file{cv23} select larger delimiter series.
 
 \section{Metrics and MATH constants}\label{sec:scalars}
 \subsection{Glyph metrics}
@@ -662,8 +350,10 @@ data. Top-accent attachment for source math alphabets is based on
   \frac{\operatorname{CHARWD}+\operatorname{CHARIC}}{2}
   + \operatorname{skewkern}.
 \]
-Coordinate transformations are accounted for in combining accents and
-synthesized forms. Text, script and scriptscript designs use the source
+For untransformed source alphabets, the calculation uses the exact TFM
+fixed-point values and is rounded once to output units. Combining accents
+and synthesized forms use the corresponding coordinate transformations
+and geometric attachment positions. Text, script and scriptscript designs use the source
 optical sizes.
 
 \subsection{Constants}
@@ -671,7 +361,7 @@ The following assignments define the 56 MATH constants and the common
 connector overlap in both editions. They combine source metrics, package
 script ratios and conversion policies.
 
-The expressions follow \file{tools/math_constants.py} in evaluation order.
+The expressions follow \file{tools/native_math.py} in evaluation order.
 \texttt{round} uses nearest-integer rounding, ties to even; \texttt{//} is
 floor division and \texttt{Fraction(a,b)} is exact rational arithmetic.
 Intermediate rounding is part of each assignment.
@@ -785,63 +475,36 @@ Field & Expression and source class \\
 \endgroup
 
 \section{Roman donor coverage}\label{sec:donors}
-Minimal coverage selects 317 encoded inputs: 255 from Regular and 62 from
-Bold. The table gives output and donor Unicode ranges. Each range includes both endpoints.
-The selection is defined in \file{tools/donor_scope.json}.
+The minimal donor contract contains 317 inputs: 255 from Regular and
+62 from Bold, as defined in \file{tools/donor_scope.json}. Mathematical
+bold upright Latin and digits use MTPro2 glyphs in the final font;
+the Bold donor inputs remain part of the build's input requirements.
+The ranges below list the Regular selection; donor and output Unicode
+values are identical. Ranges include both endpoints.
 
 Mathematical syntax can remap input characters. For a literal Lua math
 input, use \file{\Umathchar 0 \symoperators "00E9\relax}, replacing the
 Unicode value as needed. Upright Latin uses \file{\symup}; bold Latin
-and digits use \file{\symbfup}.
+and digits use \file{\symbfup}, which selects the MTPro2 designs.
 
-\begingroup\small\setlength\tabcolsep{4pt}\renewcommand\arraystretch{1.12}
-\begin{longtable}{@{}p{0.38\linewidth}p{0.16\linewidth}p{0.38\linewidth}@{}}
-\toprule
-Output Unicode & Donor face & Donor Unicode \\ \midrule \endfirsthead
-\toprule
-Output Unicode & Donor face & Donor Unicode \\ \midrule \endhead
-\bottomrule\endfoot
-\texttt{U+0022--U+0027} & Regular & \texttt{U+0022--U+0027} \\
-\texttt{U+002A} & Regular & \texttt{U+002A} \\
-\texttt{U+002D} & Regular & \texttt{U+002D} \\
-\texttt{U+0040--U+005A} & Regular & \texttt{U+0040--U+005A} \\
-\texttt{U+005E--U+007A} & Regular & \texttt{U+005E--U+007A} \\
-\texttt{U+007E} & Regular & \texttt{U+007E} \\
-\texttt{U+00A3} & Regular & \texttt{U+00A3} \\
-\texttt{U+00A5} & Regular & \texttt{U+00A5} \\
-\texttt{U+00AE} & Regular & \texttt{U+00AE} \\
-\texttt{U+00B0} & Regular & \texttt{U+00B0} \\
-\texttt{U+00B7} & Regular & \texttt{U+00B7} \\
-\texttt{U+00C0--U+00C5} & Regular & \texttt{U+00C0--U+00C5} \\
-\texttt{U+00C7--U+00CF} & Regular & \texttt{U+00C7--U+00CF} \\
-\texttt{U+00D1--U+00D6} & Regular & \texttt{U+00D1--U+00D6} \\
-\texttt{U+00D9--U+00DD} & Regular & \texttt{U+00D9--U+00DD} \\
-\texttt{U+00E0--U+00E5} & Regular & \texttt{U+00E0--U+00E5} \\
-\texttt{U+00E7--U+00EF} & Regular & \texttt{U+00E7--U+00EF} \\
-\texttt{U+00F1--U+00F6} & Regular & \texttt{U+00F1--U+00F6} \\
-\texttt{U+00F9--U+00FD} & Regular & \texttt{U+00F9--U+00FD} \\
-\texttt{U+00FF--U+010F} & Regular & \texttt{U+00FF--U+010F} \\
-\texttt{U+0112--U+0125} & Regular & \texttt{U+0112--U+0125} \\
-\texttt{U+0128--U+0131} & Regular & \texttt{U+0128--U+0131} \\
-\texttt{U+0134--U+0137} & Regular & \texttt{U+0134--U+0137} \\
-\texttt{U+0139--U+013E} & Regular & \texttt{U+0139--U+013E} \\
-\texttt{U+0143--U+0148} & Regular & \texttt{U+0143--U+0148} \\
-\texttt{U+014C--U+0151} & Regular & \texttt{U+014C--U+0151} \\
-\texttt{U+0154--U+0165} & Regular & \texttt{U+0154--U+0165} \\
-\texttt{U+0168--U+017E} & Regular & \texttt{U+0168--U+017E} \\
-\texttt{U+01FA--U+01FF} & Regular & \texttt{U+01FA--U+01FF} \\
-\texttt{U+0218--U+021B} & Regular & \texttt{U+0218--U+021B} \\
-\texttt{U+0237} & Regular & \texttt{U+0237} \\
-\texttt{U+02C6} & Regular & \texttt{U+02C6} \\
-\texttt{U+02DC} & Regular & \texttt{U+02DC} \\
-\texttt{U+1E80--U+1E85} & Regular & \texttt{U+1E80--U+1E85} \\
-\texttt{U+1EF2--U+1EF3} & Regular & \texttt{U+1EF2--U+1EF3} \\
-\texttt{U+2044} & Regular & \texttt{U+2044} \\
-\texttt{U+20AC} & Regular & \texttt{U+20AC} \\
-\texttt{U+1D400--U+1D419} & Bold & \texttt{U+0041--U+005A} \\
-\texttt{U+1D41A--U+1D433} & Bold & \texttt{U+0061--U+007A} \\
-\texttt{U+1D7CE--U+1D7D7} & Bold & \texttt{U+0030--U+0039} \\
-\end{longtable}\endgroup
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\texttt{U+0022--U+0027} & \texttt{U+00D1--U+00D6} & \texttt{U+0154--U+0165} \\
+\texttt{U+002A} & \texttt{U+00D9--U+00DD} & \texttt{U+0168--U+017E} \\
+\texttt{U+002D} & \texttt{U+00E0--U+00E5} & \texttt{U+01FA--U+01FF} \\
+\texttt{U+0040--U+005A} & \texttt{U+00E7--U+00EF} & \texttt{U+0218--U+021B} \\
+\texttt{U+005E--U+007A} & \texttt{U+00F1--U+00F6} & \texttt{U+0237} \\
+\texttt{U+007E} & \texttt{U+00F9--U+00FD} & \texttt{U+02C6} \\
+\texttt{U+00A3} & \texttt{U+00FF--U+010F} & \texttt{U+02DC} \\
+\texttt{U+00A5} & \texttt{U+0112--U+0125} & \texttt{U+1E80--U+1E85} \\
+\texttt{U+00AE} & \texttt{U+0128--U+0131} & \texttt{U+1EF2--U+1EF3} \\
+\texttt{U+00B0} & \texttt{U+0134--U+0137} & \texttt{U+2044} \\
+\texttt{U+00B7} & \texttt{U+0139--U+013E} & \texttt{U+20AC} \\
+\texttt{U+00C0--U+00C5} & \texttt{U+0143--U+0148} &  \\
+\texttt{U+00C7--U+00CF} & \texttt{U+014C--U+0151} &  \\
+\end{tabular}
+\end{center}
 
 \subsection{Extended coverage and eligibility}
 Extended retains actually encoded Regular characters in U+0020--036F,
@@ -854,7 +517,7 @@ U+2980--2AFF and U+1D400--1D7FF. Exceptions U+2105, U+2116,
 U+211E, U+2120, U+2121, U+2122 and U+212E remain subject to the same ownership and edition restrictions.
 Primes U+2032--2037/U+2057, PUA U+E000--F8FF, U+FEFF/U+FFFD and
 existing output names are reserved. Imported glyphs must have usable outlines and metrics.
-Bold coverage remains unchanged.
+The Bold donor requirements are unchanged by extended coverage.
 
 The additional coverage depends on the donor pair.
 
