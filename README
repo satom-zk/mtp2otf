@@ -34,11 +34,11 @@ Diagnostics: stderr and build/<edition>/build.log. Check the exit status.
 
 Files
 -----
-  build.sh, tools/          Converter and mapping data.
-  doc/mtp2otf.pdf           Build guide and technical reference.
-  doc/font-guide.pdf        Font usage, character variants and examples.
+  build.sh, tools/         Converter and mapping data.
+  doc/mtp2otf.pdf          Build guide and technical reference.
+  doc/mtp2otf-guide.pdf    Font usage, character variants and examples.
   doc/*.tex                Document sources.
-  LICENSE                   0BSD for project code and documentation.
+  LICENSE                  0BSD for project code and documentation.
 
 Font and dependency licenses apply separately.
 Repository: https://github.com/satom-zk/mtp2otf
