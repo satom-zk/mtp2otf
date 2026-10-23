@@ -21,9 +21,8 @@ __pycache__/
 *.toc
 *.synctex.gz
 *.pdf
-!/doc/word.pdf
-!/doc/lualatex.pdf
 !/doc/mtp2otf.pdf
+!/doc/mtp2otf-guide.pdf
 
 # Local archives/editor files
 *.zip
