@@ -9,6 +9,7 @@ Preserve MATH, GSUB, GPOS, and cmap. Usage: otf2ttf.py in.otf out.ttf
 from fontTools.pens.cu2quPen import Cu2QuPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont, newTable
+
 from large_variant_policy import field_range
 
 

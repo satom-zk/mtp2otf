@@ -81,7 +81,7 @@ def references(node, seen=None):
 def validate_gsub(gs):
     if getattr(gs, "FeatureVariations", None) is not None:
         raise ValueError(
-            "FeatureVariations not supported by mathematical bold stage"
+            "FeatureVariations are not supported"
         )
     if gs.Version != 65536:
         raise ValueError("unsupported GSUB version")
@@ -314,18 +314,18 @@ def install_optical_routes(sources, ssty_map, alphabet):
             uni_owner[extra_u] = g.glyphname
 
     # After all alphabet imports, hmtx keeps CHARWD, MATH keeps CHARIC,
-    # and ordinary GPOS stores the TFM pair kern alone.
-    # Exclude family skewchar-right pairs from ordinary kerning.
+    # and ordinary GPOS stores the TFM pair kern alone. Exclude family
+    # skewchar-right pairs from ordinary kerning.
 
-    # cv51: slashed-zero and circular empty-set forms.
+    # cv17: slashed-zero and circular empty-set forms.
     if ("ams", 191) in imported and 0x2205 in uni_owner:
         out.addLookup(
-            "cv51",
+            "cv17",
             "gsub_single",
             (),
             (
                 (
-                    "cv51",
+                    "cv17",
                     (
                         ("DFLT", ("dflt",)),
                         ("latn", ("dflt",)),
@@ -334,14 +334,14 @@ def install_optical_routes(sources, ssty_map, alphabet):
                 ),
             ),
         )
-        out.addLookupSubtable("cv51", "cv51-1")
+        out.addLookupSubtable("cv17", "cv17-1")
         for base, alt in with_ssty(
             [(uni_owner[0x2205], imported[("ams", 191)])], out
         ):
             try:
-                out[base].addPosSub("cv51-1", alt)
+                out[base].addPosSub("cv17-1", alt)
             except Exception as exc:
-                raise ValueError(f"cv51 glyph {base}: {exc}") from exc
+                raise ValueError(f"cv17 glyph {base}: {exc}") from exc
 
     def add_cv(tag, pairs):
         """Register a single-substitution character-variant feature."""
@@ -372,44 +372,48 @@ def install_optical_routes(sources, ssty_map, alphabet):
             except Exception as exc:
                 raise ValueError(f"{tag} glyph {base}: {exc}") from exc
 
-    # cv21: straight braces.
+    # cv06: straight braces.
     add_cv(
-        "cv21",
+        "cv06",
         [
             (uni_owner.get(0x007B), "braceleft.straight"),
             (uni_owner.get(0x007D), "braceright.straight"),
         ],
     )
 
-    # cv47: AMS negated relations; defaults retain MTPro2 forms.
+    # cv14: AMS negated relations; defaults retain MTPro2 forms.
     add_cv(
-        "cv47",
+        "cv14",
         [
             (uni_owner.get(u), imported.get(("ams", slot)))
             for u, slot in ((0x2241, 156),)
         ],
     )
 
-    # cv41: variant subsetneq and supsetneq.
+    # cv10: variant subsetneq and supsetneq.
     add_cv(
-        "cv41",
+        "cv10",
         [
             (uni_owner.get(u), imported.get(("ams", slot)))
             for u, slot in ((0x228A, 160), (0x228B, 161))
         ],
     )
 
-    # cv03: hbar and hslash.
-    add_cv("cv03", [(uni_owner.get(0x210F), imported.get(("syt", 175)))])
+    # cv04: hbar and hslash.
+    add_cv("cv04", [(uni_owner.get(0x210F), imported.get(("syt", 175)))])
 
-    # cv11: slanted large operators.
-    add_cv(
-        "cv11",
-        [
-            (uni_owner.get(u), imported.get(("exa", slot)))
-            for u, slot in ((0x2211, 160), (0x220F, 162), (0x2210, 164))
-        ],
-    )
+    # ss07: slanted large operators.
+    suffixes = U.OPERATOR_SUFFIXES if sources.condition == "source" else ("",)
+    operator_pairs = [
+        (base + suffix, alt + suffix)
+        for u, slot in ((0x2211, 160), (0x220F, 162), (0x2210, 164))
+        for base, alt in [(uni_owner[u], imported[("exa", slot)])]
+        for suffix in suffixes
+    ]
+    if (len(set(operator_pairs)) != 3 * len(suffixes)
+            or any(a not in out or b not in out for a, b in operator_pairs)):
+        raise ValueError("incomplete ss07 six-stage operator coverage")
+    add_cv("ss07", operator_pairs)
 
 
 def sort_features(gs):
@@ -486,44 +490,95 @@ def alternate_feature(font, tag, choices):
     validate_gsub(gs)
 
 
-def finish(font, edition):
-    """Serialize only declared public lookups, in their specified order.
+def selector_mapping(lookup, parameters):
+    """Read disjoint simple subtables without changing lookup semantics.
     """
+    kind = 3 if parameters else 1
+    if lookup.LookupType != kind or lookup.LookupFlag != 0:
+        raise ValueError("unsupported selector lookup type/flags")
+    mapping = {}
+    for sub in lookup.SubTable:
+        entries = sub.alternates if parameters else sub.mapping
+        if mapping.keys() & entries.keys():
+            raise ValueError("overlapping selector subtables")
+        if parameters and any(len(v) != parameters for v in entries.values()):
+            raise ValueError("selector alternate count differs")
+        mapping.update(entries)
+    if not mapping:
+        raise ValueError("empty selector lookup")
+    return mapping
+
+
+def selector_metadata(font, spec, stylistic):
+    from fontTools.ttLib.tables import otTables as ot
+
+    name = font["name"]
+    characters = sorted(
+        cp for cp in spec["characters"] if cp in font.getBestCmap())
+    values = [spec["label"]]
+    if not stylistic:
+        if not characters:
+            raise ValueError("character variant has no UI sample characters")
+        values += [spec["tooltip"],
+                   "".join(map(chr, characters)), *spec["parameters"]]
+    start = max(255, *(n.nameID for n in name.names)) + 1
+    if start + len(values) - 1 > 32767:
+        raise ValueError("feature name ID space exhausted")
+    for offset, value in enumerate(values):
+        name.setName(value, start + offset, 3, 1, 0x409)
+    if stylistic:
+        params = ot.FeatureParamsStylisticSet()
+        params.Version = 0
+        params.UINameID = start
+    else:
+        params = ot.FeatureParamsCharacterVariants()
+        params.Format = 0
+        params.FeatUILabelNameID = start
+        params.FeatUITooltipTextNameID = start + 1
+        params.SampleTextNameID = start + 2
+        params.NumNamedParameters = len(spec["parameters"])
+        params.FirstParamUILabelNameID = start + 3 if spec["parameters"] else 0
+        params.Character = characters
+        params.CharCount = len(characters)
+    return params
+
+
+def finish(font, edition):
+    """Order final public lookups and attach their UI metadata."""
     gs = font["GSUB"].table
     validate_gsub(gs)
-    by_tag = {r.FeatureTag: r for r in gs.FeatureList.FeatureRecord}
-    unknown = set(by_tag) - set(U.SUBSTITUTION_ORDER)
-    if unknown:
-        raise ValueError(
-            "undeclared public substitutions: " + repr(sorted(unknown))
-        )
+    specs = U.public_selectors(edition)
+    records = gs.FeatureList.FeatureRecord
+    by_tag = {r.FeatureTag: r for r in records}
+    if (len(by_tag) != len(records)
+            or set(by_tag) - {"dtls", "ssty", "ccmp"} != set(specs)):
+        raise ValueError("final selector inventory differs")
+    tags = [tag for tag in U.SUBSTITUTION_ORDER if tag in by_tag]
     order = []
-    for tag in U.SUBSTITUTION_ORDER:
-        if tag in by_tag:
-            indices = by_tag[tag].Feature.LookupListIndex
-            if len(indices) != 1:
-                raise ValueError("one final lookup expected: " + tag)
-            order.extend(indices)
-    if len(order) != len(set(order)):
+    for tag in tags:
+        indices = by_tag[tag].Feature.LookupListIndex
+        if len(indices) != 1:
+            raise ValueError("one final lookup expected: " + tag)
+        order.extend(indices)
+    if len(set(order)) != len(order):
         raise ValueError("unexpected shared final lookup")
-    used = set(order)
-    if any(True for i in used for _ in references(gs.LookupList.Lookup[i])):
-        raise ValueError(
-            "contextual final lookup requires an explicit order rule"
-        )
     lookups = gs.LookupList.Lookup
+    if any(True for i in order for _ in references(lookups[i])):
+        raise ValueError("contextual lookup requires an explicit order rule")
+    for tag in tags:
+        if tag in specs:
+            spec = specs[tag]
+            record = by_tag[tag].Feature
+            selector_mapping(lookups[record.LookupListIndex[0]],
+                             len(spec["parameters"]))
+            record.FeatureParams = selector_metadata(
+                font, spec, tag.startswith("ss")
+            )
     remap_lookups(gs, {old: new for new, old in enumerate(order)})
     gs.LookupList.Lookup = [lookups[i] for i in order]
     gs.LookupList.LookupCount = len(order)
-    validate_gsub(gs)
-    cv = sum(tag.startswith("cv") for tag in by_tag)
-    ss = sum(tag.startswith("ss") and tag != "ssty" for tag in by_tag)
-    if (cv, ss) != ((23, 2) if edition == "full" else (10, 0)):
-        raise ValueError("final selector inventory differs")
-    return dict(
-        features=sorted(by_tag),
-        lookup_order=[tag for tag in U.SUBSTITUTION_ORDER if tag in by_tag],
-    )
+    sort_features(gs)
+    return dict(features=sorted(by_tag), lookup_order=tags)
 
 
 def install_maps(font, maps, new_tags=()):
@@ -534,16 +589,15 @@ def install_maps(font, maps, new_tags=()):
     by_tag = {r.FeatureTag: r for r in gs.FeatureList.FeatureRecord}
     if set(new_tags) & set(by_tag):
         raise ValueError("new relation CV already installed")
-    # Existing cv41 is expanded in place, retaining all of its old
-    # mappings.
-    if "cv41" in maps:
-        rec = by_tag["cv41"]
+    # Extend native proper-inclusion routes with their optical forms.
+    if "cv10" in maps:
+        rec = by_tag["cv10"]
         if len(rec.Feature.LookupListIndex) != 1:
-            raise ValueError("unsupported cv41 structure")
+            raise ValueError("unsupported cv10 structure")
         st = gs.LookupList.Lookup[rec.Feature.LookupListIndex[0]].SubTable[0]
-        for a, b in maps["cv41"].items():
+        for a, b in maps["cv10"].items():
             if a in st.mapping and st.mapping[a] != b:
-                raise ValueError("cv41 prior route changed")
+                raise ValueError("cv10 prior route changed")
             st.mapping[a] = b
     tags = [tag for tag in new_tags if maps.get(tag)]
     shift = len(tags)
@@ -589,9 +643,8 @@ def install_logical_and(font):
     """Select existing logical-and alternatives, including size-grown
     input.
 
-    Both large roots already have the matching exa:166/167 MATH
-    sequence. Map its standard text and display glyphs, so either
-    selection order works.
+    Map all six matching large stages, plus the three small optical
+    forms, so either selection order works.
     """
     c = font.getBestCmap()
     ss = ssty_mapping(font)
@@ -605,18 +658,18 @@ def install_logical_and(font):
     target = constructions["varland.big"]
     old_large = [r.VariantGlyph for r in base.MathGlyphVariantRecord]
     new_large = [r.VariantGlyph for r in target.MathGlyphVariantRecord]
-    if old_large != [c[0x22C0], "uni22C0.dsp"]:
+    if old_large != [c[0x22C0] + s for s in U.OPERATOR_SUFFIXES]:
         raise ValueError("unexpected standard bigwedge construction")
-    if new_large != ["varland.big", "varland.big.dsp"]:
+    if new_large != ["varland.big" + s for s in U.OPERATOR_SUFFIXES]:
         raise ValueError("unexpected alternate bigwedge construction")
     if base.GlyphAssembly or target.GlyphAssembly:
         raise ValueError("unexpected bigwedge assembly")
     mapping = dict(zip(small + old_large, alternate + new_large))
-    if len(mapping) != 5:
-        raise ValueError("incomplete G08 input coverage")
-    install_maps(font, {"cv12": mapping}, new_tags=("cv12",))
+    if len(mapping) != 9:
+        raise ValueError("incomplete conjunction input coverage")
+    install_maps(font, {"cv05": mapping}, new_tags=("cv05",))
     return dict(
-        tag="cv12",
+        tag="cv05",
         mapping=mapping,
         base_large_source_slots=[86, 94],
         alternate_large_source_slots=[166, 167],
@@ -642,22 +695,23 @@ def install_negative_choices(font, edition):
     ss = ssty_mapping(font)
     choices = {}
     routes = []
-    for cp, first, second in U.NEGATIVE_CHOICES:
+    for tag, cp, first, second in U.NEGATIVE_CHOICES:
         forms = [cmap[cp], *ss[cmap[cp]]]
         left = [first, *ss[first]]
         right = [second, *ss[second]]
         for level, (a, b, c) in enumerate(zip(forms, left, right)):
-            choices[a] = [b, c]
+            choices.setdefault(tag, {})[a] = [b, c]
             routes.append(
                 dict(
-                    tag="cv46",
+                    tag=tag,
                     Unicode=f"U+{cp:04X}",
                     level=level,
                     input=a,
                     choices=[b, c],
                 )
             )
-    alternate_feature(font, "cv46", choices)
+    for tag, entries in choices.items():
+        alternate_feature(font, tag, entries)
     return dict(
         edition=edition,
         routes=routes,

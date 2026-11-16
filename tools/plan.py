@@ -1,7 +1,7 @@
 """Required source references and construction dependencies, then
 preflight. Mapping owns semantic slots. TFM supplies chain/assembly
-relationships only; Encoding and CharStrings establish presence, never
-substitute another slot.
+relationships only; Encoding and CharStrings establish presence,
+never substitute another slot.
 """
 
 from dataclasses import dataclass, field
@@ -126,8 +126,7 @@ def create(catalog, coverage):
             add(tag, [slot])
     add("exa", U.VERTICAL_METRIC_REFERENCES.values())
     # Native chains include their original VARCHAR components; keep
-    # cycle/error
-    # checks.
+    # cycle/error checks.
     for tag, start in starts:
         chars = catalog.faces[tag].tfm.chars
         slot = start
@@ -227,6 +226,8 @@ def normal_growth(catalog):
         name: [("exa", text), ("exa", display)]
         for text, (cp, name, display) in U.EXA_OPS.items()
     }
+    for name, groups in U.operator_sources().items():
+        operators[name] = [ref for group in groups for ref in group]
     horizontal = {
         str(cp): [(role, s) for role, slots in series for s in slots]
         for cp, series in U.NORMAL_HORIZONTAL.items()

@@ -104,13 +104,13 @@ def apply(font, catalog, snapshot, ledger, inventory):
         k: {}
         for k in [
             "cv01",
-            "cv33",
-            "cv34",
+            "ss05",
+            "ss06",
             "ss01",
-            "cv31",
             "ss02",
+            "ss03",
             "dtls",
-            "cv32",
+            "ss04",
         ]
     }
     newbold = {}
@@ -139,12 +139,12 @@ def apply(font, catalog, snapshot, ledger, inventory):
         for slot, (cp, nm) in spec["blackboard"]:
             for level, s in enumerate(U.ALPHABET_SUFFIX):
                 for a, b in [("bb", "bbd"), ("hrb", "hrbd")]:
-                    maps["cv33"][glyph(a + s, slot)] = glyph(b + s, slot)
+                    maps["ss05"][glyph(a + s, slot)] = glyph(b + s, slot)
                 for a, b in [("bb", "hrb"), ("bbd", "hrbd")]:
-                    maps["cv34"][glyph(a + s, slot)] = glyph(b + s, slot)
+                    maps["ss06"][glyph(a + s, slot)] = glyph(b + s, slot)
         for cp, slot in spec["blackboard_special"]:
             for level, s in enumerate(U.ALPHABET_SUFFIX):
-                maps["cv34"][glyph("bbi" + s, slot)] = glyph("hbi" + s, slot)
+                maps["ss06"][glyph("bbi" + s, slot)] = glyph("hbi" + s, slot)
     for role, dotted_i, dot_i, dotted_j, dot_j in spec["dotless"]:
         for dotted, dot in [(dotted_i, dot_i), (dotted_j, dot_j)]:
             dotted_names = optical(role, dotted)
@@ -155,9 +155,9 @@ def apply(font, catalog, snapshot, ledger, inventory):
         for slot in [123, 124]:
             for level, s in enumerate(U.ALPHABET_SUFFIX):
                 for a, b in [("bb", "bbd"), ("hrb", "hrbd")]:
-                    maps["cv33"][glyph(a + s, slot)] = glyph(b + s, slot)
+                    maps["ss05"][glyph(a + s, slot)] = glyph(b + s, slot)
                 for a, b in [("bb", "hrb"), ("bbd", "hrbd"), ("bbi", "hbi")]:
-                    maps["cv34"][glyph(a + s, slot)] = glyph(b + s, slot)
+                    maps["ss06"][glyph(a + s, slot)] = glyph(b + s, slot)
     for role, cp, ordinary_slot, swash_slot in spec["swash"]:
         if role in declarations.active_tags(edition):
             a = optical(role, ordinary_slot)
@@ -199,11 +199,11 @@ def apply(font, catalog, snapshot, ledger, inventory):
             ]
             ss[alts[0]] = alts[1:]
             tag = (
-                "ss02"
+                "ss03"
                 if row["group"] == "Curly"
-                else "cv32"
+                else "ss04"
                 if row["group"] == "Frak"
-                else "cv31"
+                else "ss02"
             )
             for i in range(3):
                 maps[tag][ordinary[i]] = alts[i]
@@ -212,7 +212,7 @@ def apply(font, catalog, snapshot, ledger, inventory):
             base = oldcmap[cp]
             ordinary = [base, *oldss[base]]
             for i in range(3):
-                maps["cv32"][ordinary[i]] = names[i]
+                maps["ss04"][ordinary[i]] = names[i]
         for slot, (cp, _) in spec["script"]:
             normal = [oldcmap[cp], *oldss[oldcmap[cp]]]
             curl = optical("curly", slot)
@@ -223,10 +223,10 @@ def apply(font, catalog, snapshot, ledger, inventory):
                 if scriptalt != normal[i]:
                     maps["ss01"][scriptalt] = curlyalt
                 if curlyalt != curl[i]:
-                    maps["cv31"][curl[i]] = curlyalt
-                maps["ss02"][normal[i]] = curlyalt
-                maps["ss02"][scriptalt] = curlyalt
-                maps["ss02"][curl[i]] = curlyalt
+                    maps["ss02"][curl[i]] = curlyalt
+                maps["ss03"][normal[i]] = curlyalt
+                maps["ss03"][scriptalt] = curlyalt
+                maps["ss03"][curl[i]] = curlyalt
         for slot in [123, 124]:
             for s in U.ALPHABET_SUFFIX:
                 maps["ss01"][glyph("script" + s, slot)] = glyph(

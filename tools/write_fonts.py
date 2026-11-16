@@ -12,6 +12,10 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 
+from fontTools import subset
+from fontTools.pens.recordingPen import RecordingPen
+from fontTools.ttLib import TTFont
+
 import alphabets
 import diagnostics
 import font_geometry
@@ -20,10 +24,8 @@ import math_tables
 import source_glyphs
 import substitution
 from diagnostics import verify_contract, write_contract
-from fontTools import subset
-from fontTools.pens.recordingPen import RecordingPen
-from fontTools.ttLib import TTFont
 from mapping import load_alternates
+from validation import compound_records, validate_compounds
 
 
 @contextmanager
@@ -78,7 +80,7 @@ def read_native(native_otf, work, snapshot):
         or inventory.get("input_hashes") != snapshot["inputs"]
     ):
         raise ValueError("native selector input/edition/policy mismatch")
-    return constants, inventory
+    return constants, inventory, compound_records(inventory)
 
 
 @dataclass(frozen=True)
@@ -116,8 +118,7 @@ def load_originals(catalog, snapshot, edition, ledger):
 
 def edit_full(font, originals, snapshot, ledger):
     """Full-only mutation sequence; all original faces were loaded by
-    the
-    owner.
+    the owner.
     """
     with stage("AMS checkmark/maltese"):
         source_glyphs.add_ams_glyphs(font, originals.ams)
@@ -152,7 +153,9 @@ def edit_remaining(font, *, edition, inventory, originals, snapshot, ledger):
 def process(native_otf, final_otf, *, work, catalog, snapshot, alternate_path):
     """Load, normalize CFF in memory, edit, and save atomically."""
     with stage("native handoff"):
-        constants, inventory = read_native(native_otf, work, snapshot)
+        constants, inventory, compounds = read_native(
+            native_otf, work, snapshot
+        )
         edition = snapshot["build_identity"]["edition"]
         ledger = (
             load_alternates(alternate_path)["rows"]
@@ -164,11 +167,11 @@ def process(native_otf, final_otf, *, work, catalog, snapshot, alternate_path):
     final_otf.parent.mkdir(parents=True, exist_ok=True)
     with BytesIO() as normalized:
         with TTFont(native_otf) as font:
+            with stage("native compound provenance"):
+                validate_compounds(font, compounds, require_parts=True)
             edit_initial(font, edition=edition, constants=constants)
-            # Fixed selectors require serialized head/CFF bounds.
-            # Keep this in-memory compile/decompile before installing
-            # them.
-            # Earlier disk roundtrips are unnecessary.
+            # Fixed selectors require serialized head/CFF bounds. Keep
+            # this in-memory compile/decompile before installing them.
             with stage("CFF/bbox normalization boundary"):
                 font.save(normalized, reorderTables=False)
         normalized.seek(0)
@@ -182,8 +185,8 @@ def process(native_otf, final_otf, *, work, catalog, snapshot, alternate_path):
                 ledger=ledger,
             )
             # Common source corrections and minimal entrance/growth
-            # policy
-            # remain separate records in the same in-memory font owner.
+            # policy remain separate records in the same in-memory font
+            # owner.
             reports = {}
             with stage("source alphabet identities and final routes"):
                 alphabet = alphabets.apply(
@@ -195,8 +198,10 @@ def process(native_otf, final_otf, *, work, catalog, snapshot, alternate_path):
                 )
             with stage("measured growth records"):
                 reports["growth"] = math_tables.finalize_measured_growth(font)
-            with stage("left vector assembly geometry"):
-                reports["left-vector"] = font_geometry.build_left_vector(font)
+            with stage("horizontal arrow connectors"):
+                reports["arrow-connectors"] = (
+                    font_geometry.build_horizontal_arrow_connectors(font)
+                )
             with stage("ordinary and Plain brace recipes"):
                 reports["braces"] = font_geometry.build_overbrace(
                     font, inventory
@@ -221,14 +226,22 @@ def process(native_otf, final_otf, *, work, catalog, snapshot, alternate_path):
                 reports["accents"] = font_geometry.build_standard_accents(
                     font, catalog
                 )
+            with stage("left vector growth and optical styles"):
+                reports["left-vector"] = font_geometry.build_left_vector(font)
             with stage("vertical choice roots and optical growth"):
                 reports["vertical-choices"] = (
                     math_tables.install_vertical_choices(font)
+                )
+            with stage("angle and vertical bar sizes"):
+                reports["delimiter-sizes"] = (
+                    font_geometry.build_angle_bar_sizes(font)
                 )
             with stage("final public substitutions"):
                 reports["substitutions"] = substitution.finish(font, edition)
             with stage("reference closure and physical serialization set"):
                 reports["closure"] = prune(font)
+            with stage("final compound provenance"):
+                validate_compounds(font, compounds, require_parts=False)
             with stage("final average width and Windows ANSI policy"):
                 font_geometry.update_average_width(font)
                 font_geometry.preserve_windows_ansi_compatibility(font)
@@ -258,8 +271,8 @@ def _save_final(font, final_otf):
 def normalize_cff(font):
     """Bind copied/appended charstrings to one Private/Subrs owner."""
     # Rebind Private/Subrs after source append steps to one serialized
-    # CFF
-    # object graph before passing it to fontTools' physical subsetter.
+    # CFF object graph before passing it to fontTools' physical
+    # subsetter.
     from fontTools.ttLib import newTable
 
     data = font.getTableData("CFF ")
@@ -279,8 +292,8 @@ def prune(font):
         reason[n].add("cmap/current public entrance or .notdef")
     gsub = font["GSUB"].table
     # Retired feature lookups have already been removed, including
-    # context
-    # references. Current generators use single/alternate/ligature GSUB.
+    # context references. Current generators use
+    # single/alternate/ligature GSUB.
     edges = []
     for lookup in gsub.LookupList.Lookup:
         for st in lookup.SubTable:
@@ -361,8 +374,8 @@ def prune(font):
     options.notdef_outline = True
     options.recalc_timestamp = False
     # All desired graph references are now explicit. fontTools validates
-    # and
-    # cleans actual table coverage/counts during the physical subset.
+    # and cleans actual table coverage/counts during the physical
+    # subset.
     sub = subset.Subsetter(options=options)
     sub.populate(glyphs=live)
     sub.subset(font)

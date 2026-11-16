@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Read MTPro2 sty/fd declarations and edition input requirements.
 
-Keep source identities public; evaluate source-dependent values during
-build.
+Keep source identities public; evaluate source-dependent values
+during build.
 """
 
 from __future__ import annotations
@@ -42,8 +42,8 @@ OPTICAL_FD_GROUPS = {
 }
 
 # Map builder tags to the LaTeX declaration that owns their skewchar
-# policy. The selector itself is structural; the numeric
-# skewchar is parsed at runtime.
+# policy. The selector itself is structural; the numeric skewchar is
+# parsed at runtime.
 _SKEW_ROLE = {}
 for _t in ("mit", "mit_s", "mit_ss", "bmit", "bmit_s", "bmit_ss"):
     _SKEW_ROLE[_t] = ("family", "sty", "LMP1", "mtt")
@@ -237,8 +237,8 @@ def _shape_skew(
 
 
 def _parse_accents(sty: str) -> Dict[str, AccentDeclaration]:
-    # MTPro2 declarations are simple braced tokens;
-    # whitespace/newlines are allowed.
+    # MTPro2 declarations are simple braced tokens; whitespace/newlines
+    # are allowed.
     pat = re.compile(
         r"\\DeclareMathAccent\s*\{\\([A-Za-z@]+)\}\s*"
         r"\{\\([A-Za-z@]+)\}\s*\{([^}]+)\}\s*\{([^}]+)\}",
@@ -313,8 +313,8 @@ def _parse_dot_macros(sty: str) -> DotMacroPolicy:
             "ddots macro geometry is not the expected three-dot structure"
         )
     # The internal spacing is the first kern between two successive dot
-    # boxes; edge kerns are math-class padding and are
-    # not baked into the glyph.
+    # boxes; edge kerns are math-class padding and are not baked into
+    # the glyph.
     inner = mkerns[1]
     if mkerns[-2] != inner:
         raise ValueError("ddots internal spacing is asymmetric")
@@ -457,8 +457,7 @@ def load_policy_json(path: str | Path) -> SourcePolicy:
 
 def policy_from_data(data: dict) -> SourcePolicy:
     """Decode already-read source declarations, preserving
-    Fraction/tuple
-    units.
+    Fraction/tuple units.
     """
     sr = data["script_ratio"]
     ssr = data["scriptscript_ratio"]

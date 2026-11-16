@@ -2,10 +2,11 @@
 
 import copy
 
-import mapping as U
-import substitution
 from fontTools.pens.recordingPen import DecomposingRecordingPen
 from fontTools.ttLib.tables import otTables as ot
+
+import mapping as U
+import substitution
 
 
 def copy_math_attributes(font, source, clone):
@@ -131,9 +132,9 @@ def finalize_measured_growth(font):
                 kept = unique
                 expected = {0x302: 37, 0x303: 37, 0x30C: 35, 0x23DC: 24}[cp]
                 if len(kept) != expected:
-                    raise ValueError("C05 horizontal set differs")
+                    raise ValueError("horizontal source set differs")
             if not kept:
-                raise ValueError("C05 empty normal ready-made series")
+                raise ValueError("empty normal horizontal series")
             c.MathGlyphVariantRecord = kept
             c.VariantCount = len(kept)
             records.append(
@@ -158,7 +159,7 @@ def finalize_measured_growth(font):
 
 
 def install_brace_choices(font, inventory):
-    """Bind ordinary/Plain/Curly roots directly to final cv24 choices.
+    """Bind ordinary/Plain/Curly roots directly to final cv09 choices.
     """
     imports = {(r["tag"], r["slot"]): r["glyph"] for r in inventory["imports"]}
     variants = font["MATH"].table.MathVariants
@@ -182,7 +183,7 @@ def install_brace_choices(font, inventory):
             if table.isUnicode() and cp in table.cmap:
                 table.cmap[cp] = ordinary
         choices[ordinary] = ["brace.plain." + label, curly]
-    substitution.alternate_feature(font, "cv24", choices)
+    substitution.alternate_feature(font, "cv09", choices)
     return dict(choices=choices)
 
 
@@ -207,15 +208,14 @@ def install_vertical_choices(font):
         return ceil(pen.bounds[3] - pen.bounds[1]) + 1
 
     ss = substitution.ssty_mapping(font)
-    maps = {"cv22": {}, "cv23": {}}
-    cv21 = {}
+    maps = {"cv07": {}, "cv08": {}}
+    straight_routes = {}
     for root, choice in U.vertical_choices().items():
         base = f"uni{choice['cp']:04X}"
         copy_math_attributes(font, base, root)
         # Native geometry supplies AM, connectors and shared parts.
-        # Optical
-        # roots keep this selected series while using their source
-        # entry.
+        # Optical roots keep this selected series while using their
+        # source entry.
         alts = []
         for level, source in enumerate(ss[base], 1):
             clone = clone_glyph(font, source, f"{root}.ssty{level}")
@@ -236,11 +236,10 @@ def install_vertical_choices(font):
             for source, target in zip(
                 [root, *alts], [straight, *ss[straight]]
             ):
-                cv21[source] = target
+                straight_routes[source] = target
     # Bind ordinary and straight optical entries to their existing
-    # native
-    # constructions too. No path falls back to the ordinary series after
-    # ssty.
+    # native constructions too. No path falls back to the ordinary
+    # series after ssty.
     for base in (
         "uni0028",
         "uni0029",
@@ -258,16 +257,16 @@ def install_vertical_choices(font):
     variants.VertGlyphCoverage.glyphs = names
     variants.VertGlyphConstruction = [constructions[n] for n in names]
     variants.VertGlyphCount = len(names)
-    substitution.install_maps(font, maps, new_tags=("cv22", "cv23"))
+    substitution.install_maps(font, maps, new_tags=("cv07", "cv08"))
     gs = font["GSUB"].table
     rec = next(
-        r for r in gs.FeatureList.FeatureRecord if r.FeatureTag == "cv21"
+        r for r in gs.FeatureList.FeatureRecord if r.FeatureTag == "cv06"
     )
     gs.LookupList.Lookup[rec.Feature.LookupListIndex[0]].SubTable[
         0
-    ].mapping.update(cv21)
+    ].mapping.update(straight_routes)
     return dict(
-        choices=U.vertical_choices(), precedence="cv23 then cv21", new_PUA=0
+        choices=U.vertical_choices(), precedence="cv08 then cv06", new_PUA=0
     )
 
 

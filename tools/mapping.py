@@ -447,8 +447,8 @@ SYT = {
     186: (None, "braceright.straight"),
 }
 
-# Encode text-size operators; name delimiter variants and
-# parts from TFM recipes.
+# Encode text-size operators; name delimiter variants and parts from TFM
+# recipes.
 EXA_OPS = {  # slot(text): (unicode, name, display slot)
     0x50: (0x2211, "summation", 0x58),
     0x51: (0x220F, "product", 0x59),
@@ -515,6 +515,46 @@ XL_TABLE = {
     "barint": (124, 28, 78, 31),
     "slashint": (125, 29, 79, 32),
 }
+
+# These approved operators acquire four additional source sizes.
+# EXA_OPS/XL_TABLE retain slot ownership; their tables are not copied.
+LARGE_OPERATOR_SERIES = frozenset((
+    "circledot", "circleplus", "circlemultiply", "unionsq.big",
+    "union.big", "intersection.big", "unionmulti.big", "logicaland.big",
+    "logicalor.big", "summation", "product", "coproduct", "integral",
+    "contintegral", "cwoint", "awoint", "cwint", "iint", "iiint",
+    "oiint", "oiiint", "slsum", "slprod", "slcoprod", "varland.big",
+    "barint", "slashint",
+))
+OPERATOR_STAGES = ("text", "display", "xl", "XL", "XXL", "XXXL")
+OPERATOR_SUFFIXES = ("", ".dsp", ".xl", ".XL", ".XXL", ".XXXL")
+
+
+def operator_sources():
+    """Ordered source groups for each approved six-size series."""
+    ordinary = {
+        name: (text, display)
+        for text, (_, name, display) in EXA_OPS.items()
+    }
+    result = {}
+    for name in sorted(LARGE_OPERATOR_SERIES):
+        if name not in ordinary or name not in XL_TABLE:
+            raise ValueError("missing approved operator series: " + name)
+        stages = XL_TABLE[name]
+        if len(stages) != 4:
+            raise ValueError("incomplete approved operator sizes: " + name)
+        groups = [(("exa", slot),) for slot in ordinary[name]]
+        for tag, stage in zip(("xl", "xl", "xl", "xxxl"), stages):
+            slots = stage if isinstance(stage, tuple) else (stage,)
+            if not slots or any(type(s) is not int or s < 0 for s in slots):
+                raise ValueError("invalid operator source stage: " + name)
+            if len(slots) != (2 if name == "varland.big"
+                              and tag == "xxxl" else 1):
+                raise ValueError("invalid operator source parts: " + name)
+            groups.append(tuple((tag, slot) for slot in slots))
+        result[name] = tuple(groups)
+    return result
+
 
 # Vertical delimiters: codepoint -> (base source, extension chain head).
 V_DELIMS = {
@@ -782,8 +822,8 @@ AMSA = {  # slot: (unicode, name)
     0x9C: (None, "nsim.ams"),
     0x9E: (0x27CB, "diagup"),
     0x9F: (0x27CD, "diagdown"),
-    # Encode subsetneq/supsetneq; expose alternate
-    # forms through cv features.
+    # Encode subsetneq/supsetneq; expose alternate forms through cv
+    # features.
     160: (None, "varsubsetneq"),
     161: (None, "varsupsetneq"),
     162: (None, "nsubseteqq"),
@@ -889,8 +929,8 @@ def alpha_map(kind):
     return out
 
 
-# Structural source registry. These are filenames/roles,
-# not evaluated metrics.
+# Structural source registry. These are filenames/roles, not evaluated
+# metrics.
 SOURCE_FONTS: Dict[str, str] = {
     "mit": "mt2mit",
     "syt": "mt2syt",
@@ -971,9 +1011,8 @@ LITE_TAGS = frozenset(
     )
 )
 
-# Only the new alphabets use raw fixed-point metrics in this
-# implementation. Preserve the historical PL conversion for all
-# existing source roles.
+# These alphabet roles use raw fixed-point metrics. Other roles retain
+# PL conversion and its rounding.
 ADDED_ALPHABET_TAGS = (
     "bscript",
     "bscript_s",
@@ -1096,10 +1135,7 @@ def validate(data):
 
 
 def load_alternates(path):
-    """Read the product's fixed route data; historical projections are
-    dev-
-    only.
-    """
+    """Read and validate the fixed alternate routes."""
     return validate(json.loads(Path(path).read_bytes()))
 
 
@@ -1169,7 +1205,7 @@ def vertical_choices():
             else:
                 refs.append((role, last[0] + side))
         choices[f"uni{cp:04X}.large"] = dict(
-            cp=cp, tag="cv23" if curly else "cv22", refs=refs
+            cp=cp, tag="cv08" if curly else "cv07", refs=refs
         )
     return choices
 
@@ -1183,40 +1219,127 @@ SOURCE_WIDEARC_CHAINS = (("exe", 208), ("exf", 177), ("exg", 177))
 SOURCE_OVERPAREN_CONTINUATION = tuple(range(177, 184))
 
 
-# Final public routes are ordered deliberately: selectors precede
-# optical
-# selection where they introduce optical roots; ss02 overrides
-# ss01/cv31.
+# Selectors precede optical selection when they introduce optical roots.
+# Curly Script Alternates (ss03) overrides ss01 and ss02.
 SUBSTITUTION_ORDER = (
-    "cv46",
     "cv12",
+    "cv13",
+    "cv05",
     "cv02",
-    "cv43",
-    "cv42",
-    "cv44",
-    "cv45",
-    "cv52",
-    "cv01",
-    "cv33",
-    "cv34",
-    "ss01",
-    "cv31",
-    "ss02",
-    "dtls",
-    "cv53",
-    "cv22",
-    "cv23",
-    "cv21",
-    "ssty",
-    "cv11",
     "cv03",
-    "cv41",
-    "cv47",
-    "cv51",
+    "ss08",
+    "cv11",
+    "ss09",
+    "cv15",
+    "cv16",
+    "ss10",
+    "cv01",
+    "ss05",
+    "ss06",
+    "ss01",
+    "ss02",
+    "ss03",
+    "dtls",
+    "cv18",
+    "cv19",
+    "cv07",
+    "cv08",
+    "cv06",
+    "ssty",
+    "ss07",
+    "cv04",
+    "cv10",
+    "cv14",
+    "cv17",
     "ccmp",
-    "cv24",
-    "cv32",
+    "cv09",
+    "ss04",
 )
+
+# Public tag: label, Unicode inputs, tooltip, choices, Lite
+# availability.
+PUBLIC_SELECTORS = {
+    "cv01": ("Swash z", (0x1D467, 0x1D49B),
+             "Use swash mathematical italic z.", (), True),
+    "cv02": ("Alternate Beta", (0x03B2, 0x1D6FD, 0x1D6C3, 0x1D737),
+             "Use alternate beta in the available styles and weights.",
+             (), True),
+    "cv03": ("Alternate Delta", (0x03B4, 0x1D6FF, 0x1D6C5, 0x1D739),
+             "Use alternate delta in the available styles and weights.",
+             (), True),
+    "cv04": ("Alternate Hbar", (0x210F,),
+             "Use the original hslash form for hbar.", (), True),
+    "cv05": ("Alternate Conjunction", (0x2227, 0x22C0),
+             "Use alternate small and large conjunction signs.", (), True),
+    "cv06": ("Straight Braces", (0x007B, 0x007D),
+             "Select straight braces; overrides extended Curly braces.",
+             (), True),
+    "cv07": ("Extended Parentheses", (0x0028, 0x0029),
+             "Enable the additional large ready-made parentheses.", (), True),
+    "cv08": ("Extended Curly Braces", (0x007B, 0x007D),
+             "Enable the additional large ready-made Curly braces.", (), True),
+    "cv09": ("Horizontal Brace Forms", (0x23DE, 0x23DF),
+             "Select the design of overbraces and underbraces.",
+             ("Plain", "Curly"), True),
+    "cv10": ("Proper Inclusion Forms", (0x228A, 0x228B, 0x2ACB, 0x2ACC),
+             "Use alternate proper subset and superset signs.", (), False),
+    "cv11": ("Unequal Comparison Forms", (0x2268, 0x2269),
+             "Use alternate less-than and greater-than but not equal signs.",
+             (), False),
+    "cv12": ("Negated Comparison Forms", (0x2270, 0x2271),
+             "Select negated comparisons independently of negated inclusions.",
+             ("Slanted equality", "Double equality"), False),
+    "cv13": ("Negated Inclusion Forms", (0x2288, 0x2289),
+             "Select the AMS alternate or double-equality negated inclusions.",
+             ("Alternate inclusion", "Double equality"), False),
+    "cv14": ("Not-Similar Form", (0x2241,),
+             "Use the alternate not-similar sign.", (), False),
+    "cv15": ("Proportional-To Form", (0x221D,),
+             "Use the alternate proportional-to sign.", (), False),
+    "cv16": ("Smile and Frown Forms", (0x2322, 0x2323),
+             "Use the smaller smile and frown signs.", (), False),
+    "cv17": ("Empty-Set Form", (0x2205,),
+             "Use the alternate empty-set sign.", (), False),
+    "cv18": ("Yen Form", (0x00A5,),
+             "Use the original AMS yen sign.", (), False),
+    "cv19": ("Registered Form", (0x00AE,),
+             "Use the original AMS registered sign.", (), False),
+    "ss01": ("Curly Script", (), "", (), False),
+    "ss02": ("Script Alternates", (), "", (), False),
+    "ss03": ("Curly Script Alternates", (), "", (), False),
+    "ss04": ("Fraktur Alternates", (), "", (), False),
+    "ss05": ("Heavy Blackboard", (), "", (), False),
+    "ss06": ("Holey Blackboard", (), "", (), False),
+    "ss07": ("Slanted Large Operators", (), "", (), True),
+    "ss08": ("Short Bar Relations", (), "", (), False),
+    "ss09": ("Thick Tilde Relations", (), "", (), False),
+    "ss10": ("Shaded Card Suits", (), "", (), True),
+}
+
+
+def public_selectors(edition):
+    if edition not in ("full", "lite"):
+        raise ValueError("unknown edition: " + edition)
+    specs = {}
+    for tag, (label, characters, tooltip, parameters, lite) in (
+        PUBLIC_SELECTORS.items()
+    ):
+        if edition == "lite" and not lite:
+            continue
+        specs[tag] = dict(
+            label=label,
+            characters=tuple(
+                cp for cp in characters
+                if edition == "full" or cp not in (
+                    0x1D49B, 0x1D6C3, 0x1D737, 0x1D6C5, 0x1D739,
+                )
+            ),
+            tooltip=tooltip,
+            parameters=parameters,
+        )
+    return specs
+
+
 EXCLUDED_GLYPHS = frozenset(
     ["capprod.big", "capprod.big.dsp", "ast.big", "ast.big.dsp"]
     + [n + s for n in ("npreceq", "nsucceq") for s in ("", ".ssty1", ".ssty2")]
@@ -1269,47 +1392,37 @@ NORMAL_HORIZONTAL = {
     ],
 }
 NEGATIVE_CHOICES = (
-    (0x2270, "nleqslant", "nleqq"),
-    (0x2271, "ngeqslant", "ngeqq"),
-    (0x2288, "nsubseteq.ams", "nsubseteqq"),
-    (0x2289, "nsupseteq.ams", "nsupseteqq"),
+    ("cv12", 0x2270, "nleqslant", "nleqq"),
+    ("cv12", 0x2271, "ngeqslant", "ngeqq"),
+    ("cv13", 0x2288, "nsubseteq.ams", "nsubseteqq"),
+    ("cv13", 0x2289, "nsupseteq.ams", "nsupseteqq"),
 )
 
 
-RELATION_TAGS = {
-    "G01": "cv02",
-    "G02": "cv43",
-    "G03": "cv41",
-    "G04": "cv42",
-    "G05": "cv44",
-    "G06": "cv45",
-    "G07": "cv52",
-}
-NEW_RELATION_TAGS = ("cv02", "cv43", "cv42", "cv44", "cv45", "cv52")
 RELATION_SUFFIX = ("", "_s", "_ss")
-# group, standard input, existing target, original role/slot, bold input
+# Public tag, standard input, target, source role/slot, bold input.
 RELATION_ROWS = (
-    ("G01", 0x1D6FD, "varbeta.it", "mit", 176, 0x1D737),
-    ("G01", 0x1D6FF, "vardelta.it", "mit", 178, 0x1D739),
-    ("G01", 0x03B2, "uni03D0", "mit", 177, 0x1D6C3),
-    ("G01", 0x03B4, "upvardelta", "mit", 179, 0x1D6C5),
-    ("G02", 0x2223, "shortmid", "ams", 205, None),
-    ("G02", 0x2225, "shortparallel", "ams", 206, None),
-    ("G02", 0x2224, "nshortmid", "ams", 174, None),
-    ("G02", 0x2226, "nshortparallel", "ams", 175, None),
-    ("G03", 0x228A, "varsubsetneq", "ams", 160, None),
-    ("G03", 0x228B, "varsupsetneq", "ams", 161, None),
-    ("G03", 0x2ACB, "varsubsetneqq", "ams", 166, None),
-    ("G03", 0x2ACC, "varsupsetneqq", "ams", 167, None),
-    ("G04", 0x2268, "lvertneqq", "ams", 128, None),
-    ("G04", 0x2269, "gvertneqq", "ams", 129, None),
-    ("G05", 0x223C, "thicksim", "ams", 207, None),
-    ("G05", 0x2248, "thickapprox", "ams", 208, None),
-    ("G06", 0x221D, "varpropto", "ams", 95, None),
-    ("G06", 0x2323, "smallsmile", "ams", 96, None),
-    ("G06", 0x2322, "smallfrown", "ams", 97, None),
-    ("G07", 0x2663, "clubshaded", "syt", 129, None),
-    ("G07", 0x2660, "spadeshaded", "syt", 131, None),
+    ("cv02", 0x1D6FD, "varbeta.it", "mit", 176, 0x1D737),
+    ("cv03", 0x1D6FF, "vardelta.it", "mit", 178, 0x1D739),
+    ("cv02", 0x03B2, "uni03D0", "mit", 177, 0x1D6C3),
+    ("cv03", 0x03B4, "upvardelta", "mit", 179, 0x1D6C5),
+    ("ss08", 0x2223, "shortmid", "ams", 205, None),
+    ("ss08", 0x2225, "shortparallel", "ams", 206, None),
+    ("ss08", 0x2224, "nshortmid", "ams", 174, None),
+    ("ss08", 0x2226, "nshortparallel", "ams", 175, None),
+    ("cv10", 0x228A, "varsubsetneq", "ams", 160, None),
+    ("cv10", 0x228B, "varsupsetneq", "ams", 161, None),
+    ("cv10", 0x2ACB, "varsubsetneqq", "ams", 166, None),
+    ("cv10", 0x2ACC, "varsupsetneqq", "ams", 167, None),
+    ("cv11", 0x2268, "lvertneqq", "ams", 128, None),
+    ("cv11", 0x2269, "gvertneqq", "ams", 129, None),
+    ("ss09", 0x223C, "thicksim", "ams", 207, None),
+    ("ss09", 0x2248, "thickapprox", "ams", 208, None),
+    ("cv15", 0x221D, "varpropto", "ams", 95, None),
+    ("cv16", 0x2323, "smallsmile", "ams", 96, None),
+    ("cv16", 0x2322, "smallfrown", "ams", 97, None),
+    ("ss10", 0x2663, "clubshaded", "syt", 129, None),
+    ("ss10", 0x2660, "spadeshaded", "syt", 131, None),
 )
 
 
@@ -1553,12 +1666,12 @@ def final_source_requests(edition, spec, ledger):
         )
     if edition == "full":
         family("ams", [88, 122, 85, 114], "AMS standard/selector originals")
-    for group, cp, target, role, slot, boldcp in RELATION_ROWS:
+    for tag, cp, target, role, slot, boldcp in RELATION_ROWS:
         if role == "ams" and edition == "lite":
             continue
-        family(role, [slot], "relation " + group)
+        family(role, [slot], "relation " + tag)
         if boldcp is not None and edition == "full":
-            family("bmit", [slot], "bold relation " + group)
+            family("bmit", [slot], "bold relation " + tag)
     for cp, command, glyph, role, slot in STANDARD_UNICODE_ROUTES:
         if role != "ams" or edition == "full":
             family(role, [slot], "standard Unicode alias")

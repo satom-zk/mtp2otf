@@ -1,4 +1,5 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[a4paper]{article}
+\usepackage[fontsize=10.5pt]{fontsize}
 \usepackage[margin=26mm]{geometry}
 \usepackage{amsmath}
 \usepackage{fontspec}
@@ -15,9 +16,8 @@
 \setlist{nosep,leftmargin=*}
 \clubpenalty=10000
 \widowpenalty=10000
-\newcommand{\file}[1]{{\small\texttt{\detokenize{#1}}}}
-\AddToHook{env/verbatim/begin}{\small}
-\title{mtp2otf\\\large Build guide and technical reference}
+\newcommand{\file}[1]{\texttt{\detokenize{#1}}}
+\title{mtp2otf v1.5\\\large Build guide and technical reference}
 \author{}
 \date{}
 \begin{document}
@@ -31,7 +31,7 @@ including optical script sizes, and supplies the layout
 data used by Unicode math engines. Upright Latin letters and additional
 text characters come from a separate Roman font pair.
 
-The converter produces OTF for LuaLaTeX and TTF for Microsoft Word.
+The converter produces OTF for LuaLaTeX and TTF for Windows.
 Full and Lite use separate family names and can be installed together.
 The selected edition requires the corresponding MTPro2 source files.
 
@@ -119,6 +119,13 @@ Use Word's equation editor for mathematical alphabets, accents, delimiters
 and operators. It does not expose the same OpenType feature controls as
 LuaLaTeX. The explicit feature examples in \file{mtp2otf-guide.pdf} are for LuaLaTeX.
 
+Large operator selection depends on the equation's growth setting.
+In the Microsoft 365 Word examples checked on 25 October 2026,
+ordinary sums, products and integrals remained at display size even with
+tall operands or limits. Enabling n-ary growth selected the XXL designs
+for the three matrix examples. This does not establish access to every
+size or character variant in Word.
+
 \subsection{LuaLaTeX}
 Load the OTF with \file{unicode-math}:
 \begin{samepage}
@@ -150,7 +157,7 @@ Repository: \url{https://github.com/satom-zk/mtp2otf}\\
 Issues: \url{https://github.com/satom-zk/mtp2otf/issues}
 
 \section{Release history}
-\begin{description}
+\begin{description}[font=\normalfont,leftmargin=3.3em,labelwidth=2.8em,labelsep=.5em]
 \item[v1.0] Initial release.
 \item[v1.1] Added large glyphs, missing mathematical alphabets, and
   character-variant access.
@@ -161,70 +168,97 @@ Issues: \url{https://github.com/satom-zk/mtp2otf/issues}
 \item[v1.4] Revised Unicode mappings and standard input routes, reorganized
   character variants, and separated ordinary delimiter growth from optional
   large ready-made forms. Removed unused private-use entries.
+\item[v1.5] Added four original ready-made sizes to 27 large-operator
+  series, including their existing character variants. Each series now
+  contains six finite designs. Ordinary text/display selection is unchanged.
+  Reorganized character variants and stylistic sets, separated independent
+  symbol choices, and added feature labels and numbered-choice names.
 \end{description}
 
 \newpage
 \appendix
 
-\section{Character variants}\label{sec:alphabets}
+\section{Stylistic sets and character variants}\label{sec:alphabets}
 The inputs below are the standard Unicode characters selected by the
 mathematical alphabet or symbol command. Features also follow the
 corresponding script-size designs. F = Full; L = Lite.
 
-\begingroup\small\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.12}
-\begin{longtable}{@{}p{0.12\linewidth}p{0.34\linewidth}p{0.39\linewidth}p{0.09\linewidth}@{}}
+\begingroup\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.12}
+\begin{longtable}{@{}p{0.12\linewidth}>{\raggedright\arraybackslash}p{0.34\linewidth}p{0.39\linewidth}p{0.09\linewidth}@{}}
 \toprule
 Feature & Design & Standard inputs & Edition \\ \midrule \endfirsthead
 \toprule
 Feature & Design & Standard inputs & Edition \\ \midrule \endhead
 \bottomrule\endfoot
 \texttt{cv01} & Swash z & \texttt{U+1D467} & F/L \\*
- & & \texttt{U+1D49B} & F \\
-\texttt{cv02} & Alternative beta and delta, upright and italic & \texttt{U+03B2}; \texttt{U+03B4}; \texttt{U+1D6FD}; \texttt{U+1D6FF} & F/L \\*
- & & \texttt{U+1D6C3}; \texttt{U+1D6C5}; \texttt{U+1D737}; \texttt{U+1D739} & F \\
-\texttt{cv03} & Alternative hbar (original hslash) & \texttt{U+210F} & F/L \\
-\texttt{cv11} & Slanted product, coproduct and sum & \texttt{U+220F--U+2211} & F/L \\
-\texttt{cv12} & Alternative small and large conjunction signs & \texttt{U+2227}; \texttt{U+22C0} & F/L \\
-\texttt{cv21} & Straight braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
-\texttt{cv22} & Large prebuilt parentheses & \texttt{U+0028--U+0029} & F/L \\
-\texttt{cv23} & Large prebuilt curly braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
-\texttt{cv24=1} & Plain overbrace and underbrace & \texttt{U+23DE--U+23DF} & F/L \\
-\texttt{cv24=2} & Curly overbrace and underbrace & \texttt{U+23DE--U+23DF} & F/L \\
-\texttt{cv31} & Script alternatives, regular and bold & Script alternate inputs listed below & F \\
-\texttt{cv32} & Fraktur alternatives, regular and bold & Fraktur alternate inputs listed below & F \\
-\texttt{cv33} & Heavier upright Blackboard & Upright Blackboard Latin and digits & F \\
-\texttt{cv34} & Holey Blackboard, including the standard italic forms & Upright Blackboard Latin and digits; \texttt{U+213C--213F}; \texttt{U+2145--2149} & F \\
-\texttt{cv41} & Alternative proper-subset and proper-superset signs & \texttt{U+228A--U+228B}; \texttt{U+2ACB--U+2ACC} & F \\
-\texttt{cv42} & Alternative less/greater-than-but-not-equal signs & \texttt{U+2268--U+2269} & F \\
-\texttt{cv43} & Short divides and parallel signs, including their negations & \texttt{U+2223--U+2226} & F \\
-\texttt{cv44} & Thick similar and approximately-equal signs & \texttt{U+223C}; \texttt{U+2248} & F \\
-\texttt{cv45} & Alternative proportional-to, smile and frown signs & \texttt{U+221D}; \texttt{U+2322--U+2323} & F \\
-\texttt{cv46=1} & Slanted-equality negated comparisons; alternative negated inclusions & \texttt{U+2270--U+2271}; \texttt{U+2288--U+2289} & F \\
-\texttt{cv46=2} & Double-equality negated comparisons and inclusions & \texttt{U+2270--U+2271}; \texttt{U+2288--U+2289} & F \\
-\texttt{cv47} & Alternative not-similar sign & \texttt{U+2241} & F \\
-\texttt{cv51} & Alternative empty set & \texttt{U+2205} & F \\
-\texttt{cv52} & Shaded spade and club & \texttt{U+2660}; \texttt{U+2663} & F/L \\
-\texttt{cv53} & Alternative yen and registered signs & \texttt{U+00A5}; \texttt{U+00AE} & F \\
+ & Bold forms & \texttt{U+1D49B} & F \\
+\texttt{cv02} & Alternate Beta & \texttt{U+03B2}; \texttt{U+1D6FD} & F/L \\*
+ & Bold forms & \texttt{U+1D6C3}; \texttt{U+1D737} & F \\
+\texttt{cv03} & Alternate Delta & \texttt{U+03B4}; \texttt{U+1D6FF} & F/L \\*
+ & Bold forms & \texttt{U+1D6C5}; \texttt{U+1D739} & F \\
+\texttt{cv04} & Alternate Hbar & \texttt{U+210F} & F/L \\
+\texttt{cv05} & Alternate Conjunction & \texttt{U+2227}; \texttt{U+22C0} & F/L \\
+\texttt{cv06} & Straight Braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
+\texttt{cv07} & Extended Parentheses & \texttt{U+0028}; \texttt{U+0029} & F/L \\
+\texttt{cv08} & Extended Curly Braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
+\texttt{cv09} & Horizontal Brace Forms:\newline 1~=~Plain\newline 2~=~Curly & \texttt{U+23DE}; \texttt{U+23DF} & F/L \\
+\texttt{cv10} & Proper Inclusion Forms & \texttt{U+228A}; \texttt{U+228B}; \texttt{U+2ACB}; \texttt{U+2ACC} & F \\
+\texttt{cv11} & Unequal Comparison Forms & \texttt{U+2268}; \texttt{U+2269} & F \\
+\texttt{cv12} & Negated Comparison Forms:\newline 1~=~Slanted equality\newline 2~=~Double equality & \texttt{U+2270}; \texttt{U+2271} & F \\
+\texttt{cv13} & Negated Inclusion Forms:\newline 1~=~Alternate inclusion\newline 2~=~Double equality & \texttt{U+2288}; \texttt{U+2289} & F \\
+\texttt{cv14} & Not-Similar Form & \texttt{U+2241} & F \\
+\texttt{cv15} & Proportional-To Form & \texttt{U+221D} & F \\
+\texttt{cv16} & Smile and Frown Forms & \texttt{U+2322}; \texttt{U+2323} & F \\
+\texttt{cv17} & Empty-Set Form & \texttt{U+2205} & F \\
+\texttt{cv18} & Yen Form & \texttt{U+00A5} & F \\
+\texttt{cv19} & Registered Form & \texttt{U+00AE} & F \\
 \texttt{ss01} & Curly Script & Regular Script alphabet & F \\
-\texttt{ss02} & Curly Script alternate series & Regular Script alphabet & F \\
+\texttt{ss02} & Script Alternates & Regular and bold Script alternatives; existing Curly alternatives & F \\
+\texttt{ss03} & Curly Script Alternates & Regular Script alphabet & F \\
+\texttt{ss04} & Fraktur Alternates & Fraktur alternate inputs listed below & F \\
+\texttt{ss05} & Heavy Blackboard & Upright Blackboard Latin and digits & F \\
+\texttt{ss06} & Holey Blackboard & Upright Blackboard Latin and digits; \texttt{U+213C--213F}; \texttt{U+2145--2149} & F \\
+\texttt{ss07} & Slanted Large Operators & \texttt{U+220F--2211} & F/L \\
+\texttt{ss08} & Short Bar Relations & \texttt{U+2223--2226} & F \\
+\texttt{ss09} & Thick Tilde Relations & \texttt{U+223C}; \texttt{U+2248} & F \\
+\texttt{ss10} & Shaded Card Suits & \texttt{U+2660}; \texttt{U+2663} & F/L \\
 \end{longtable}\endgroup
 
-\file{cv33} and \file{cv34} together select the heavier Holey upright
-Blackboard design. \file{cv33} leaves the Greek and standard italic
-Blackboard characters unchanged. \file{cv34} selects their corresponding
+\file{ss05} and \file{ss06} together select the heavier Holey upright
+Blackboard design. \file{ss05} leaves the Greek and standard italic
+Blackboard characters unchanged. \file{ss06} selects their corresponding
 Holey designs.
 
-\file{ss01} and \file{cv31} can be combined. \file{ss02} selects the Curly
+\file{ss01} and \file{ss02} can be combined. \file{ss03} selects the Curly
 alternate series without requiring \file{ss01}; it overrides the regular
-Script choices of \file{ss01} and \file{cv31}. \file{cv32} remains independent.
+Script choices of \file{ss01} and \file{ss02}. \file{ss04} remains independent.
 
-For \file{cv24} and \file{cv46}, choose one numbered value per tag;
-disabling the feature restores the default. \file{cv47} affects only
-U+2241 and can be combined with either \file{cv46} choice.
+For \file{cv09}, \file{cv12} and \file{cv13}, choose one numbered
+value per tag. Value 0 disables that feature; it does not cancel another
+active feature. Negated comparisons (\file{cv12}) and inclusions
+(\file{cv13}) can use different choices. \file{cv14} affects only U+2241.
 
-\begingroup\small\raggedright\textbf{Script alternate inputs:} \texttt{U+2110}; \texttt{U+2112}; \texttt{U+1D49E}; \texttt{U+1D4A2}; \texttt{U+1D4AC}; \texttt{U+1D4AE}; \texttt{U+1D4B4--U+1D4B5}; \texttt{U+1D4C7}; \texttt{U+1D4CF}; \texttt{U+1D4D2}; \texttt{U+1D4D6}; \texttt{U+1D4D8}; \texttt{U+1D4DB}; \texttt{U+1D4E0}; \texttt{U+1D4E2}; \texttt{U+1D4E8--U+1D4E9}; \texttt{U+1D4FB}; \texttt{U+1D503}.\par\endgroup
+\file{ss03} alone and \file{ss01,ss02} agree for regular Script.
+Only the latter also enables the existing bold Script alternatives.
+The Curly inputs G/M/N/Q/Y have existing alternatives under \file{ss02}.
 
-\begingroup\small\raggedright\textbf{Fraktur alternate inputs:} \texttt{U+2111}; \texttt{U+211C}; \texttt{U+1D51C}; \texttt{U+1D535--U+1D536}; \texttt{U+1D584}; \texttt{U+1D59D--U+1D59E}.\par\endgroup
+Full provides 19 character variants and 10 stylistic sets. Lite provides
+\file{cv01--cv09}, \file{ss07} and \file{ss10}, with the same meanings.
+All selectors are off by default. Numbering does not determine lookup order.
+New features will use unused numbers; published meanings will remain fixed.
+
+Feature labels are stored in OpenType FeatureParams and the name table.
+Character variants also contain descriptions, samples and, where relevant,
+ordered parameter labels. Their descriptive Unicode lists are separate
+from the actual GSUB glyph coverage. Applications decide whether to expose
+these names; they are not additional TeX commands.
+
+The substitution report records the public feature tags and lookup order.
+Glyph names are independent of public feature tags.
+
+\begingroup\raggedright\textbf{Script alternate inputs:} \texttt{U+2110}; \texttt{U+2112}; \texttt{U+1D49E}; \texttt{U+1D4A2}; \texttt{U+1D4AC}; \texttt{U+1D4AE}; \texttt{U+1D4B4--U+1D4B5}; \texttt{U+1D4C7}; \texttt{U+1D4CF}; \texttt{U+1D4D2}; \texttt{U+1D4D6}; \texttt{U+1D4D8}; \texttt{U+1D4DB}; \texttt{U+1D4E0}; \texttt{U+1D4E2}; \texttt{U+1D4E8--U+1D4E9}; \texttt{U+1D4FB}; \texttt{U+1D503}.\par\endgroup
+
+\begingroup\raggedright\textbf{Fraktur alternate inputs:} \texttt{U+2111}; \texttt{U+211C}; \texttt{U+1D51C}; \texttt{U+1D535--U+1D536}; \texttt{U+1D584}; \texttt{U+1D59D--U+1D59E}.\par\endgroup
 
 \section{Growing symbols}\label{sec:large}
 The table lists standard inputs with MATH size data in both editions.
@@ -236,10 +270,11 @@ Use paired \file{\left} and \file{\right} for delimiters, \file{\sqrt}
 for radicals, and accent or over/under commands for horizontal constructions.
 The table describes font data; a symbol command alone need not request growth.
 For U+20D7, \file{\vec} selects a fixed accent and \file{\overrightarrow}
-requests a wide accent. \file{\bar} and \file{\overbar} use the fixed
-U+0304 accent; \file{\wideoverbar} uses U+0305.
+requests a wide accent. \file{\bar} uses fixed U+0304;
+\file{\overbar} uses fixed U+0305, and \file{\wideoverbar} requests
+the stretching U+0305 accent.
 
-\begingroup\fontsize{8}{10}\selectfont\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
+\begingroup\setlength\tabcolsep{3pt}\renewcommand\arraystretch{1.08}
 \begin{longtable}{@{}p{0.12\linewidth}p{0.38\linewidth}p{0.16\linewidth}p{0.06\linewidth}p{0.08\linewidth}p{0.08\linewidth}@{}}
 \toprule
 Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endfirsthead
@@ -247,26 +282,26 @@ Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endfirsthead
 Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endhead
 \bottomrule\endfoot
 \texttt{U+0028} & \texttt{\detokenize{\lparen}} & default & V & 5 & yes \\
-\texttt{U+0028} & \texttt{\detokenize{\lparen}} & \texttt{cv22=1} & V & 24 & yes \\
+\texttt{U+0028} & \texttt{\detokenize{\lparen}} & \texttt{cv07=1} & V & 24 & yes \\
 \texttt{U+0029} & \texttt{\detokenize{\rparen}} & default & V & 5 & yes \\
-\texttt{U+0029} & \texttt{\detokenize{\rparen}} & \texttt{cv22=1} & V & 24 & yes \\
+\texttt{U+0029} & \texttt{\detokenize{\rparen}} & \texttt{cv07=1} & V & 24 & yes \\
 \texttt{U+002F} & \texttt{\detokenize{\mathslash}} & default & V & 5 & no \\
 \texttt{U+005B} & \texttt{\detokenize{\lbrack}} & default & V & 5 & yes \\
 \texttt{U+005C} & \texttt{\detokenize{\backslash}} & default & V & 5 & no \\
 \texttt{U+005D} & \texttt{\detokenize{\rbrack}} & default & V & 5 & yes \\
 \texttt{U+007B} & \texttt{\detokenize{\lbrace}} & default & V & 5 & yes \\
-\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & \texttt{cv23=1} & V & 24 & yes \\
-\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & \texttt{cv21=1} & V & 5 & yes \\
-\texttt{U+007C} & \texttt{\detokenize{\vert}} & default & V & 1 & yes \\
+\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & \texttt{cv08=1} & V & 24 & yes \\
+\texttt{U+007B} & \texttt{\detokenize{\lbrace}} & \texttt{cv06=1} & V & 5 & yes \\
+\texttt{U+007C} & \texttt{\detokenize{\vert}} & default & V & 8 & yes \\
 \texttt{U+007D} & \texttt{\detokenize{\rbrace}} & default & V & 5 & yes \\
-\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & \texttt{cv23=1} & V & 24 & yes \\
-\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & \texttt{cv21=1} & V & 5 & yes \\
+\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & \texttt{cv08=1} & V & 24 & yes \\
+\texttt{U+007D} & \texttt{\detokenize{\rbrace}} & \texttt{cv06=1} & V & 5 & yes \\
 \texttt{U+0302} & \texttt{\detokenize{\widehat{...}}} & default & H & 37 & no \\
 \texttt{U+0303} & \texttt{\detokenize{\widetilde{...}}} & default & H & 37 & no \\
 \texttt{U+0305} & \texttt{\detokenize{\wideoverbar{...}}} & default & H & 3 & yes \\
 \texttt{U+030C} & \texttt{\detokenize{\widecheck{...}}} & default & H & 35 & no \\
-\texttt{U+2016} & \texttt{\detokenize{\Vert}} & default & V & 1 & yes \\
-\texttt{U+20D6} & \texttt{\detokenize{\overleftarrow{...}}} & default & H & 0 & yes \\
+\texttt{U+2016} & \texttt{\detokenize{\Vert}} & default & V & 8 & yes \\
+\texttt{U+20D6} & \texttt{\detokenize{\overleftarrow{...}}} & default & H & 2 & yes \\
 \texttt{U+20D7} & \texttt{\detokenize{\overrightarrow{...}}} & default & H & 2 & yes \\
 \texttt{U+2190} & \texttt{\detokenize{\leftarrow}} & default & H & 2 & yes \\
 \texttt{U+2191} & \texttt{\detokenize{\uparrow}} & default & V & 1 & yes \\
@@ -281,29 +316,29 @@ Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endhead
 \texttt{U+21D3} & \texttt{\detokenize{\Downarrow}} & default & V & 1 & yes \\
 \texttt{U+21D4} & \texttt{\detokenize{\Leftrightarrow}} & default & H & 2 & yes \\
 \texttt{U+21D5} & \texttt{\detokenize{\Updownarrow}} & default & V & 1 & yes \\
-\texttt{U+220F} & \texttt{\detokenize{\prod}} & default & V & 2 & no \\
-\texttt{U+220F} & \texttt{\detokenize{\prod}} & \texttt{cv11=1} & V & 2 & no \\
-\texttt{U+2210} & \texttt{\detokenize{\coprod}} & default & V & 2 & no \\
-\texttt{U+2210} & \texttt{\detokenize{\coprod}} & \texttt{cv11=1} & V & 2 & no \\
-\texttt{U+2211} & \texttt{\detokenize{\sum}} & default & V & 2 & no \\
-\texttt{U+2211} & \texttt{\detokenize{\sum}} & \texttt{cv11=1} & V & 2 & no \\
+\texttt{U+220F} & \texttt{\detokenize{\prod}} & default & V & 6 & no \\
+\texttt{U+220F} & \texttt{\detokenize{\prod}} & \texttt{ss07=1} & V & 6 & no \\
+\texttt{U+2210} & \texttt{\detokenize{\coprod}} & default & V & 6 & no \\
+\texttt{U+2210} & \texttt{\detokenize{\coprod}} & \texttt{ss07=1} & V & 6 & no \\
+\texttt{U+2211} & \texttt{\detokenize{\sum}} & default & V & 6 & no \\
+\texttt{U+2211} & \texttt{\detokenize{\sum}} & \texttt{ss07=1} & V & 6 & no \\
 \texttt{U+221A} & \texttt{\detokenize{\sqrt{...}}} & default & V & 5 & yes \\
-\texttt{U+2223} & \texttt{\detokenize{\mid}} & default & V & 1 & yes \\
-\texttt{U+2225} & \texttt{\detokenize{\parallel}} & default & V & 1 & yes \\
-\texttt{U+222B} & \texttt{\detokenize{\int}} & default & V & 2 & no \\
-\texttt{U+222C} & \texttt{\detokenize{\iint}} & default & V & 2 & no \\
-\texttt{U+222D} & \texttt{\detokenize{\iiint}} & default & V & 2 & no \\
-\texttt{U+222E} & \texttt{\detokenize{\oint}} & default & V & 2 & no \\
-\texttt{U+222F} & \texttt{\detokenize{\oiint}} & default & V & 2 & no \\
-\texttt{U+2230} & \texttt{\detokenize{\oiiint}} & default & V & 2 & no \\
-\texttt{U+2231} & \texttt{\detokenize{\intclockwise}} & default & V & 2 & no \\
-\texttt{U+2232} & \texttt{\detokenize{\varointclockwise}} & default & V & 2 & no \\
-\texttt{U+2233} & \texttt{\detokenize{\ointctrclockwise}} & default & V & 2 & no \\
-\texttt{U+22C0} & \texttt{\detokenize{\bigwedge}} & default & V & 2 & no \\
-\texttt{U+22C0} & \texttt{\detokenize{\bigwedge}} & \texttt{cv12=1} & V & 2 & no \\
-\texttt{U+22C1} & \texttt{\detokenize{\bigvee}} & default & V & 2 & no \\
-\texttt{U+22C2} & \texttt{\detokenize{\bigcap}} & default & V & 2 & no \\
-\texttt{U+22C3} & \texttt{\detokenize{\bigcup}} & default & V & 2 & no \\
+\texttt{U+2223} & \texttt{\detokenize{\mid}} & default & V & 8 & yes \\
+\texttt{U+2225} & \texttt{\detokenize{\parallel}} & default & V & 8 & yes \\
+\texttt{U+222B} & \texttt{\detokenize{\int}} & default & V & 6 & no \\
+\texttt{U+222C} & \texttt{\detokenize{\iint}} & default & V & 6 & no \\
+\texttt{U+222D} & \texttt{\detokenize{\iiint}} & default & V & 6 & no \\
+\texttt{U+222E} & \texttt{\detokenize{\oint}} & default & V & 6 & no \\
+\texttt{U+222F} & \texttt{\detokenize{\oiint}} & default & V & 6 & no \\
+\texttt{U+2230} & \texttt{\detokenize{\oiiint}} & default & V & 6 & no \\
+\texttt{U+2231} & \texttt{\detokenize{\intclockwise}} & default & V & 6 & no \\
+\texttt{U+2232} & \texttt{\detokenize{\varointclockwise}} & default & V & 6 & no \\
+\texttt{U+2233} & \texttt{\detokenize{\ointctrclockwise}} & default & V & 6 & no \\
+\texttt{U+22C0} & \texttt{\detokenize{\bigwedge}} & default & V & 6 & no \\
+\texttt{U+22C0} & \texttt{\detokenize{\bigwedge}} & \texttt{cv05=1} & V & 6 & no \\
+\texttt{U+22C1} & \texttt{\detokenize{\bigvee}} & default & V & 6 & no \\
+\texttt{U+22C2} & \texttt{\detokenize{\bigcap}} & default & V & 6 & no \\
+\texttt{U+22C3} & \texttt{\detokenize{\bigcup}} & default & V & 6 & no \\
 \texttt{U+2308} & \texttt{\detokenize{\lceil}} & default & V & 5 & yes \\
 \texttt{U+2309} & \texttt{\detokenize{\rceil}} & default & V & 5 & yes \\
 \texttt{U+230A} & \texttt{\detokenize{\lfloor}} & default & V & 5 & yes \\
@@ -313,29 +348,109 @@ Unicode & Input & Selection & V/H & Var. & Asm. \\ \midrule \endhead
 \texttt{U+23B1} & \texttt{\detokenize{\rmoustache}} & default & V & 1 & yes \\
 \texttt{U+23DC} & \texttt{\detokenize{\overparen{...}}} & default & H & 24 & yes \\
 \texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & default & H & 0 & yes \\
-\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & \texttt{cv24=1} & H & 0 & yes \\
-\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & \texttt{cv24=2} & H & 35 & yes \\
+\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & \texttt{cv09=1} & H & 0 & yes \\
+\texttt{U+23DE} & \texttt{\detokenize{\overbrace{...}}} & \texttt{cv09=2} & H & 35 & yes \\
 \texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & default & H & 0 & yes \\
-\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & \texttt{cv24=1} & H & 0 & yes \\
-\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & \texttt{cv24=2} & H & 35 & yes \\
-\texttt{U+27E8} & \texttt{\detokenize{\langle}} & default & V & 5 & no \\
-\texttt{U+27E9} & \texttt{\detokenize{\rangle}} & default & V & 5 & no \\
+\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & \texttt{cv09=1} & H & 0 & yes \\
+\texttt{U+23DF} & \texttt{\detokenize{\underbrace{...}}} & \texttt{cv09=2} & H & 35 & yes \\
+\texttt{U+27E8} & \texttt{\detokenize{\langle}} & default & V & 8 & no \\
+\texttt{U+27E9} & \texttt{\detokenize{\rangle}} & default & V & 8 & no \\
 \texttt{U+27EE} & \texttt{\detokenize{\lgroup}} & default & V & 1 & yes \\
 \texttt{U+27EF} & \texttt{\detokenize{\rgroup}} & default & V & 1 & yes \\
-\texttt{U+2A00} & \texttt{\detokenize{\bigodot}} & default & V & 2 & no \\
-\texttt{U+2A01} & \texttt{\detokenize{\bigoplus}} & default & V & 2 & no \\
-\texttt{U+2A02} & \texttt{\detokenize{\bigotimes}} & default & V & 2 & no \\
+\texttt{U+2A00} & \texttt{\detokenize{\bigodot}} & default & V & 6 & no \\
+\texttt{U+2A01} & \texttt{\detokenize{\bigoplus}} & default & V & 6 & no \\
+\texttt{U+2A02} & \texttt{\detokenize{\bigotimes}} & default & V & 6 & no \\
 \texttt{U+2A03} & \texttt{\detokenize{\bigcupdot}} & default & V & 2 & no \\
-\texttt{U+2A04} & \texttt{\detokenize{\biguplus}} & default & V & 2 & no \\
-\texttt{U+2A06} & \texttt{\detokenize{\bigsqcup}} & default & V & 2 & no \\
-\texttt{U+2A0D} & \texttt{\detokenize{\intbar}} & default & V & 2 & no \\
-\texttt{U+2A0F} & \texttt{\detokenize{\fint}} & default & V & 2 & no \\
+\texttt{U+2A04} & \texttt{\detokenize{\biguplus}} & default & V & 6 & no \\
+\texttt{U+2A06} & \texttt{\detokenize{\bigsqcup}} & default & V & 6 & no \\
+\texttt{U+2A0D} & \texttt{\detokenize{\intbar}} & default & V & 6 & no \\
+\texttt{U+2A0F} & \texttt{\detokenize{\fint}} & default & V & 6 & no \\
 \end{longtable}\endgroup
 
 The engine compares its size request with MATH AdvanceMeasurement.
 This is a selection dimension and need not equal the glyph's ink extent.
-Default delimiters and radicals use the ordinary source sequence;
-\file{cv22}/\file{cv23} select larger delimiter series.
+The 27 extended operator series have text/display and four additional
+ready-made designs (xl, XL, XXL, XXXL), with no repeatable assembly.
+Normal text/display selection and all MATH constants remain unchanged.
+With ordinary \file{unicode-math} input, the height of a following
+expression does not enlarge an operator. A larger design can be selected
+by an explicit LuaTeX size request; see \file{mtp2otf-guide.pdf}.
+Word controls these requests through its equation settings.
+Bigcupdot (U+2A03) retains its two designs.
+Default parentheses, braces and radicals use the ordinary source sequence;
+\file{cv07}/\file{cv08} select larger delimiter series.
+
+\subsection{Angle brackets and vertical bars}
+The small sizes of angle brackets and vertical bars need a common size
+sequence. In the original conversion, the angle brackets had five finite
+sizes, while single and double bars had only their base size followed by
+an assembly. Comparing automatic delimiters with Latin Modern Math showed
+that a bar could remain visibly shorter than the adjacent angle brackets
+around the same expression. Latin Modern provided a reference for closer
+small-size steps, rather than outlines to copy.
+
+The source and output use different growth mechanisms. Traditional TeX
+uses the TFM next-larger chain and extensible recipes; part placement is
+based on TFM box dimensions. OpenType MATH supplies size measurements,
+part advances and connector lengths, and lets the layout engine vary
+connector overlap within those limits. Thus, translating the source
+outlines does not by itself reproduce the Type~1 assembly heights.
+For the source bar extension parts, the TFM height plus depth is about
+600 font units, whereas the outline spans 636. The source's repeated
+placement therefore gives about 36 units of outline overlap. This is
+not the same quantity as MATH's minimum connector overlap, which is 20
+in the final font. With only a few parts, a difference in placement or
+size selection is a larger fraction of the total height and is more
+noticeable than in a tall assembly.
+
+To give small delimiters more consistent choices, v1.5 adds three
+intermediate angle sizes and seven finite sizes to each bar series.
+The resulting eight stages are shared by the left and right angle
+brackets, single bars and double bars in both editions:
+\begin{center}
+\begin{tabular}{@{}rrl@{}}
+\toprule
+Ink height & AdvanceMeasurement & Angle design \\
+\midrule
+931  & 932  & source \\
+1100 & 1101 & interpolated \\
+1200 & 1201 & source \\
+1450 & 1451 & interpolated \\
+1800 & 1801 & source \\
+2100 & 2101 & interpolated \\
+2400 & 2401 & source \\
+3000 & 3001 & source \\
+\bottomrule
+\end{tabular}
+\end{center}
+Values are in font units at 1000 units per em. The new 1100, 1450 and
+2100 stages follow the corresponding Latin Modern angle sizes, while
+retaining all five source angle designs. The bars follow this adopted
+angle sequence, not Latin Modern's separate bar sequence.
+AdvanceMeasurement is the ceiling of the ink height plus one unit;
+it is the selection measurement, not the horizontal advance width.
+
+New angle outlines interpolate corresponding vertices and advance widths
+between adjacent source designs after aligning their vertical centers.
+This retains the source designs at their original sizes and avoids simply
+stretching one angle vertically. New bar outlines use the source
+extension part's horizontal coordinates and advance: each stroke is
+45 units wide, with a 103-unit inner gap in the double bar.
+The original base bars are retained.
+
+Each added bar matches both the lower and upper ink bounds of the
+corresponding angle, not just its total height. LuaTeX rounds height and
+depth separately in script and scriptscript styles; matching only their
+sum can select different stages at a size boundary.
+The relation inputs U+2223 and U+2225 share the finite size lists of
+U+007C and U+2016 respectively. The implementation is
+\file{build_angle_bar_sizes} in \file{tools/font_geometry.py}.
+
+This addition leaves the existing bar assembly records intact. Bars can
+still grow beyond the largest finite size, whereas angle brackets have
+no assembly and stop at the 3000-unit design. The shared sequence improves
+small-size selection; it does not guarantee equal heights for every
+expression, application or size request.
 
 \section{Metrics and MATH constants}\label{sec:scalars}
 \subsection{Glyph metrics}
@@ -370,6 +485,7 @@ Intermediate rounding is part of each assignment.
 \texttt{round(sy[i] * upm)}, with \texttt{sy} from \file{mt2syt.tfm};
 \texttt{e(i)} uses \file{mt2exa.tfm}. \texttt{theta = e(8)} and
 \texttt{xh = s(5)}. \texttt{script\_sy} comes from \file{mt2sys.tfm}.
+
 The script ratios are the \file{mtpro2.sty} defaults;
 \texttt{\_pct(r)} is \texttt{round(r.numerator * 100 / r.denominator)}.
 
@@ -401,7 +517,7 @@ joining run when required by outline geometry. Both connector ends of
 repeatable parts participate; fixed outside ends do not.
 
 \begingroup
-\small
+
 \setlength{\tabcolsep}{4pt}
 \begin{longtable}{@{}p{0.46\linewidth}p{0.48\linewidth}@{}}
 \toprule
@@ -460,7 +576,7 @@ Field & Expression and source class \\
 \texttt{Radical\allowbreak Degree\allowbreak Bottom\allowbreak Raise\allowbreak Percent} & \texttt{60}\newline OT-SUG \\
 \texttt{Script\allowbreak Percent\allowbreak Scale\allowbreak Down} & \texttt{\_pct(script\_ratio)}\newline MT-STY \\
 \texttt{Script\allowbreak Script\allowbreak Percent\allowbreak Scale\allowbreak Down} & \texttt{\_pct(scriptscript\_ratio)}\newline MT-STY \\
-\texttt{Min\allowbreak Connector\allowbreak Overlap} & \texttt{100}\newline OT-MIG+MT-PFB \\
+\texttt{Min\allowbreak Connector\allowbreak Overlap} & \texttt{20}\newline OT-MIG+MT-PFB \\
 \texttt{Accent\allowbreak Base\allowbreak Height} & \texttt{xh}\newline MT-TFM \\
 \texttt{Flattened\allowbreak Accent\allowbreak Base\allowbreak Height} & \texttt{round(cap\_height \allowbreak * upm)}\newline MT-TFM \\
 \texttt{Delimited\allowbreak Sub\allowbreak Formula\allowbreak Min\allowbreak Height} & \texttt{int(display\_operator\_min\_height)}\newline MT-MIG+MT \\
@@ -488,7 +604,7 @@ Unicode value as needed. Upright Latin uses \file{\symup}; bold Latin
 and digits use \file{\symbfup}, which selects the MTPro2 designs.
 
 \begin{center}
-\small
+
 \begin{tabular}{@{}lll@{}}
 \texttt{U+0022--U+0027} & \texttt{U+00D1--U+00D6} & \texttt{U+0154--U+0165} \\
 \texttt{U+002A} & \texttt{U+00D9--U+00DD} & \texttt{U+0168--U+017E} \\
@@ -520,6 +636,7 @@ existing output names are reserved. Imported glyphs must have usable outlines an
 The Bold donor requirements are unchanged by extended coverage.
 
 The additional coverage depends on the donor pair.
+
 
 
 \end{document}

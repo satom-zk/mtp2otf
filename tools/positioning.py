@@ -90,6 +90,7 @@ def install_alphabet_kerns(font, catalog, sourceglyph, spec):
     generation/reporting.
     """
     from fontTools.ttLib.tables.otBase import ValueRecord
+
     from math_metrics import kern_advance
 
     pairs, rows = {}, []

@@ -1,6 +1,5 @@
 """Read original Type1 dictionaries; acquire native handles without
-output
-copies.
+output copies.
 """
 
 import sys

@@ -1,71 +1,85 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[margin=25mm]{geometry}
-\usepackage{amsmath,fontspec,unicode-math,array}
+\usepackage{amsmath,fontspec,unicode-math,array,longtable}
 \setmainfont{Nimbus Roman}
-\setmonofont{Nimbus Mono PS}[Scale=MatchLowercase]
+\setmonofont{Nimbus Mono PS}
 \setmathfont{MTPro2Math.otf}[Path=../out/]
 % Use upright letters from the active math font for named operators.
 \setoperatorfont{\symup}
 % Named versions are used only to print alternatives on successive rows.
 % A user's document normally selects its features once with setmathfont.
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=heavy,
-  RawFeature={+cv33}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=holey,
-  RawFeature={+cv34}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=heavyholey,
-  RawFeature={+cv33,+cv34}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=scriptalt,
-  RawFeature={+cv31}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=curly,
-  RawFeature={+ss01}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=curlyalt,
-  RawFeature={+ss01,+cv31}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=curlytwo,
-  RawFeature={+ss02}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=frakturalt,
-  RawFeature={+cv32}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=straight,
-  RawFeature={+cv21}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=largeparen,
-  RawFeature={+cv22}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=largecurly,
-  RawFeature={+cv23}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=swash,
   RawFeature={+cv01}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=greekalt,
+  RawFeature={+cv02,+cv03}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=betaonly,
   RawFeature={+cv02}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=planckalt,
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=deltaonly,
   RawFeature={+cv03}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=slantedops,
-  RawFeature={+cv11}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=planckalt,
+  RawFeature={+cv04}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=curly,
+  RawFeature={+ss01}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=scriptalt,
+  RawFeature={+ss02}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=curlytwo,
+  RawFeature={+ss03}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=curlyalt,
+  RawFeature={+ss01,+ss02}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=frakturalt,
+  RawFeature={+ss04}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=heavy,
+  RawFeature={+ss05}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=holey,
+  RawFeature={+ss06}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=heavyholey,
+  RawFeature={+ss05,+ss06}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=andalt,
-  RawFeature={+cv12}]
+  RawFeature={+cv05}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=slantedops,
+  RawFeature={+ss07}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=straight,
+  RawFeature={+cv06}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=largeparen,
+  RawFeature={+cv07}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=largecurly,
+  RawFeature={+cv08}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=plainhbrace,
-  RawFeature={cv24=1}]
+  RawFeature={cv09=1}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=curlyhbrace,
-  RawFeature={cv24=2}]
+  RawFeature={cv09=2}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=subsetalt,
-  RawFeature={+cv41}]
+  RawFeature={+cv10}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=orderalt,
-  RawFeature={+cv42}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=shortrel,
-  RawFeature={+cv43}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=thickrel,
-  RawFeature={+cv44}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=curverel,
-  RawFeature={+cv45}]
+  RawFeature={+cv11}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=negone,
-  RawFeature={cv46=1}]
+  RawFeature={cv12=1,cv13=1}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=negtwo,
-  RawFeature={cv46=2}]
+  RawFeature={cv12=2,cv13=2}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=negmixed,
+  RawFeature={cv12=1,cv13=2}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=nsimalt,
-  RawFeature={+cv47}]
+  RawFeature={+cv14}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=curverel,
+  RawFeature={+cv15,+cv16}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=proptoonly,
+  RawFeature={+cv15}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=smileonly,
+  RawFeature={+cv16}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=shortrel,
+  RawFeature={+ss08}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=thickrel,
+  RawFeature={+ss09}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=emptyalt,
-  RawFeature={+cv51}]
-\setmathfont{MTPro2Math.otf}[Path=../out/,version=cardsalt,
-  RawFeature={+cv52}]
+  RawFeature={+cv17}]
 \setmathfont{MTPro2Math.otf}[Path=../out/,version=marksalt,
-  RawFeature={+cv53}]
+  RawFeature={+cv18,+cv19}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=yenonly,
+  RawFeature={+cv18}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=registeredonly,
+  RawFeature={+cv19}]
+\setmathfont{MTPro2Math.otf}[Path=../out/,version=cardsalt,
+  RawFeature={+ss10}]
 \usepackage[hidelinks,pdftitle={MTPro2 Math: Font guide},
   pdfauthor={}]{hyperref}
 \setlength{\parindent}{0pt}
@@ -75,7 +89,9 @@
 \emergencystretch=2em
 \clubpenalty=10000
 \widowpenalty=10000
-\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\codesize}{\fontsize{10.5pt}{12pt}\selectfont}
+\newcommand{\code}[1]{{\codesize\texttt{\detokenize{#1}}}}
+\AddToHook{env/verbatim/begin}{\codesize}
 \newcommand{\sample}[2]{\begingroup\mathversion{#1}$#2$\endgroup}
 \newcommand{\bbline}{\symbb{ABGMXYZ\;abcxyz\;0123456789}}
 \newcommand{\bbgreek}{\BbbGamma\;\BbbPi\;\Bbbgamma\;\Bbbpi}
@@ -103,10 +119,11 @@
 \newcommand{\andsample}{p\wedge q\quad\displaystyle\bigwedge_{i=1}^{n}P_i}
 \newcommand{\negatedsample}{a\nleq b\quad a\ngeq b\quad
   A\nsubseteq B\quad A\nsupseteq B}
+
 \begin{document}
 
 {\LARGE MTPro2 Math}\par
-{\large Font guide}\hfill v1.4\par
+{\large Font guide}\hfill v1.5\par
 \medskip
 Use the generated font with LuaLaTeX and \code{unicode-math}:
 \begin{verbatim}
@@ -114,8 +131,8 @@ Use the generated font with LuaLaTeX and \code{unicode-math}:
 \setmathfont{MTPro2Math.otf}
 \end{verbatim}
 Use \code{MTPro2MathLite.otf} for Lite. The examples in this guide use Full.
-No \code{mtpro2.sty} is needed. Building the font and using it in Word
-are described in \code{mtp2otf.pdf}.
+No \code{mtpro2.sty} is needed. Building the font, installing the TTF on
+Windows and using it in Word are described in \code{mtp2otf.pdf}.
 
 \section{Letters and Greek}
 Ordinary letters are mathematical italic. Use \code{\symup},
@@ -136,7 +153,9 @@ $\symit{\alpha\beta\Gamma\Omega}$,
 $\symbfup{\alpha\beta\Gamma\Omega}$ and
 $\symbfit{\alpha\beta\Gamma\Omega}$.
 
-Character variants select alternative designs for the whole document.
+Character variants (cv) select local letter or symbol forms; stylistic
+sets (ss) select related designs across a group of characters. Both can
+be selected for the whole document.
 For example, swash z is selected in the preamble:
 \begin{verbatim}
 \setmathfont{MTPro2Math.otf}[RawFeature={+cv01}]
@@ -147,20 +166,74 @@ Default & \sample{normal}{z\quad\symbfit{z}} & swash z\\
 \code{cv01} & \sample{swash}{z\quad\symbfit{z}} & \\[5pt]
 Default & \sample{normal}{\symup{\beta\delta}\quad\symit{\beta\delta}\quad
   \symbfup{\beta\delta}\quad\symbfit{\beta\delta}} & beta, delta\\
-\code{cv02} & \sample{greekalt}{\symup{\beta\delta}\quad\symit{\beta\delta}\quad
+\code{cv02,cv03} & \sample{greekalt}{\symup{\beta\delta}\quad\symit{\beta\delta}\quad
   \symbfup{\beta\delta}\quad\symbfit{\beta\delta}} & \\[5pt]
 Default & \sample{normal}{\hbar} & Planck sign\\
-\code{cv03} & \sample{planckalt}{\hbar} & \\
+\code{cv04} & \sample{planckalt}{\hbar} & \\
 \end{tabular}
 \end{center}
 These choices are available in both editions; their bold counterparts
 require Full. Under \code{unicode-math}, \code{\hbar} and
 \code{\hslash} name the same character, whose design is selected by
-\code{cv03}.
+\code{cv04}.
 
-Features can be combined: \code{RawFeature={+cv01,+cv02}} selects both.
+Beta and delta are independent: \code{cv02} changes beta, and
+\code{cv03} changes delta. The row above enables both.
+Features can be combined: \code{RawFeature={+cv01,+cv02}} selects swash z
+and alternate beta while leaving delta unchanged.
 For a feature with numbered choices, use, for example,
-\code{RawFeature={cv24=2}}. Omit a feature to keep its default design.
+\code{RawFeature={cv09=2}}. Omit a feature to keep its default design.
+
+\newpage
+\section{Script and Fraktur}
+These alphabets are available in Full. Use \code{\symscr} and \code{\symbfscr} for regular and bold Script.
+\code{ss01} selects Curly Script. \code{ss02} changes selected letters
+in regular and bold Script, including alternatives in the Curly family.
+\code{ss03} selects the alternate Curly series directly.
+
+\begin{center}
+\code{\symscr{CGILQSYZrz}}\par\smallskip
+\begin{tabular}{@{}ll@{}}
+Default & \sample{normal}{\scriptline}\\
+\code{ss01} & \sample{curly}{\scriptline}\\
+\code{ss02} & \sample{scriptalt}{\scriptline}\\
+\code{ss03} & \sample{curlytwo}{\scriptline}\\
+\code{ss01,ss02} & \sample{curlyalt}{\scriptline}\\
+\end{tabular}
+\end{center}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}[RawFeature={+ss01,+ss02}]
+\end{verbatim}
+\code{ss03} takes precedence over the other regular Script choices.
+It matches \code{ss01,ss02} for regular Script, but does not itself enable
+bold Script alternatives. Curly G/M/N/Q/Y also have alternatives under
+\code{ss02}.
+The Curly selectors affect regular Script; bold Script retains its own
+design, with its alternatives controlled by \code{ss02}.
+
+\begin{center}
+\code{\symbfscr{CGILQSYZrz}}\par\smallskip
+\begin{tabular}{@{}ll@{}}
+Default & \sample{normal}{\boldscriptline}\\
+\code{ss02} & \sample{scriptalt}{\boldscriptline}\\
+\end{tabular}
+\end{center}
+
+Fraktur is selected with \code{\symfrak} or \code{\symbffrak}.
+Its alternatives use \code{ss04}, independently of the Script choices.
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+ & \code{\symfrak{IRYxy}} & \code{\symbffrak{IRYxy}}\\
+Default & \sample{normal}{\symfrak{IRYxy}}
+  & \sample{normal}{\symbffrak{IRYxy}}\\
+\code{ss04} & \sample{frakturalt}{\symfrak{IRYxy}}
+  & \sample{frakturalt}{\symbffrak{IRYxy}}\\
+\end{tabular}
+\end{center}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}[RawFeature={+ss02,+ss04}]
+\end{verbatim}
 
 \newpage
 \section{Blackboard}
@@ -171,27 +244,27 @@ The default design and three upright alternatives are shown below.
 \code{\symbb{ABGMXYZ\;abcxyz\;0123456789}}\par\smallskip
 \begin{tabular}{@{}ll@{}}
 Default & \sample{normal}{\bbline}\\
-\code{cv33} & \sample{heavy}{\bbline}\\
-\code{cv34} & \sample{holey}{\bbline}\\
-\code{cv33,cv34} & \sample{heavyholey}{\bbline}\\
+\code{ss05} & \sample{heavy}{\bbline}\\
+\code{ss06} & \sample{holey}{\bbline}\\
+\code{ss05,ss06} & \sample{heavyholey}{\bbline}\\
 \end{tabular}
 \end{center}
-\code{cv33} selects heavier upright letters. \code{cv34} selects the
+\code{ss05} selects heavier upright letters. \code{ss06} selects the
 Holey Roman family; combine them for its heavier upright design.
 For example:
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv33,+cv34}]
+\setmathfont{MTPro2Math.otf}[RawFeature={+ss05,+ss06}]
 \end{verbatim}
 
 Four Greek characters and five italic characters have standard Unicode
-inputs. \code{cv34} changes these to the corresponding Holey designs;
-\code{cv33} leaves them unchanged.
+inputs. \code{ss06} changes these to the corresponding Holey designs;
+\code{ss05} leaves them unchanged.
 
 \begin{center}
 \begin{tabular}{@{}lll@{}}
  & Greek & Italic\\
 Default & \sample{normal}{\bbgreek} & \sample{normal}{\bbitalic}\\
-\code{cv34} & \sample{holey}{\bbgreek} & \sample{holey}{\bbitalic}\\
+\code{ss06} & \sample{holey}{\bbgreek} & \sample{holey}{\bbitalic}\\
 \end{tabular}
 \end{center}
 \begin{verbatim}
@@ -201,52 +274,93 @@ Default & \sample{normal}{\bbgreek} & \sample{normal}{\bbitalic}\\
 The italic Blackboard selection is limited to these five characters.
 
 \newpage
-\section{Script and Fraktur}
-These alphabets are available in Full. Use \code{\symscr} and \code{\symbfscr} for regular and bold Script.
-\code{cv31} changes selected letters in both weights. Curly Script is
-selected with \code{ss01}; it also has alternatives under \code{cv31}.
-\code{ss02} selects a second Curly series directly.
-
+\section{Operators and formula sizes}
+To use the math font's upright letters for named operators such as
+\code{\sin} and \code{\cos}, set:
+\begin{verbatim}
+\setoperatorfont{\symup}
+\end{verbatim}
+Large operators have ordinary text and display designs. The math
+style selects them automatically; \code{\limits} and \code{\nolimits} control the
+placement of limits.
+\[
+  \textstyle\sum_{k=1}^{n}a_k\quad\int_0^1 f(x)\,dx
+  \qquad\displaystyle\sum_{k=1}^{n}a_k\quad\int_0^1 f(x)\,dx
+\]
+\code{cv05} changes the three optical designs of \code{\wedge}
+and the large operator \code{\bigwedge} at every supported size:
 \begin{center}
-\code{\symscr{CGILQSYZrz}}\par\smallskip
 \begin{tabular}{@{}ll@{}}
-Default & \sample{normal}{\scriptline}\\
-\code{cv31} & \sample{scriptalt}{\scriptline}\\
-\code{ss01} & \sample{curly}{\scriptline}\\
-\code{ss01,cv31} & \sample{curlyalt}{\scriptline}\\
-\code{ss02} & \sample{curlytwo}{\scriptline}\\
+Default & \sample{normal}{\andsample}\\[9pt]
+\code{cv05} & \sample{andalt}{\andsample}\\
+\end{tabular}
+\end{center}
+\code{ss07} selects slanted sums, products and coproducts at every supported size.
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+Default & \sample{normal}{\operatorsample}\\[9pt]
+\code{ss07} & \sample{slantedops}{\operatorsample}\\
 \end{tabular}
 \end{center}
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+ss01,+cv31}]
+\setmathfont{MTPro2Math.otf}[RawFeature={+ss07}]
 \end{verbatim}
-\code{ss02} takes precedence over the other regular Script choices.
-The Curly selectors affect regular Script; bold Script retains its own
-design, with its alternatives controlled by \code{cv31}.
+Both operator features are available in Full and Lite. The features select
+design families; the engine's size request selects a stage within a family.
+Other operators retain their own designs:
+\[
+  \bigcap_{i=1}^{n}A_i\qquad\bigcup_{i=1}^{n}A_i
+  \qquad\bigotimes_{i=1}^{n}V_i\qquad\oint_C\vec{F}\cdot d\vec{r}
+\]
+The original package's extra-large operator commands are not provided.
+Use a size request as described below instead.
 
-\begin{center}
-\code{\symbfscr{CGILQSYZrz}}\par\smallskip
-\begin{tabular}{@{}ll@{}}
-Default & \sample{normal}{\boldscriptline}\\
-\code{cv31} & \sample{scriptalt}{\boldscriptline}\\
-\end{tabular}
-\end{center}
-
-Fraktur is selected with \code{\symfrak} or \code{\symbffrak}.
-Its alternatives use \code{cv32}, independently of the Script choices.
-
-\begin{center}
-\begin{tabular}{@{}lll@{}}
- & \code{\symfrak{IRYxy}} & \code{\symbffrak{IRYxy}}\\
-Default & \sample{normal}{\symfrak{IRYxy}}
-  & \sample{normal}{\symbffrak{IRYxy}}\\
-\code{cv32} & \sample{frakturalt}{\symfrak{IRYxy}}
-  & \sample{frakturalt}{\symbffrak{IRYxy}}\\
-\end{tabular}
-\end{center}
+\newpage
+\subsection*{Requesting a larger operator}
+With ordinary \code{unicode-math} input, a tall fraction after \code{\int}
+does not enlarge the integral sign. To select a larger design in LuaLaTeX,
+set \code{\Umathoperatorsize} for the required math style:
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv31,+cv32}]
+\begingroup
+\Umathoperatorsize\displaystyle=3em
+\[
+  \int_0^1 \frac{1}{1+\frac{x}{1+x^2}}\,dx
+\]
+\endgroup
 \end{verbatim}
+\begin{center}
+\begin{tabular}{@{}cc@{}}
+Ordinary display & Requested size \code{3em} \\[10pt]
+$\displaystyle\int_0^1\frac{1}{1+\frac{x}{1+x^2}}\,dx$
+& \begingroup\Umathoperatorsize\displaystyle=3em
+$\displaystyle\int_0^1\frac{1}{1+\frac{x}{1+x^2}}\,dx$\endgroup
+\\
+\end{tabular}
+\end{center}
+The value is a size request, not a scale factor: the engine chooses from
+the font's ready-made designs. It does not continuously stretch the glyph.
+The group limits the setting to this example. Within the group, the setting
+also applies to other operators in display style, such as \code{\sum} and
+\code{\prod}. Stylistic sets such as \code{ss07} choose the design
+family independently of the size request.
+
+Larger designs are available in both Full and Lite. The supported series
+and their number of sizes are listed in \code{mtp2otf.pdf}, Appendix B.
+The command above is specific to LuaTeX; Word controls operator growth
+through its own equation settings.
+
+\subsection*{Scripts, fractions and radicals}
+Subscripts and superscripts select the source's optical sizes automatically:
+\[
+  x+\alpha\qquad 2^{x+\alpha}\qquad 2^{2^{x+\alpha}}
+\]
+Radicals and fractions use the ordinary commands:
+\begin{verbatim}
+\sqrt{\frac{a^2+b^2}{c^2+d^2}} \qquad \sqrt[3]{x+y}
+\end{verbatim}
+\[
+  \sqrt{\frac{a^2+b^2}{c^2+d^2}}\qquad\sqrt[3]{x+y}
+\]
 
 \newpage
 \section{Parentheses and braces}
@@ -255,21 +369,21 @@ The default series uses the original ordinary growth range, followed by
 an assembly of repeatable parts. The default braces use the morphed
 design, which approaches the assembled shape as it grows.
 
-\code{cv22} extends parentheses through the large ready-made designs.
+\code{cv07} extends parentheses through the large ready-made designs.
 The two examples below use the same input and font size.
 
 \begin{center}
 \begin{tabular}{@{}ll@{}}
 Default & \sample{normal}{\matrixsample}\\[10pt]
-\code{cv22} & \sample{largeparen}{\matrixsample}\\
+\code{cv07} & \sample{largeparen}{\matrixsample}\\
 \end{tabular}
 \end{center}
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv22}]
+\setmathfont{MTPro2Math.otf}[RawFeature={+cv07}]
 \end{verbatim}
 
-For braces, \code{cv21} selects straight braces with the ordinary growth
-range. \code{cv23} selects Curly braces with an extended ready-made range.
+For braces, \code{cv06} selects straight braces with the ordinary growth
+range. \code{cv08} selects Curly braces with an extended ready-made range.
 
 At larger sizes the default and straight series use the same assembly.
 Each row shows a small set and a larger piecewise function:
@@ -277,14 +391,14 @@ Each row shows a small set and a larger piecewise function:
 \begin{tabular}{@{}lll@{}}
 Default & \sample{normal}{\smallbrace}
   & \sample{normal}{\tentfunction}\\[10pt]
-\code{cv21} & \sample{straight}{\smallbrace}
+\code{cv06} & \sample{straight}{\smallbrace}
   & \sample{straight}{\tentfunction}\\[10pt]
-\code{cv23} & \sample{largecurly}{\smallbrace}
+\code{cv08} & \sample{largecurly}{\smallbrace}
   & \sample{largecurly}{\tentfunction}\\
 \end{tabular}
 \end{center}
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv22,+cv23}]
+\setmathfont{MTPro2Math.otf}[RawFeature={+cv07,+cv08}]
 \end{verbatim}
 Use paired delimiters, or end with \code{\right.} for a one-sided brace:
 \begin{verbatim}
@@ -293,9 +407,8 @@ Use paired delimiters, or end with \code{\right.} for a one-sided brace:
 \end{verbatim}
 
 The large series reaches 28.8\,em before continuing with the ordinary
-assembly. \code{cv21} takes precedence over \code{cv23}; choose one brace
+assembly. \code{cv06} takes precedence over \code{cv08}; choose one brace
 style. Parenthesis selection remains independent.
-
 
 \newpage
 \section{Accents and horizontal braces}
@@ -324,74 +437,21 @@ Horizontal parentheses and braces cover their contents. For example:
 \[
   \overparen{AB}\qquad\underbrace{V\times\cdots\times V}_{n}
 \]
-\code{cv24} selects the design of both overbraces and underbraces:
+\code{cv09} selects the design of both overbraces and underbraces:
 \begin{center}
 \begin{tabular}{@{}ll@{}}
 Default & \sample{normal}{\bracepair}\\[10pt]
-\code{cv24=1}: plain & \sample{plainhbrace}{\bracepair}\\[10pt]
-\code{cv24=2}: Curly & \sample{curlyhbrace}{\bracepair}\\
+\code{cv09=1}: plain & \sample{plainhbrace}{\bracepair}\\[10pt]
+\code{cv09=2}: Curly & \sample{curlyhbrace}{\bracepair}\\
 \end{tabular}
 \end{center}
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={cv24=2}]
+\setmathfont{MTPro2Math.otf}[RawFeature={cv09=2}]
 \end{verbatim}
 This choice is independent of the vertical-brace features. Use:
 \begin{verbatim}
 \overbrace{...}^{...}     \underbrace{...}_{...}
 \end{verbatim}
-
-\newpage
-\section{Operators and formula sizes}
-To use the math font's upright letters for named operators such as
-\code{\sin} and \code{\cos}, set:
-\begin{verbatim}
-\setoperatorfont{\symup}
-\end{verbatim}
-Large operators have text and display designs. The math style selects
-them automatically; \code{\limits} and \code{\nolimits} control the
-placement of limits.
-\[
-  \textstyle\sum_{k=1}^{n}a_k\quad\int_0^1 f(x)\,dx
-  \qquad\displaystyle\sum_{k=1}^{n}a_k\quad\int_0^1 f(x)\,dx
-\]
-\code{cv11} selects slanted sums, products and coproducts in both sizes.
-\begin{center}
-\begin{tabular}{@{}ll@{}}
-Default & \sample{normal}{\operatorsample}\\[9pt]
-\code{cv11} & \sample{slantedops}{\operatorsample}\\
-\end{tabular}
-\end{center}
-\begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={+cv11}]
-\end{verbatim}
-\code{cv12} changes conjunction signs, both \code{\wedge} and
-\code{\bigwedge}:
-\begin{center}
-\begin{tabular}{@{}ll@{}}
-Default & \sample{normal}{\andsample}\\[9pt]
-\code{cv12} & \sample{andalt}{\andsample}\\
-\end{tabular}
-\end{center}
-Both operator features are available in Full and Lite.
-Other operators retain their own designs:
-\[
-  \bigcap_{i=1}^{n}A_i\qquad\bigcup_{i=1}^{n}A_i
-  \qquad\bigotimes_{i=1}^{n}V_i\qquad\oint_C\vec{F}\cdot d\vec{r}
-\]
-Subscripts and superscripts select the source's optical sizes without
-an explicit feature setting:
-\[
-  x+\alpha\qquad 2^{x+\alpha}\qquad 2^{2^{x+\alpha}}
-\]
-Radicals and fractions use the ordinary commands:
-\begin{verbatim}
-\sqrt{\frac{a^2+b^2}{c^2+d^2}} \qquad \sqrt[3]{x+y}
-\end{verbatim}
-\[
-  \sqrt{\frac{a^2+b^2}{c^2+d^2}}\qquad\sqrt[3]{x+y}
-\]
-The original package's explicit extra-large operator commands are not
-provided.
 
 \newpage
 \section{Relations}
@@ -400,70 +460,82 @@ changing their input commands or mathematical meanings.
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 Default & \sample{normal}{\subsetneq\;\supsetneq\;\subsetneqq\;\supsetneqq} & \\
-\code{cv41} & \sample{subsetalt}{\subsetneq\;\supsetneq\;\subsetneqq\;\supsetneqq}
+\code{cv10} & \sample{subsetalt}{\subsetneq\;\supsetneq\;\subsetneqq\;\supsetneqq}
   & \code{\subsetneq \supsetneq}\\
  & & \code{\subsetneqq \supsetneqq}\\[5pt]
 Default & \sample{normal}{\lneqq\;\gneqq} & \\
-\code{cv42} & \sample{orderalt}{\lneqq\;\gneqq}
+\code{cv11} & \sample{orderalt}{\lneqq\;\gneqq}
   & \code{\lneqq \gneqq}\\[5pt]
-Default & \sample{normal}{\mid\;\nmid\;\parallel\;\nparallel} & \\
-\code{cv43} & \sample{shortrel}{\mid\;\nmid\;\parallel\;\nparallel}
-  & \code{\mid \nmid \parallel \nparallel}\\[5pt]
-Default & \sample{normal}{\sim\;\approx} & \\
-\code{cv44} & \sample{thickrel}{\sim\;\approx}
-  & \code{\sim \approx}\\[5pt]
-Default & \sample{normal}{\propto\;\smile\;\frown} & \\
-\code{cv45} & \sample{curverel}{\propto\;\smile\;\frown}
-  & \code{\propto \smile \frown}\\
 \end{tabular}
 \end{center}
-\code{cv43} selects shorter relation bars; it does not change the
-delimiter bars in \code{\left|x\right|} or
-\code{\left\Vert v\right\Vert}. \code{cv44} selects thicker
-similarity and approximation signs.
-
-Negated comparisons and inclusions have two further choices under
-\code{cv46}. Use their direct commands:
+Negated comparisons use \code{cv12}; negated inclusions use \code{cv13}.
+Each independently accepts 0 (off), 1 (first alternative) or 2 (double
+equality). Value 1 selects slanted equality for comparisons and the AMS
+alternate for inclusions. Use their direct commands:
 \begin{verbatim}
 a\nleq b \quad a\ngeq b \quad A\nsubseteq B \quad A\nsupseteq B
 \end{verbatim}
 \begin{center}
 \begin{tabular}{@{}ll@{}}
 Default & \sample{normal}{\negatedsample}\\[4pt]
-\code{cv46=1} & \sample{negone}{\negatedsample}\\[4pt]
-\code{cv46=2} & \sample{negtwo}{\negatedsample}\\
+\code{cv12=1,cv13=1} & \sample{negone}{\negatedsample}\\[4pt]
+\code{cv12=2,cv13=2} & \sample{negtwo}{\negatedsample}\\
 \end{tabular}
 \end{center}
 The not-similar sign is independent:
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 Default & \sample{normal}{a\nsim b} & \code{a\nsim b}\\
-\code{cv47} & \sample{nsimalt}{a\nsim b} & \\
+\code{cv14} & \sample{nsimalt}{a\nsim b} & \\
 \end{tabular}
 \end{center}
 \begin{verbatim}
-\setmathfont{MTPro2Math.otf}[RawFeature={cv46=1,+cv47}]
+\setmathfont{MTPro2Math.otf}[RawFeature={cv12=1,cv13=1,+cv14}]
 \end{verbatim}
+
+\code{cv15} selects the proportional-to form; \code{cv16} selects smile
+and frown. They can be enabled independently.
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+Default & \sample{normal}{\propto\;\smile\;\frown} & \\
+\code{cv15,cv16} & \sample{curverel}{\propto\;\smile\;\frown}
+  & \code{\propto \smile \frown}\\
+\end{tabular}
+\end{center}
+\code{ss08} selects shorter relation bars; it does not change the
+delimiter bars in \code{\left|x\right|} or
+\code{\left\Vert v\right\Vert}. \code{ss09} selects thicker
+similarity and approximation signs.
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+Default & \sample{normal}{\mid\;\nmid\;\parallel\;\nparallel} & \\
+\code{ss08} & \sample{shortrel}{\mid\;\nmid\;\parallel\;\nparallel}
+  & \code{\mid \nmid \parallel \nparallel}\\[5pt]
+Default & \sample{normal}{\sim\;\approx} & \\
+\code{ss09} & \sample{thickrel}{\sim\;\approx}
+  & \code{\sim \approx}\\
+\end{tabular}
+\end{center}
 
 \newpage
 \section{Other symbols}
-\code{cv51} selects the alternative empty-set sign in Full.
+\code{cv17} selects the alternative empty-set sign in Full.
 \code{\emptyset} and \code{\varnothing} refer to the same Unicode
 character under \code{unicode-math}.
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 Default & \sample{normal}{\emptyset} & \code{\emptyset}\\
-\code{cv51} & \sample{emptyalt}{\emptyset} & \\[5pt]
-Default & \sample{normal}{\spadesuit\;\clubsuit}
-  & \code{\spadesuit \clubsuit}\\
-\code{cv52} & \sample{cardsalt}{\spadesuit\;\clubsuit} & \\[5pt]
+\code{cv17} & \sample{emptyalt}{\emptyset} & \\[5pt]
 Default & \sample{normal}{\mathyen\;\registeredmark}
   & \code{\mathyen}, U+00AE\\
-\code{cv53} & \sample{marksalt}{\mathyen\;\registeredmark} & \\
+\code{cv18,cv19} & \sample{marksalt}{\mathyen\;\registeredmark} & \\[5pt]
+Default & \sample{normal}{\spadesuit\;\clubsuit}
+  & \code{\spadesuit \clubsuit}\\
+\code{ss10} & \sample{cardsalt}{\spadesuit\;\clubsuit} & \\
 \end{tabular}
 \end{center}
-\code{cv52} gives shaded spades and clubs in both editions.
-\code{cv53} changes the yen and registered signs in Full.
+\code{cv18} changes yen and \code{cv19} changes the registered sign in Full;
+they are independent. \code{ss10} gives shaded spades and clubs in both editions.
 
 The usual symbol commands include \code{\ell}, \code{\partial},
 \code{\nabla}, \code{\infty}, \code{\dagger} and \code{\ddagger}:
@@ -473,6 +545,29 @@ The usual symbol commands include \code{\ell}, \code{\partial},
 Mathematical sans-serif and monospace alphabets, a complete bold-symbol
 version, and a compatibility package for MTPro2-specific macros are
 not included.
+
+\newpage
+\section{Combining features}
+These features can be selected independently.
+Each example keeps the other symbol at its default unless explicitly enabled.
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+Default & \sample{normal}{\beta+\delta}\\
+\code{cv02} & \sample{betaonly}{\beta+\delta}\\
+\code{cv03} & \sample{deltaonly}{\beta+\delta}\\[6pt]
+Default & \sample{normal}{\negatedsample}\\
+\code{cv12=1,cv13=2} & \sample{negmixed}{\negatedsample}\\[6pt]
+Default & \sample{normal}{a\propto b\quad x\smile y\quad x\frown y}\\
+\code{cv15} & \sample{proptoonly}{a\propto b\quad x\smile y\quad x\frown y}\\
+\code{cv16} & \sample{smileonly}{a\propto b\quad x\smile y\quad x\frown y}\\[6pt]
+Default & \sample{normal}{\mathyen\quad\registeredmark}\\
+\code{cv18} & \sample{yenonly}{\mathyen\quad\registeredmark}\\
+\code{cv19} & \sample{registeredonly}{\mathyen\quad\registeredmark}\\[6pt]
+\end{tabular}
+\end{center}
+\begin{verbatim}
+\setmathfont{MTPro2Math.otf}[RawFeature={cv12=1,cv13=2}]
+\end{verbatim}
 
 \newpage
 \section{Three math sizes}

@@ -5,11 +5,12 @@ import os
 from dataclasses import dataclass
 from fractions import Fraction
 
-import donors
 import fontforge
+import psMat
+
+import donors
 import large_variant_policy as L
 import mapping as U
-import psMat
 from outlines import native_font
 
 
@@ -59,12 +60,14 @@ class GlyphSources:
     I/O.
     """
 
-    def __init__(self, font, faces, rules, plan):
+    def __init__(self, font, faces, rules, plan, *, condition):
         self.font, self.faces, self.rules = font, faces, rules
+        self.condition = condition
         self.plan = {tag: set(slots) for tag, slots in plan["native"].items()}
         self.growth = plan["growth"]
         self.imported = {}
         self.variant_sources = {}
+        self.compound_sources = {}
         self.source_requests = set()
         self.uni_owner = {}
 
@@ -81,8 +84,7 @@ class GlyphSources:
 
     def mu_to_units(self, value):
         """Convert TeX math units to output-font units (one em is
-        eighteen
-        mu).
+        eighteen mu).
         """
         return round(value / 18 * self.font.em)
 
@@ -231,8 +233,7 @@ class GlyphSources:
 
     def regular_dotless_j(self, ffont, byuni):
         """Use this donor's encoded glyph, or remove its uniquely
-        separated
-        j dot.
+        separated j dot.
         """
         source_u = 0x0237 if 0x0237 in byuni else 0x006A
         source_name = byuni.get(source_u)
@@ -351,8 +352,8 @@ def import_core(sources, limits):
         for slot, (u, name) in sorted(table.items()):
             import_glyph(tag, slot, name=name, unicode_=u)
 
-    # Encode text operators; keep display variants in size order.
-    # base glyph -> size-ordered variants, including the base
+    # Encode text operators; keep display variants in size order. base
+    # glyph -> size-ordered variants, including the base
     op_variants = {}
     if "exa" in fonts:
         for slot, (u, name, dslot) in U.EXA_OPS.items():
@@ -405,13 +406,20 @@ def import_core(sources, limits):
                                 psMat.translate(out[left].width, _offsets[1]),
                             )
                             g.width = out[left].width + out[r].width
+                            sources.compound_sources[gn] = dict(
+                                glyph=gn, series=name,
+                                stage=U.OPERATOR_STAGES[sz + 2],
+                                parts=[dict(tag=ftag, slot=q, glyph=part,
+                                            scale=_scale)
+                                       for q, part in zip(sl, (left, r))],
+                            )
                             var.append(gn)
                     else:
                         v = import_glyph(ftag, sl, name=f"{base}{sfx}")
                         if v:
                             var.append(v)
-            # Limit fixed sizes to keep Windows
-            # clipping bounds manageable.
+            # Limit fixed sizes to keep Windows clipping bounds
+            # manageable.
             trimmed = [var[0]]
             for gn in var[1:]:
                 bb = out[gn].boundingBox()
@@ -429,6 +437,13 @@ def import_core(sources, limits):
                             out.removeGlyph(out[d])
                     continue
                 recenter_on_axis(gn)
+                if gn in sources.compound_sources:
+                    record = sources.compound_sources[gn]
+                    transforms = {ref[0]: ref[1] for ref in out[gn].references}
+                    for part in record["parts"]:
+                        part["transform"] = list(transforms[part["glyph"]])
+                    record["advance"] = out[gn].width
+                    record["bbox"] = list(out[gn].boundingBox())
                 trimmed.append(gn)
             op_variants[base] = trimmed
 
@@ -463,8 +478,8 @@ def import_roman(sources, regular, bold):
         _nr = donors.unicode_map(_nf_reg)
         for _u in list(range(0x41, 0x5B)) + list(range(0x61, 0x7B)):
             _copy_donor_glyph(_nf_reg, _nr, _u, _u)
-        # dotless i is used internally by dtls. Prefer the
-        # encoded U+0131 if present.
+        # dotless i is used internally by dtls. Prefer the encoded
+        # U+0131 if present.
         if 0x0131 in _nr:
             upright_dotless = _copy_donor_glyph(
                 _nf_reg, _nr, 0x0131, None, "i.dotless"
@@ -486,8 +501,8 @@ def import_roman(sources, regular, bold):
 
     with native_font(ROMAN_BOLD) as _nf_bold:
         _nb = donors.unicode_map(_nf_bold)
-        # Unicode Mathematical Bold Latin and digits follow
-        # \mathbf / rmdefault bold.
+        # Unicode Mathematical Bold Latin and digits follow \mathbf /
+        # rmdefault bold.
         for _i, _u in enumerate(range(0x41, 0x5B)):
             _copy_donor_glyph(_nf_bold, _nb, _u, 0x1D400 + _i)
         for _i, _u in enumerate(range(0x61, 0x7B)):
@@ -523,8 +538,8 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
     bold_it_latin = {}
     bold_dotless_i = None
     bold_dotless_j = None
-    # Lite has donor bold Latin/digits, but no
-    # synthesized Full-only bold math.
+    # Lite has donor bold Latin/digits, but no synthesized Full-only
+    # bold math.
     if "bmit" in fonts and "bsyt" in fonts:
         # Mathematical Bold Italic Latin U+1D468..U+1D49B.
         bold_it_latin = {}
@@ -535,13 +550,13 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
             g = import_glyph("bmit", ord("a") + i, unicode_=0x1D482 + i)
             bold_it_latin[ch] = g
 
-        # Keep bold dotless forms unencoded; public dotless
-        # codepoints belong to italic.
+        # Keep bold dotless forms unencoded; public dotless codepoints
+        # belong to italic.
         bold_dotless_i = import_glyph("bmit", 0x7B, name="u1D48A.dotless")
         bold_dotless_j = import_glyph("bmit", 0x7C, name="u1D48B.dotless")
 
-        # Greek uppercase order in the Unicode
-        # Mathematical Alphanumeric block.
+        # Greek uppercase order in the Unicode Mathematical Alphanumeric
+        # block.
         greek_cap_names = [
             "ALPHA",
             "BETA",
@@ -611,8 +626,8 @@ def import_bold_and_aliases(sources, upright_dotless_i, upright_dotless_j):
             "CHI": "X",
         }
 
-        # Use mt2bmit for non-Latin-shaped bold Greek and
-        # Latin aliases for the rest.
+        # Use mt2bmit for non-Latin-shaped bold Greek and Latin aliases
+        # for the rest.
         bold_greek = {}
         for idx, name in enumerate(greek_cap_names):
             tgt = 0x1D6A8 + idx
@@ -786,8 +801,8 @@ def import_remaining_roman(sources, regular, edition, coverage, spec):
                 out[gn].width = round(nf2[src_name].width * _roman_extra_scale)
                 uni_owner[u] = gn
 
-            # Fill remaining text coverage without
-            # replacing existing math glyphs.
+            # Fill remaining text coverage without replacing existing
+            # math glyphs.
             todo = donors.text_candidates(
                 nf2,
                 uni_owner,
@@ -880,7 +895,7 @@ def import_optical_forms(sources, accents):
     add_ssty("syt", "syt_s", "syt_ss", U.SYT)
     add_ssty("ams", "ams_s", "ams_ss", U.AMSA)
     add_ssty("bb", "bb_s", "bb_ss", U.alpha_map("bb"))
-    # Import Blackboard option-family optical sources for cv33/cv34.
+    # Import Blackboard option-family optical sources for ss05/ss06.
     for _core, _s, _ss in (
         ("bbd", "bbd_s", "bbd_ss"),
         ("bbi", "bbi_s", "bbi_ss"),
@@ -907,14 +922,14 @@ def import_optical_forms(sources, accents):
     add_ssty("frak", "frak_s", "frak_ss", U.alpha_map("frak"))
     add_ssty("bscript", "bscript_s", "bscript_ss", U.alpha_map("bscript"))
     add_ssty("bfrak", "bfrak_s", "bfrak_ss", U.alpha_map("bfrak"))
-    # Donor mathematical bold has no mt2mb* script
-    # substitutions; mbf is separate.
+    # Donor mathematical bold has no mt2mb* script substitutions; mbf is
+    # separate.
     add_ssty("curly", "curly_s", "curly_ss", U.alpha_map("curly"))
     add_ssty("bmit", "bmit_s", "bmit_ss", U.MIT)
     add_ssty("bsyt", "bsyt_s", "bsyt_ss", U.SYT)
 
-    # Normalize script accents and use their own
-    # source-family skew kern.
+    # Normalize script accents and use their own source-family skew
+    # kern.
     for tag in ("syt_s", "syt_ss"):
         for slot in ACCENT_SLOTS:
             key = (tag, slot)
@@ -981,9 +996,9 @@ def build_primes(sources, ssty_map):
     """Use original S/SS primes; derive same-line forms from the S
     design.
 
-    Placement of superscripts and preceding-character IC belongs to the
-    engine. The returned attachments override only the transformed T
-    forms.
+    Placement of superscripts and preceding-character IC belongs to
+    the engine. The returned attachments override only the
+    transformed T forms.
     """
     from constructions import compose_glyph
 
@@ -1013,8 +1028,8 @@ def build_primes(sources, ssty_map):
     source_width = round(sources.faces["syt_s"][1].chars[48]["wd"] * out.em)
     for cp, count in ((0x2033, 2), (0x2034, 3), (0x2057, 4)):
         # Keep fractional positions through composition; round total
-        # width
-        # once, rather than accumulating rounded single-prime advances.
+        # width once, rather than accumulating rounded single-prime
+        # advances.
         offsets = [(float(i * ratio * source_width), 0) for i in range(count)]
         compose_glyph(
             sources,
@@ -1037,8 +1052,8 @@ def build_primes(sources, ssty_map):
             ssty_map.setdefault(base, []).append(name)
 
     # Preserve raw-prime ccmp ligatures, longest sequence first. There
-    # is
-    # no padding to cancel with a dedicated prime-prime GPOS adjustment.
+    # is no padding to cancel with a dedicated prime-prime GPOS
+    # adjustment.
     out.addLookup(
         "primelig",
         "gsub_ligature",

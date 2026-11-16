@@ -32,8 +32,8 @@ def install_initial_math(sources, accents):
             w = tfm.chars[slot]["wd"]
             ic = tfm.chars[slot].get("ic") or 0.0
             kern = tfm.kerns.get((slot, sk), 0.0) if sk is not None else 0.0
-            # TeX centers over the accentee width plus
-            # CHARIC, then adds skew kern.
+            # TeX centers over the accentee width plus CHARIC, then adds
+            # skew kern.
             topaccent[gname] = round(((w + ic) / 2 + kern) * 1000)
     # Combining accents attach at the ink center.
     for gname in accent_glyphs:
@@ -81,8 +81,8 @@ def install_initial_math(sources, accents):
         try:
             setattr(out.math, FF_NAMES.get(k, k), int(v))
         except AttributeError as exc:
-            # Only these scalars are restored from
-            # the snapshot by font_geometry.
+            # Only these scalars are restored from the snapshot by
+            # font_geometry.
             if k not in (
                 "ScriptPercentScaleDown",
                 "ScriptScriptPercentScaleDown",
@@ -119,8 +119,8 @@ def assign_private_codepoints(sources):
         cw = out[c].width
         compose(0x2237, None, c, [(0, 0), (cw + 167, 0)], 2 * cw + 167)
 
-    # Expose private alternatives for Word, where cv/salt
-    # controls are unavailable.
+    # Expose private alternatives for Word, where cv/salt controls are
+    # unavailable.
     PUA = 0xE000
 
     def pua(gname):
@@ -154,8 +154,8 @@ def assign_private_codepoints(sources):
             if (tag, slot) in imported:
                 pua(imported[(tag, slot)])
 
-    # Keep private assignments fixed across editions;
-    # missing glyphs leave holes.
+    # Keep private assignments fixed across editions; missing glyphs
+    # leave holes.
     PUA_FIXED = {
         0xE23E: "lhook",
         0xE23F: "rhook",
@@ -308,8 +308,8 @@ def assign_metrics(sources, *, cap_height):
     out = sources.font
     sy_fd = sources.faces["syt"][1].fontdimen
     out.ascent, out.descent = 800, 200
-    # Use absolute FontForge metrics rather than offsets
-    # from the bounding box.
+    # Use absolute FontForge metrics rather than offsets from the
+    # bounding box.
     out.os2_typoascent_add = out.os2_typodescent_add = 0
     out.hhea_ascent_add = out.hhea_descent_add = 0
     out.os2_typoascent, out.os2_typodescent, out.os2_typolinegap = (
@@ -322,8 +322,8 @@ def assign_metrics(sources, *, cap_height):
     # Reuse the source cap height already converted for MATH.
     out.os2_capheight = cap_height
     # Cover all outlines with Windows clipping bounds; USE_TYPO_METRICS
-    # controls spacing. Scan glyph bounds for compatibility
-    # across FontForge versions.
+    # controls spacing. Scan glyph bounds for compatibility across
+    # FontForge versions.
     _bounds_y = assign_windows(out)
     return _bounds_y
 
@@ -383,16 +383,16 @@ def finish_source_features(
         _g.altuni = (_g.altuni or ()) + ((0x0305, -1, 0),)
         uni_owner[0x0305] = uni_owner[0x0304]
 
-    # Finalize TopAccent and original pair kerning after all source
-    # and alternate imports. MATH italic corrections remain independent.
+    # Finalize TopAccent and original pair kerning after all source and
+    # alternate imports. MATH italic corrections remain independent.
 
     if "wideoverbar.compat" in out:
         accent_glyphs.add("wideoverbar.compat")
     if "widevector.compat" in out:
         accent_glyphs.add("widevector.compat")
 
-    # Finite source accents retain positive advance
-    # and attach at its center.
+    # Finite source accents retain positive advance and attach at its
+    # center.
     _source_fixed_accent_names = frozenset(
         (
             # Normalized dot accents instead retain zero advance and
@@ -410,8 +410,8 @@ def finish_source_features(
             accent_glyphs.add(_agn)
             _source_fixed_accent_glyphs.add(_agn)
 
-    # Apply family skewchar policy after every source
-    # alphabet has been imported.
+    # Apply family skewchar policy after every source alphabet has been
+    # imported.
     for (_tag, _slot), _gname in sorted(imported.items()):
         if _tag not in SOURCE_SKEW or _tag not in fonts or _gname not in out:
             continue
@@ -581,8 +581,9 @@ def compute_constants(
         + min(round(size * upm) for size in display_sizes)
     ) // 2
 
-    # Source dimensions and explicit OpenType migration values.
-    c["MinConnectorOverlap"] = 100
+    # Source dimensions and explicit OpenType migration values. Adopted
+    # migration minimum, verified for the source part joins.
+    c["MinConnectorOverlap"] = 20
     c["AccentBaseHeight"] = xh
     c["FlattenedAccentBaseHeight"] = round(cap_height * upm)
     c["DelimitedSubFormulaMinHeight"] = int(display_operator_min_height)

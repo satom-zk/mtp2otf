@@ -1,10 +1,14 @@
 """Post-normalization original glyphs and their public/optical routes.
-All
-source acquisition belongs to catalog/outlines/metrics, not this module.
+All source acquisition belongs to catalog/outlines/metrics, not this
+module.
 """
 
 from collections import defaultdict
 from copy import deepcopy
+
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.t2CharStringPen import T2CharStringPen
+from fontTools.ttLib.tables.otBase import ValueRecord
 
 import declarations
 import mapping as U
@@ -18,18 +22,10 @@ from font_geometry import (
     math_add,
     update_average_width,
 )
-from fontTools.pens.boundsPen import BoundsPen
-from fontTools.pens.t2CharStringPen import T2CharStringPen
-from fontTools.ttLib.tables.otBase import ValueRecord
 from mapping import bold_identities
 from math_tables import copy_math_attributes
 from positioning import append_pairs
-from substitution import (
-    insert_routes,
-    ssty_index,
-    ssty_mapping,
-    validate_gsub,
-)
+from substitution import insert_routes, ssty_index, ssty_mapping, validate_gsub
 
 AMS_SYMBOLS = ((10003, 88, "checkmark"), (10016, 122, "maltese"))
 
@@ -183,9 +179,6 @@ def add_optical_alternates(f, cache, mf, ledger):
     update_average_width(f)
 
 
-AMS_ALTERNATE_TAG = "cv53"
-
-
 AMS_ALTERNATE_STYLES = (
     ("T", "ams", "mt2syat"),
     ("S", "ams_s", "mt2syas"),
@@ -193,20 +186,24 @@ AMS_ALTERNATE_STYLES = (
 )
 
 
-AMS_ALTERNATE_SYMBOLS = ((165, 85, "yen"), (174, 114, "registered"))
+AMS_ALTERNATE_SYMBOLS = (
+    (165, 85, "yen", "cv18"),
+    (174, 114, "registered", "cv19"),
+)
 
 
 def ams_alternates_identities():
     return [
         dict(
             Unicode_input=cp,
+            tag=tag,
             slot=slot,
             style=style,
             source=stem,
             source_role=role,
             output_glyph="original.ams." + label + "." + style,
         )
-        for cp, slot, label in AMS_ALTERNATE_SYMBOLS
+        for cp, slot, label, tag in AMS_ALTERNATE_SYMBOLS
         for style, role, stem in AMS_ALTERNATE_STYLES
     ]
 
@@ -228,16 +225,16 @@ def ams_alternates_precheck(font):
     gs = font["GSUB"].table
     if any(
         (
-            r.FeatureTag == AMS_ALTERNATE_TAG
+            r.FeatureTag in {s[3] for s in AMS_ALTERNATE_SYMBOLS}
             for r in gs.FeatureList.FeatureRecord
         )
     ):
-        raise ValueError("cv53 feature collision/repeated append")
+        raise ValueError("AMS alternate feature collision/repeated append")
     validate_gsub(gs)
     index = ssty_index(gs)
     cmap = font.getBestCmap()
     if (
-        any((cp not in cmap for cp, _, _ in AMS_ALTERNATE_SYMBOLS))
+        any((cp not in cmap for cp, _, _, _ in AMS_ALTERNATE_SYMBOLS))
         or cmap[165] == cmap[174]
     ):
         raise ValueError(
@@ -250,10 +247,6 @@ def ams_alternates_precheck(font):
     ):
         raise ValueError("AMS alternate MATH IC/TopAccent tables required")
     return index
-
-
-def ams_alternates_add_routes(font, rows, index):
-    return insert_routes(font, rows, index, tag=AMS_ALTERNATE_TAG)
 
 
 def add_ams_alternates(f, cache):
@@ -295,7 +288,9 @@ def add_ams_alternates(f, cache):
         f["hmtx"][name] = (width, round(bp.bounds[0]))
         math_add(f, name, corr, accent)
         rows.append(identity)
-    ams_alternates_add_routes(f, rows, index)
+    for offset, (_, _, _, tag) in enumerate(AMS_ALTERNATE_SYMBOLS):
+        selected = [row for row in rows if row["tag"] == tag]
+        insert_routes(f, selected, index + offset, tag=tag)
     f["maxp"].numGlyphs = len(f.getGlyphOrder())
     agg = aggregate_values(f)
     top.FontBBox = agg["FontBBox"]
@@ -399,8 +394,8 @@ def add_original_bold(font, cache, mf, edition):
             raise ValueError(
                 "empty mbf source outline: " + identity["source_id"]
             )
-        # T2 width operand is relative to the existing
-        # Private nominalWidthX.
+        # T2 width operand is relative to the existing Private
+        # nominalWidthX.
         pen = T2CharStringPen(advance - top.Private.nominalWidthX, glyphs)
         glyph.draw(pen)
         char = pen.getCharString(
@@ -552,8 +547,7 @@ def build_relations(font, catalog, snapshot, ab_report):
     def import_source(role, slot):
         if (role, slot) in source_map:
             return source_map[role, slot]
-        # Keep the historical glyph identifier stable across public CV
-        # renumbering.
+        # Glyph identifiers are independent of public feature tags.
         n = f"cv22.{U.SOURCE_FONTS[role]}.s{slot:03d}"
         info = source(role, slot, n)
         face = catalog.faces[role]
@@ -567,7 +561,7 @@ def build_relations(font, catalog, snapshot, ab_report):
         imported.append(dict(info, glyph=n))
         return n
 
-    for group, cp, target, role, slot, boldcp in U.RELATION_ROWS:
+    for tag, cp, target, role, slot, boldcp in U.RELATION_ROWS:
         if role == "ams" and edition == "lite":
             continue
         if cp not in cmap or target not in font.getGlyphOrder():
@@ -575,13 +569,12 @@ def build_relations(font, catalog, snapshot, ab_report):
         inputs = [cmap[cp], *ss[cmap[cp]]]
         targets = [target, *ss[target]]
         for level, (a, b) in enumerate(zip(inputs, targets)):
-            maps[U.RELATION_TAGS[group]][a] = b
+            maps[tag][a] = b
             info = source(role + U.RELATION_SUFFIX[level], slot, b)
             source_map[role + U.RELATION_SUFFIX[level], slot] = b
             routes.append(
                 dict(
-                    group=group,
-                    tag=U.RELATION_TAGS[group],
+                    tag=tag,
                     Unicode=f"U+{cp:04X}",
                     level=level,
                     input=a,
@@ -598,11 +591,10 @@ def build_relations(font, catalog, snapshot, ab_report):
             ss[targets[0]] = targets[1:]
             inputs = [cmap[boldcp], *ss[cmap[boldcp]]]
             for level, (a, b) in enumerate(zip(inputs, targets)):
-                maps[U.RELATION_TAGS[group]][a] = b
+                maps[tag][a] = b
                 routes.append(
                     dict(
-                        group=group,
-                        tag=U.RELATION_TAGS[group],
+                        tag=tag,
                         Unicode=f"U+{boldcp:04X}",
                         level=level,
                         input=a,
@@ -646,11 +638,14 @@ def build_relations(font, catalog, snapshot, ab_report):
                 )
             )
     append_pairs(font, pair_values)
-    substitution.install_maps(font, maps, new_tags=U.NEW_RELATION_TAGS)
+    new_tags = tuple(dict.fromkeys(
+        tag for tag, *_ in U.RELATION_ROWS if tag != "cv10"
+    ))
+    substitution.install_maps(font, maps, new_tags=new_tags)
     font["maxp"].numGlyphs = len(font.getGlyphOrder())
     return dict(
         edition=edition,
-        feature_tags=U.RELATION_TAGS,
+        feature_tags=sorted(maps),
         split_bars=bars,
         cloned_bar_pairs=cloned_pairs,
         routes=routes,
@@ -749,8 +744,7 @@ def bind_unicode(font, catalog):
         raw = face.raw_metrics().chars[65]
         skew = catalog.declarations.skewchar_by_tag.get(role)
         kern = metrics.read_kerns_fix20(face.tfm_path).get((65, skew), 0)
-        # Keep C02's raw source arithmetic even though the new Unicode
-        # combining classification now makes the root a protected mark.
+        # Use raw source arithmetic for this protected combining mark.
         value = round(
             1000 * (raw.get("width", 0) + raw.get("italic", 0)) / 2
             + 1000 * kern / (1 << 20)

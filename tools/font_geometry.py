@@ -7,15 +7,17 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
+from fractions import Fraction
 from math import ceil
 
-from config import FONT_REVISION, FONT_VERSION, identity
 from fontTools.misc.transform import Transform
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.recordingPen import RecordingPen
 from fontTools.pens.t2CharStringPen import T2CharStringPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib.tables import otTables as ot
+
+from config import FONT_REVISION, FONT_VERSION, identity
 from math_tables import copy_math_attributes, math_add
 from substitution import ssty_mapping
 
@@ -221,15 +223,13 @@ def _fix_braces(font):
         font, old_under, ["bracelu", "brace.hext", uc, "brace.hext", "braceru"]
     )
     # Source braces re-use a dedicated glyph at the Unicode entrance.
-    # Retain the former fallback construction with the same
-    # finalized assembly too.
+    # Retain the former fallback construction with the same finalized
+    # assembly too.
     for cp, base, con in ((0x23DE, og, ocn), (0x23DF, ug, ucn)):
         fallback = hmap.get(f"uni{cp:04X}")
         if cp == 0x23DF and base != f"uni{cp:04X}" and fallback is not None:
             fallback.GlyphAssembly = deepcopy(con.GlyphAssembly)
-    # MinConnectorOverlap is intentionally left untouched: the FontForge
-    # stage computed it from the local source outlines and
-    # serialized it already.
+    # Retain the minimum overlap supplied by the native stage.
 
 
 def _add_cmap_alias(font, cp, glyph):
@@ -414,38 +414,110 @@ def construction_map(font, direction):
     )
 
 
-def build_left_vector(font):
-    """C07-vector: move dedicated assembly components by 457-455 only.
-    """
+def build_horizontal_arrow_connectors(font):
+    """Use the straight shaft outside each arrowhead's curve hull."""
     horizontal = construction_map(font, "Horiz")
-    roots = [font.getBestCmap()[0x20D6], "widevector.compat"]
-    names = set()
-    for root in roots:
-        names.update(
-            p.glyph for p in horizontal[root].GlyphAssembly.PartRecords
-        )
-    unrelated = {
-        p.glyph
-        for root, c in horizontal.items()
-        if root not in roots
-        for p in (c.GlyphAssembly.PartRecords if c.GlyphAssembly else ())
-    }
-    if names & unrelated:
-        raise ValueError("vector component unexpectedly shared outside vector")
+    minimum = font["MATH"].table.MathVariants.MinConnectorOverlap
     records = []
-    for n in sorted(names):
-        before = _bbox(font, n)
-        _copy_shift(font, n, n, 2)
-        records.append(
-            dict(glyph=n, before=before, after=_bbox(font, n), dy=2)
+    for cp in (0x2190, 0x2192, 0x2194, 0x21D0, 0x21D2, 0x21D4):
+        root = font.getBestCmap()[cp]
+        for part in horizontal[root].GlyphAssembly.PartRecords:
+            pen = RecordingPen()
+            font.getGlyphSet()[part.glyph].draw(pen)
+            curve_x = [
+                p[0] for op, points in pen.value
+                if op in ("curveTo", "qCurveTo") for p in points
+            ]
+            xmin, _, xmax, _ = _bbox(font, part.glyph)
+            for start, field in (
+                (True, "StartConnectorLength"),
+                (False, "EndConnectorLength"),
+            ):
+                old = getattr(part, field)
+                if not old:
+                    continue
+                if not curve_x:
+                    length = int(xmax - xmin)
+                elif start:
+                    length = int(min(curve_x) - xmin)
+                else:
+                    length = int(xmax - max(curve_x))
+                if not minimum <= length <= part.FullAdvance:
+                    raise ValueError("arrow shaft cannot accommodate overlap")
+                setattr(part, field, length)
+                records.append(dict(
+                    root=root, glyph=part.glyph, field=field,
+                    before=old, after=length,
+                ))
+    return records
+
+
+def build_left_vector(font):
+    """Mirror the final right-vector growth and optical styles."""
+    from math_tables import metrics_values
+
+    variants = font["MATH"].table.MathVariants
+    info = font["MATH"].table.MathGlyphInfo
+    horizontal = construction_map(font, "Horiz")
+    optical = ssty_mapping(font)
+    left = font.getBestCmap()[0x20D6]
+    right = font.getBestCmap()[0x20D7]
+    if left in optical:
+        raise ValueError("left vector optical route already present")
+    _, anchors = metrics_values(font)
+    classes = font["GDEF"].table.GlyphClassDef.classDefs
+    extended = info.ExtendedShapeCoverage.glyphs
+
+    def mirror(source, name, center_sum, width):
+        glyphs = font.getGlyphSet()
+        _set_charstring(
+            font, name,
+            lambda pen: glyphs[source].draw(TransformPen(
+                pen, Transform(-1, 0, 0, 1, center_sum, 0)
+            )), width,
         )
-    return dict(
-        before=455,
-        after=457,
-        parts=records,
-        fixed_vec_unchanged=True,
-        constants_unchanged=True,
-    )
+        math_add(font, name, 0, round(center_sum - anchors[source]))
+        if source in classes:
+            classes[name] = classes[source]
+        extended.append(name)
+
+    roots = []
+    records = []
+    for i, (style, source) in enumerate(zip(
+        ("T", "S", "SS"), [right] + list(optical[right])
+    )):
+        root = left + (".ssty" + str(i) if i else "")
+        roots.append(root)
+        if i:
+            bounds = _bbox(font, source)
+            mirror(source, root, bounds[0] + bounds[2], 0)
+        old = horizontal[source]
+        shaft, end = old.GlyphAssembly.PartRecords
+        if not shaft.PartFlags & 1 or end.PartFlags & 1:
+            raise ValueError("unexpected right vector assembly order")
+        name = "standard.leftvector.end." + style
+        mirror(end.glyph, name, end.FullAdvance, end.FullAdvance)
+        new = deepcopy(old)
+        endpoint = deepcopy(end)
+        endpoint.glyph = name
+        endpoint.StartConnectorLength = 0
+        endpoint.EndConnectorLength = end.StartConnectorLength
+        new.GlyphAssembly.PartRecords = [endpoint, deepcopy(shaft)]
+        new.MathGlyphVariantRecord[0].VariantGlyph = root
+        new.MathGlyphVariantRecord[1].VariantGlyph = name
+        horizontal[root] = new
+        records.append(dict(
+            style=style, root=root, source=source, end=name,
+            AM=[v.AdvanceMeasurement for v in new.MathGlyphVariantRecord],
+            connector=endpoint.EndConnectorLength,
+        ))
+    optical[left] = roots[1:]
+    extended.sort(key=font.getGlyphID)
+    pairs = sorted(horizontal.items(), key=lambda p: font.getGlyphID(p[0]))
+    variants.HorizGlyphCoverage.glyphs = [n for n, c in pairs]
+    variants.HorizGlyphConstruction = [c for n, c in pairs]
+    variants.HorizGlyphCount = len(pairs)
+    return dict(styles=records, fixed_left_root_unchanged=True)
 
 
 def build_overbrace(font, inventory):
@@ -503,7 +575,7 @@ def build_overbrace(font, inventory):
 
 
 def build_groups(font, inventory):
-    """D01: same original small designs, independently owned MID-free
+    """Original small group designs with independently owned MID-free
     recipes.
     """
     native = {(r["tag"], r["slot"]): r["glyph"] for r in inventory["imports"]}
@@ -520,8 +592,7 @@ def build_groups(font, inventory):
         _copy_shift(font, parent, root)
         copy_math_attributes(font, parent, root)
         # Preserve corresponding optical small designs without sharing
-        # the
-        # complete parenthesis MATH root or growing through its
+        # the complete parenthesis MATH root or growing through its
         # variants.
         styled = []
         for level, n in enumerate(ssty.get(parent, ()), 1):
@@ -541,7 +612,7 @@ def build_groups(font, inventory):
                 if p.glyph == native["exa", slot] + ".vn":
                     parts[slot] = p
         if set(parts) != {top, bot, rep}:
-            raise ValueError("D01 missing original normalized group parts")
+            raise ValueError("missing original normalized group parts")
         ga = deepcopy(old)
         ga.PartRecords = [deepcopy(parts[s]) for s in [bot, rep, top]]
         ga.PartCount = 3
@@ -551,7 +622,7 @@ def build_groups(font, inventory):
             ga.PartRecords[0].StartConnectorLength != 0
             or ga.PartRecords[-1].EndConnectorLength != 0
         ):
-            raise ValueError("D01 outer connector mismatch")
+            raise ValueError("group outer connector mismatch")
         c = ot.MathGlyphConstruction()
         c.GlyphAssembly = ga
         v = ot.MathGlyphVariantRecord()
@@ -593,6 +664,176 @@ def build_groups(font, inventory):
     variants.VertGlyphCoverage.glyphs = [p[0] for p in pairs]
     variants.VertGlyphConstruction = [p[1] for p in pairs]
     return output
+
+
+def _check_bar_rectangles(path, bounds, count):
+    """Require one or two disjoint, axis-aligned rectangular contours.
+    """
+    operations = ["moveTo", "lineTo", "lineTo", "lineTo", "closePath"]
+    if [op for op, _ in path] != operations * count:
+        raise ValueError("bar part has unexpected rectangular contours")
+    intervals = []
+    for offset in range(0, len(path), 5):
+        contour = path[offset:offset + 5]
+        if any(len(pts) != 1 for _, pts in contour[:-1]) or contour[-1][1]:
+            raise ValueError("bar part has invalid contour operands")
+        points = [pts[0] for _, pts in contour[:-1]]
+        x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
+        y0, y1 = bounds[1], bounds[3]
+        if x0 >= x1 or y0 >= y1 or set(points) != {
+            (x0, y0), (x0, y1), (x1, y0), (x1, y1)
+        }:
+            raise ValueError("bar part is not a full-height rectangle")
+        for (xa, ya), (xb, yb) in zip(points, points[1:] + points[:1]):
+            if (xa == xb) == (ya == yb):
+                raise ValueError("bar part has a diagonal or zero-length edge")
+        intervals.append((x0, x1))
+    intervals.sort()
+    if any(a[1] >= b[0] for a, b in zip(intervals, intervals[1:])):
+        raise ValueError("bar part rectangles are not separated")
+
+
+def build_angle_bar_sizes(font):
+    """Fill the adopted angle-bracket gaps and match vertical bar sizes.
+
+    Keep the source outlines/metrics intact. Interpolate
+    corresponding vertices and advance widths between adjacent source
+    angles, after aligning their ink centers. Bars retain the
+    extension part's x coordinates and advance. Assembly records are
+    not changed here.
+    """
+    variants = font["MATH"].table.MathVariants
+    cmap = font.getBestCmap()
+    constructions = construction_map(font, "Vert")
+    axis = font["MATH"].table.MathConstants.AxisHeight.Value
+    upm = font["head"].unitsPerEm
+    targets = [round(Fraction(n, 100) * upm) for n in (110, 145, 210)]
+    added, report = [], {}
+
+    def path(name):
+        pen = RecordingPen()
+        font.getGlyphSet()[name].draw(pen)
+        return pen.value
+
+    def record(name):
+        r = ot.MathGlyphVariantRecord()
+        r.VariantGlyph = name
+        b = _bbox(font, name)
+        r.AdvanceMeasurement = ceil(b[3] - b[1]) + 1
+        return r
+
+    reference_bounds = None
+    for cp in (0x27E8, 0x27E9):
+        root = cmap[cp]
+        con = constructions[root]
+        original = list(con.MathGlyphVariantRecord)
+        if len(original) != 5 or con.GlyphAssembly:
+            raise ValueError("expected five source angle sizes")
+        names = [r.VariantGlyph for r in original]
+        boxes = [_bbox(font, name) for name in names]
+        sizes = [b[3] - b[1] for b in boxes]
+        records, derivation = list(original), []
+        for height in targets:
+            i = next(
+                (i for i in range(4) if sizes[i] < height < sizes[i + 1]),
+                None,
+            )
+            if i is None:
+                raise ValueError("angle interpolation target not bracketed")
+            a, b = names[i:i + 2]
+            pa, pb = path(a), path(b)
+            if (
+                [op for op, _ in pa] != [op for op, _ in pb]
+                or [op for op, _ in pa]
+                != ["moveTo", *(["lineTo"] * 5), "closePath"]
+            ):
+                raise ValueError("source angle contours do not correspond")
+            ratio = Fraction(height - sizes[i], sizes[i + 1] - sizes[i])
+            ca = Fraction(boxes[i][1] + boxes[i][3], 2)
+            cb = Fraction(boxes[i + 1][1] + boxes[i + 1][3], 2)
+            points = []
+            for (op, aa), (_, bb) in zip(pa, pb):
+                coords = tuple(
+                    (
+                        round(xa + ratio * (xb - xa)),
+                        round(axis + ya - ca + ratio * (yb - cb - ya + ca)),
+                    )
+                    for (xa, ya), (xb, yb) in zip(aa, bb)
+                )
+                points.append((op, coords))
+            name = f"{root}.interpolated{height}"
+            width = round(
+                font["hmtx"][a][0]
+                + ratio * (font["hmtx"][b][0] - font["hmtx"][a][0])
+            )
+
+            def draw(pen):
+                for op, coords in points:
+                    getattr(pen, op)(*coords)
+
+            _set_charstring(font, name, draw, width)
+            records.append(record(name))
+            added.append(name)
+            derivation.append(
+                dict(
+                    glyph=name, sources=[a, b], ratio=str(ratio),
+                    height=height, advance=width,
+                )
+            )
+        records.sort(key=lambda r: r.AdvanceMeasurement)
+        con.MathGlyphVariantRecord = records
+        con.VariantCount = len(records)
+        angle_boxes = [_bbox(font, r.VariantGlyph) for r in records]
+        current_bounds = [(b[1], b[3]) for b in angle_boxes]
+        if reference_bounds is None:
+            reference_bounds = current_bounds
+        elif reference_bounds != current_bounds:
+            raise ValueError("left/right angle ink bounds differ")
+        report[root] = derivation
+
+    for cp, alias, count in ((0x007C, 0x2223, 1), (0x2016, 0x2225, 2)):
+        root = cmap[cp]
+        con = constructions[root]
+        if len(con.MathGlyphVariantRecord) != 1 or not con.GlyphAssembly:
+            raise ValueError("expected source bar with repeat-only assembly")
+        parts = con.GlyphAssembly.PartRecords
+        sources = {p.glyph for p in parts}
+        if len(sources) != 1:
+            raise ValueError("bar assembly uses distinct parts")
+        source = next(iter(sources))
+        source_path = path(source)
+        box = _bbox(font, source)
+        _check_bar_rectangles(source_path, box, count)
+        records, derivation = list(con.MathGlyphVariantRecord), []
+        for y_min, y_max in reference_bounds[1:]:
+            height = y_max - y_min
+            name = f"{root}.sized{height}"
+
+            def draw(pen):
+                for op, pts in source_path:
+                    # Match both ink bounds, not only their difference:
+                    # LuaTeX rounds height and depth separately at S/SS.
+                    coords = tuple(
+                        (x, y_max if y == box[3] else y_min)
+                        for x, y in pts
+                    )
+                    getattr(pen, op)(*coords)
+
+            _set_charstring(font, name, draw, font["hmtx"][source][0])
+            records.append(record(name))
+            added.append(name)
+            derivation.append(dict(glyph=name, source=source, height=height))
+        for name in (root, cmap[alias]):
+            constructions[name].MathGlyphVariantRecord = deepcopy(records)
+            constructions[name].VariantCount = len(records)
+        report[root] = derivation
+
+    cov = font["MATH"].table.MathGlyphInfo.ExtendedShapeCoverage
+    cov.glyphs = sorted(set(cov.glyphs) | set(added), key=font.getGlyphID)
+    return dict(
+        added=added, sources=report, assembly_unchanged=True,
+        min_overlap=variants.MinConnectorOverlap,
+    )
 
 
 def source_glyph(face, slot):
@@ -689,7 +930,7 @@ def build_standard_accents(font, catalog):
     M = font["MATH"].table
     V = M.MathVariants
     dy = M.MathConstants.AccentBaseHeight.Value
-    if dy != 457 or V.MinConnectorOverlap != 100:
+    if dy != 457 or V.MinConnectorOverlap != 20:
         raise ValueError("standard accent baseline/overlap policy differs")
     cmap = font.getBestCmap()
     ssty = ssty_mapping(font)
@@ -718,9 +959,8 @@ def build_standard_accents(font, catalog):
         roots.append(root)
         _copy_shift(font, fixedbars[i], root)
         # Fixed accents include half-unit coordinates. Preserve them
-        # exactly;
-        # the generic new-outline helper intentionally rounds near
-        # integers.
+        # exactly; the generic new-outline helper intentionally rounds
+        # near integers.
         top = font["CFF "].cff.topDictIndex[0]
         pen = T2CharStringPen(
             font["hmtx"][fixedbars[i]][0] - top.Private.nominalWidthX,
@@ -820,9 +1060,8 @@ def build_standard_accents(font, catalog):
     return dict(
         styles=report,
         retired_public_PUA=["U+E286", "U+E287"],
-        MinConnectorOverlap=100,
+        MinConnectorOverlap=V.MinConnectorOverlap,
         overbar_constants_unchanged=True,
-        old_left_vector_unchanged=True,
         source_measurement=(
             "Catalog original PFB paths and raw TFM; "
             "no supplied numeric dictionary"

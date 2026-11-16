@@ -1,7 +1,8 @@
 """FontForge bounds boundary and its small, run-owned process result.
 
-Only standard-library dependencies: safe in FontForge's embedded Python.
-This is a numeric result, not a serialized legacy font or a font cache.
+Only standard-library dependencies: safe in FontForge's embedded
+Python. This is a numeric result, not a serialized legacy font or a
+font cache.
 """
 
 import hashlib
@@ -277,11 +278,9 @@ def derive(source_otf, measurement, snapshot, source_sha):
                 getattr(font["head"], n)
                 for n in ("xMin", "yMin", "xMax", "yMax")
             ],
-            # C10 numbers stay unchanged. Minimal closure may
-            # legitimately
-            # remove the old vertical overshoots; record that
-            # observation
-            # instead of requiring every later subset to remain clipped.
+            # Keep the measured Windows values. Subsetting can remove
+            # vertical overshoots, so record whether the final outlines
+            # fit without changing the measurement.
             "source_head_fits_windows": (
                 font["head"].yMax <= measurement["Windows"][0]
                 and -font["head"].yMin <= measurement["Windows"][1]

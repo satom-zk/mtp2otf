@@ -281,8 +281,7 @@ def read_supply(path):
 
 def check_supply(supply, coverage):
     """Fail required donor gaps before native output; retain native
-    checks
-    too.
+    checks too.
     """
     requirements = [
         dict(source_role=r, source_unicode=cp)
@@ -343,8 +342,7 @@ TEXT_ONLY_SKIP = (
     (0x1D400, 0x1D7FF),  # Math alphanumerics
 )
 
-# Allow text-only letterlike symbols, but
-# reserve math-active primes.
+# Allow text-only letterlike symbols, but reserve math-active primes.
 TEXT_ONLY_PRIMES = set(range(0x2032, 0x2038)) | {0x2057}
 
 TEXT_ONLY_ALLOW = {
@@ -366,8 +364,8 @@ def _is_math_range(u):
     return any(a <= u <= b for a, b in TEXT_ONLY_SKIP)
 
 
-# Limit donor additions to Latin/Common text; math
-# ownership takes precedence.
+# Limit donor additions to Latin/Common text; math ownership takes
+# precedence.
 ROMAN_TEXT_EXTRA_RANGES = (
     (0x0020, 0x036F),
     (0x1E00, 0x1EFF),

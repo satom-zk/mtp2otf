@@ -9,10 +9,7 @@ from collections import defaultdict
 from fractions import Fraction
 
 from mapping import bold_identities
-from source_glyphs import (
-    AMS_SYMBOLS,
-    ams_alternates_identities,
-)
+from source_glyphs import AMS_SYMBOLS, ams_alternates_identities
 from substitution import ssty_mapping
 
 
@@ -74,7 +71,7 @@ def apply(font, catalog, snapshot, inventory, alphabets):
                     glyph=name,
                     value=current[name].Value,
                     reason=(
-                        "C03 geometric/fixed accent or C09 adopted "
+                        "geometric/fixed accent or "
                         "prime transform"
                     ),
                 )

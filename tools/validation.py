@@ -1,13 +1,25 @@
-"""Check the serialized product pair."""
+"""Validate inputs, native provenance, and serialized products."""
 
 import json
+import math
+from math import ceil
 
-import donors
-from config import FONT_REVISION, FONT_VERSION, identity
 from fontTools.pens.basePen import NullPen
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
-from substitution import lang_systems, references
+
+import donors
+import mapping as U
+from config import FONT_REVISION, FONT_VERSION, identity
+from substitution import (
+    lang_systems,
+    references,
+    selector_mapping,
+    ssty_mapping,
+    validate_gsub,
+)
 from windows_metrics import errors as windows_errors
 from windows_metrics import read as read_windows
 
@@ -154,6 +166,115 @@ def _layout(font):
                 raise ValueError("MATH assembly count mismatch")
 
 
+def _horizontal_growth(font):
+    """Require the adopted minimum and continuous arrow/vector growth.
+    """
+    variants = font["MATH"].table.MathVariants
+    if variants.MinConnectorOverlap != 20:
+        raise ValueError("final minimum connector overlap differs")
+    cons = dict(zip(
+        variants.HorizGlyphCoverage.glyphs,
+        variants.HorizGlyphConstruction,
+    ))
+    cmap, optical = font.getBestCmap(), ssty_mapping(font)
+    left, right = cmap[0x20D6], cmap[0x20D7]
+    lefts = [left] + list(optical[left])
+    rights = [right] + list(optical[right])
+    if len(lefts) != 3 or len(rights) != 3:
+        raise ValueError("vector requires three optical styles")
+    for a, b in zip(lefts, rights):
+        x, y = cons[a], cons[b]
+        if x.VariantCount != 2 or [
+            v.AdvanceMeasurement for v in x.MathGlyphVariantRecord
+        ] != [v.AdvanceMeasurement for v in y.MathGlyphVariantRecord]:
+            raise ValueError("left/right vector variant sizes differ")
+        ep, sp = x.GlyphAssembly.PartRecords
+        shaft, end = y.GlyphAssembly.PartRecords
+        if (sp.__dict__ != shaft.__dict__ or ep.PartFlags != 0
+                or ep.StartConnectorLength != 0
+                or ep.EndConnectorLength != end.StartConnectorLength
+                or ep.FullAdvance != end.FullAdvance):
+            raise ValueError("left/right vector assembly differs")
+    roots = [cmap[cp] for cp in (
+        0x2190, 0x2192, 0x2194, 0x21D0, 0x21D2, 0x21D4,
+    )] + lefts + rights
+    for root in roots:
+        c = cons[root]
+        intervals = []
+        for repeats in range(4):
+            parts = [p for p in c.GlyphAssembly.PartRecords
+                     for _ in range(repeats if p.PartFlags & 1 else 1)]
+            caps = [min(a.EndConnectorLength, b.StartConnectorLength)
+                    for a, b in zip(parts, parts[1:])]
+            if any(cap < 20 for cap in caps):
+                raise ValueError("horizontal joint below minimum overlap")
+            total = sum(p.FullAdvance for p in parts)
+            intervals.append((total - sum(caps), total - 20 * len(caps)))
+        end = max(v.AdvanceMeasurement for v in c.MathGlyphVariantRecord)
+        for lo, hi in sorted(intervals):
+            if hi > end and lo > end:
+                raise ValueError("uncovered horizontal growth interval")
+            end = max(end, hi)
+        # Extender self-overlap >= 20 makes later interval overlap grow.
+        if intervals[-1][0] > intervals[-2][1]:
+            raise ValueError("horizontal growth tail is not continuous")
+
+
+def _delimiter_sizes(font):
+    """Check the serialized common angle/bar series and retained growth.
+    """
+    variants = font["MATH"].table.MathVariants
+    cons = dict(
+        zip(variants.VertGlyphCoverage.glyphs, variants.VertGlyphConstruction)
+    )
+    cmap = font.getBestCmap()
+    glyphs = font.getGlyphSet()
+
+    def ink_bounds(records):
+        bounds = []
+        for record in records:
+            pen = BoundsPen(glyphs)
+            glyphs[record.VariantGlyph].draw(pen)
+            if pen.bounds is None:
+                raise ValueError("angle/bar variant has no outline")
+            _, y_min, _, y_max = pen.bounds
+            if record.AdvanceMeasurement != ceil(y_max - y_min) + 1:
+                raise ValueError(
+                    "angle/bar measurement differs from outline"
+                )
+            bounds.append((y_min, y_max))
+        return bounds
+
+    reference = cons[cmap[0x27E8]].MathGlyphVariantRecord
+    expected = [r.AdvanceMeasurement for r in reference]
+    if (
+        len(expected) != 8
+        or any(a >= b for a, b in zip(expected, expected[1:]))
+        or expected[1:6:2] != [1101, 1451, 2101]
+    ):
+        raise ValueError("invalid interpolated angle sequence")
+    expected_bounds = ink_bounds(reference)
+    for cp in (0x27E8, 0x27E9, 0x007C, 0x2016, 0x2223, 0x2225):
+        con = cons[cmap[cp]]
+        records = con.MathGlyphVariantRecord
+        if [r.AdvanceMeasurement for r in records] != expected:
+            raise ValueError("angle/bar size sequence mismatch")
+        # Equal heights alone do not guarantee equal selection at the
+        # separately rounded height/depth boundaries in script sizes.
+        if ink_bounds(records) != expected_bounds:
+            raise ValueError("angle/bar ink bounds mismatch")
+        if bool(con.GlyphAssembly) != (cp not in (0x27E8, 0x27E9)):
+            raise ValueError("angle/bar assembly presence mismatch")
+    for base, alias in ((0x007C, 0x2223), (0x2016, 0x2225)):
+        if (
+            [r.VariantGlyph
+             for r in cons[cmap[base]].MathGlyphVariantRecord]
+            != [r.VariantGlyph
+                for r in cons[cmap[alias]].MathGlyphVariantRecord]
+        ):
+            raise ValueError("bar alias size mismatch")
+
+
 def _one(font, edition):
     required = (
         "head",
@@ -220,6 +341,9 @@ def _one(font, edition):
     if typo != [806, -194, 200] or horizontal_header != [806, -194, 200]:
         raise ValueError("final vertical metrics mismatch")
     _layout(font)
+    validate_public_selectors(font, edition)
+    _delimiter_sizes(font)
+    _horizontal_growth(font)
 
 
 def check_pair(
@@ -230,6 +354,7 @@ def check_pair(
             raise ValueError("expected final CFF OTF and quadratic TTF")
         for font in (otf, ttf):
             _one(font, edition)
+        validate_operator_growth(otf)
         a, b = otf.getGlyphOrder(), ttf.getGlyphOrder()
         if len(a) != len(b):
             raise ValueError("OTF/TTF glyph count mismatch")
@@ -341,8 +466,7 @@ def check_sources(catalog, generation, coverage, *, log=None):
                     **status,
                 )
                 # Reuse the small ledger already read by create; no
-                # reverse
-                # index.
+                # reverse index.
                 for row in generation.alternate_rows:
                     for style in row["source_styles"]:
                         alt = style["alternate"]
@@ -390,3 +514,163 @@ def check_sources(catalog, generation, coverage, *, log=None):
                 f"preflight numeric role={role} DESIGNSIZE invalid"
             )
     donors.check_supply(catalog.donors, coverage)
+
+
+def compound_records(inventory):
+    """Require construction-time provenance, including both halves."""
+    expected = {
+        (name, U.OPERATOR_STAGES[i]): refs
+        for name, stages in U.operator_sources().items()
+        for i, refs in enumerate(stages) if len(refs) > 1
+    }
+    records = inventory.get("compound_sources")
+    if not isinstance(records, list):
+        raise ValueError("missing compound_sources payload")
+    imports = {(r["tag"], r["slot"]): r["glyph"]
+               for r in inventory["imports"]}
+    found = {}
+    for record in records:
+        if not isinstance(record, dict) or not {
+            "glyph", "series", "stage", "parts", "advance", "bbox"
+        } <= set(record):
+            raise ValueError("incomplete compound source record")
+        key = (record["series"], record["stage"])
+        if key not in expected or key in found:
+            raise ValueError("unexpected/duplicate compound source record")
+        parts = record["parts"]
+        if not isinstance(parts, list) or any(
+            not isinstance(part, dict) or not {
+                "tag", "slot", "glyph", "scale", "transform"
+            } <= set(part) for part in parts
+        ):
+            raise ValueError("incomplete compound part record")
+        if tuple((p["tag"], p["slot"]) for p in parts) != expected[key]:
+            raise ValueError("compound source order/parts mismatch")
+        for part in parts:
+            ref = (part["tag"], part["slot"])
+            transform = part["transform"]
+            if (imports.get(ref) != part["glyph"]
+                    or part["scale"] != (2 if part["tag"] == "xxxl" else 1)
+                    or not isinstance(transform, list) or len(transform) != 6
+                    or not all(isinstance(x, (int, float)) and math.isfinite(x)
+                               for x in transform)
+                    or transform[:4] != [1, 0, 0, 1]):
+                raise ValueError("invalid compound part provenance")
+        if (not isinstance(record["bbox"], list) or len(record["bbox"]) != 4
+                or not all(isinstance(x, (int, float)) and math.isfinite(x)
+                           for x in record["bbox"] + [record["advance"]])):
+            raise ValueError("invalid compound result dimensions")
+        found[key] = record
+    if set(found) != set(expected):
+        raise ValueError("missing required compound source record")
+    return list(found.values())
+
+
+def validate_compounds(font, records, *, require_parts):
+    """Match construction records to native/final glyph geometry."""
+
+    gs = font.getGlyphSet()
+    for record in records:
+        name = record["glyph"]
+        if name not in gs or font["hmtx"][name][0] != record["advance"]:
+            raise ValueError("compound output/advance mismatch")
+        bounds_pen = BoundsPen(gs)
+        gs[name].draw(bounds_pen)
+        bounds = bounds_pen.bounds
+        if bounds is None or any(
+            abs(a - b) > 1 for a, b in zip(bounds, record["bbox"])
+        ):
+            raise ValueError("compound output bounds mismatch")
+        if require_parts:
+            pen = BoundsPen(gs)
+            for part in record["parts"]:
+                if part["glyph"] not in gs:
+                    raise ValueError("missing imported compound part glyph")
+                gs[part["glyph"]].draw(TransformPen(pen, part["transform"]))
+            if pen.bounds is None or any(
+                abs(a - b) > 1 for a, b in zip(pen.bounds, record["bbox"])
+            ):
+                raise ValueError("compound references/result mismatch")
+
+
+def validate_operator_growth(font):
+    """Require complete ordered operator series after subsetting."""
+    m = font["MATH"].table
+    variants = dict(zip(m.MathVariants.VertGlyphCoverage.glyphs,
+                        m.MathVariants.VertGlyphConstruction))
+    extended = set(m.MathGlyphInfo.ExtendedShapeCoverage.glyphs)
+    cmap = font.getBestCmap()
+    approved = U.operator_sources()
+    for _, (cp, name, _) in U.EXA_OPS.items():
+        if name not in approved:
+            continue
+        root = cmap[cp] if cp is not None else name
+        if root not in variants:
+            raise ValueError("missing final operator construction: " + name)
+        c = variants[root]
+        glyphs = [r.VariantGlyph for r in c.MathGlyphVariantRecord]
+        measurements = [r.AdvanceMeasurement for r in c.MathGlyphVariantRecord]
+        if (glyphs != [root + s for s in U.OPERATOR_SUFFIXES]
+                or c.GlyphAssembly
+                or any(a >= b for a, b in zip(measurements, measurements[1:]))
+                or not set(glyphs[2:]) <= extended):
+            raise ValueError("invalid final six-stage operator: " + name)
+    control = variants[cmap[0x2A03]]
+    if len(control.MathGlyphVariantRecord) != 2 or control.GlyphAssembly:
+        raise ValueError("bigcupdot ordinary growth changed")
+
+
+def validate_public_selectors(font, edition):
+    """Check final selectors, lookup order, and UI name references."""
+    gs = font["GSUB"].table
+    validate_gsub(gs)
+    specs = U.public_selectors(edition)
+    records = gs.FeatureList.FeatureRecord
+    by_tag = {r.FeatureTag: r for r in records}
+    if [r.FeatureTag for r in records] != sorted(by_tag):
+        raise ValueError("duplicate or unsorted public features")
+    if set(by_tag) - {"dtls", "ssty", "ccmp"} != set(specs):
+        raise ValueError("final selector inventory differs")
+    order = [tag for tag in U.SUBSTITUTION_ORDER if tag in by_tag]
+    if len(gs.LookupList.Lookup) != len(order):
+        raise ValueError("final lookup inventory differs")
+    for index, tag in enumerate(order):
+        if by_tag[tag].Feature.LookupListIndex != [index]:
+            raise ValueError("final lookup order differs: " + tag)
+    used_names = set()
+    for tag, spec in specs.items():
+        feature = by_tag[tag].Feature
+        selector_mapping(gs.LookupList.Lookup[feature.LookupListIndex[0]],
+                         len(spec["parameters"]))
+        params = feature.FeatureParams
+        if tag.startswith("ss"):
+            if (not isinstance(params, ot.FeatureParamsStylisticSet)
+                    or params.Version):
+                raise ValueError("invalid stylistic-set metadata: " + tag)
+            names = [(params.UINameID, spec["label"])]
+        else:
+            if (not isinstance(params, ot.FeatureParamsCharacterVariants)
+                    or params.Format):
+                raise ValueError("invalid character-variant metadata: " + tag)
+            chars = sorted(
+                cp for cp in spec["characters"] if cp in font.getBestCmap())
+            if params.Character != chars or params.CharCount != len(chars):
+                raise ValueError(
+                    "character-variant UI character list differs: " + tag)
+            if params.NumNamedParameters != len(spec["parameters"]):
+                raise ValueError(
+                    "character-variant parameter count differs: " + tag)
+            if not spec["parameters"] and params.FirstParamUILabelNameID != 0:
+                raise ValueError(
+                    "unexpected character-variant parameter names")
+            names = [(params.FeatUILabelNameID, spec["label"]),
+                     (params.FeatUITooltipTextNameID, spec["tooltip"]),
+                     (params.SampleTextNameID, "".join(map(chr, chars)))]
+            names += [(params.FirstParamUILabelNameID + i, text)
+                      for i, text in enumerate(spec["parameters"])]
+        for name_id, expected in names:
+            record = font["name"].getName(name_id, 3, 1, 0x409)
+            if (not 256 <= name_id <= 32767 or name_id in used_names
+                    or record is None or record.toUnicode() != expected):
+                raise ValueError("invalid feature name reference: " + tag)
+            used_names.add(name_id)

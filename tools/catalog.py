@@ -141,7 +141,7 @@ class Catalog:
                 metric_interpretation=(
                     "raw-WIK overlay"
                     if r in mapping.ADDED_ALPHABET_TAGS
-                    else "historical tftopl PL"
+                    else "tftopl PL"
                 ),
             )
             for r, f in self.faces.items()
@@ -169,8 +169,7 @@ def read_inputs(
     stage=None,
 ):
     """Read dictionaries and metrics, never copy source glyphs to an
-    output
-    font.
+    output font.
     """
     source, pl_dir = Path(source), Path(pl_dir)
     tags = declarations.active_tags(edition)

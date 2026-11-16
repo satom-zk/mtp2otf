@@ -7,14 +7,15 @@ import sys
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
-# FontForge script runners do not uniformly add the
-# script's own directory.
+# FontForge script runners do not uniformly add the script's own
+# directory.
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # noqa: E402
 
 import constructions
 import declarations
 import donors
 import glyphs as sources
+import mapping as U
 import native_math as features
 import outlines
 import substitution
@@ -61,6 +62,7 @@ def write_payloads(
     requested,
     numeric_requested,
     variant_sources,
+    compound_sources,
 ):
     """Bind payloads to the serialized native font."""
     min_overlap = int(
@@ -87,6 +89,11 @@ def write_payloads(
             "variant_copies": [
                 dict(glyph=glyph, tag=tag, slot=slot)
                 for glyph, (tag, slot) in sorted(variant_sources.items())
+            ],
+            "compound_sources": [
+                record for _, record in sorted(compound_sources.items())
+                if record["series"] in U.LARGE_OPERATOR_SERIES
+                and record["glyph"] in font
             ],
             "imports": [
                 {"tag": tag, "slot": slot, "glyph": name}
@@ -165,7 +172,9 @@ def generate(
                 "licensee's own use; "
                 "redistribution of this font file is not permitted."
             )
-            glyphs = sources.GlyphSources(font, faces, rules, snapshot["plan"])
+            glyphs = sources.GlyphSources(
+                font, faces, rules, snapshot["plan"], condition=policy
+            )
             with stage("core source glyphs"):
                 operators = sources.import_core(glyphs, limits)
             with stage("Roman donor glyphs"):
@@ -210,8 +219,8 @@ def generate(
                 bounds = features.assign_metrics(
                     glyphs, cap_height=constants["FlattenedAccentBaseHeight"]
                 )
-            # Exactly the same native glyph set/scan;
-            # no source-only payloads.
+            # Exactly the same native glyph set/scan; no source-only
+            # payloads.
             if purpose == "windows":
                 with stage("compatibility result"):
                     result = capture(font, snapshot, bounds)
@@ -248,6 +257,7 @@ def generate(
                         for tag, face in faces.items()
                     },
                     glyphs.variant_sources,
+                    glyphs.compound_sources,
                 )
             with stage("native range and donor checks"):
                 features.check_native_ranges(glyphs)
