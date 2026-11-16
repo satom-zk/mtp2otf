@@ -9,6 +9,40 @@ import mapping as U
 import substitution
 
 
+def install_italic_kerns(font, changes):
+    """Retain IC coverage and attach one constant right-lower kern."""
+    info = font["MATH"].table.MathGlyphInfo
+    if info.MathKernInfo is not None:
+        raise ValueError("cannot overwrite existing MathKernInfo")
+    table = info.MathItalicsCorrectionInfo
+    corrections = dict(zip(table.Coverage.glyphs, table.ItalicsCorrection))
+    kerns = ot.MathKernInfo()
+    kerns.MathKernCoverage = ot.Coverage()
+    kerns.MathKernCoverage.glyphs = []
+    kerns.MathKernInfoRecords = []
+    for row in sorted(changes, key=lambda r: font.getGlyphID(r["glyph"])):
+        name = row["glyph"]
+        if corrections[name].Value != row["italic"]:
+            raise ValueError("stale italic correction input: " + name)
+        corrections[name].Value = 0
+        record = ot.MathKernInfoRecord()
+        record.TopRightMathKern = None
+        record.TopLeftMathKern = None
+        record.BottomLeftMathKern = None
+        kern = ot.MathKern()
+        kern.HeightCount = 0
+        kern.CorrectionHeight = []
+        value = ot.MathValueRecord()
+        value.Value = row["bottom_right"]
+        value.DeviceTable = None
+        kern.KernValue = [value]
+        record.BottomRightMathKern = kern
+        kerns.MathKernCoverage.glyphs.append(name)
+        kerns.MathKernInfoRecords.append(record)
+    kerns.MathKernCount = len(changes)
+    info.MathKernInfo = kerns if changes else None
+
+
 def copy_math_attributes(font, source, clone):
     gi = font["MATH"].table.MathGlyphInfo
     state = {}

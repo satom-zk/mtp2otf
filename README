@@ -1,8 +1,9 @@
-mtp2otf v1.5
+mtp2otf v1.6
 ===========
 Convert MathTime™ Professional 2 Type 1 fonts to OpenType MATH.
 Use TTF on Windows and OTF with LuaLaTeX.
 See doc/mtp2otf-guide.pdf for input examples and feature choices.
+See doc/mtp2otf.pdf for spacing and engine-specific script limits.
 
 Full provides cv01-cv19 and ss01-ss10. Lite provides cv01-cv09, ss07
 and ss10, with the same meanings. All selectors are off by default.

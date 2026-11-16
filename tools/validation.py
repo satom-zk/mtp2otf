@@ -1,7 +1,9 @@
 """Validate inputs, native provenance, and serialized products."""
 
+import hashlib
 import json
 import math
+from copy import deepcopy
 from math import ceil
 
 from fontTools.pens.basePen import NullPen
@@ -22,6 +24,73 @@ from substitution import (
 )
 from windows_metrics import errors as windows_errors
 from windows_metrics import read as read_windows
+
+
+def italic_invariants(font):
+    """Capture data that the italic advance stage must preserve."""
+    result = {tag: hashlib.sha256(font.getTableData(tag)).hexdigest()
+              for tag in ("MATH", "GPOS", "GSUB", "GDEF", "cmap")}
+    metrics = [font["hmtx"][n] for n in font.getGlyphOrder()]
+    result["metrics"] = hashlib.sha256(
+        json.dumps(metrics).encode("ascii")
+    ).hexdigest()
+    return result
+
+
+def validate_italic_advances(font, plan):
+    """Check equations and reconstruct the untouched input data."""
+    rows = plan["changes"]
+    order = font.getGlyphOrder()
+    expected = [row["glyph"] for row in rows]
+    if (len(set(expected)) != len(expected) or
+            expected != sorted(expected, key=font.getGlyphID)):
+        raise ValueError("invalid italic advance plan order")
+    info = font["MATH"].table.MathGlyphInfo
+    corrections = dict(zip(
+        info.MathItalicsCorrectionInfo.Coverage.glyphs,
+        info.MathItalicsCorrectionInfo.ItalicsCorrection,
+    ))
+    table = info.MathKernInfo
+    if (table is None or table.MathKernCoverage.glyphs != expected or
+            table.MathKernCount != len(rows) or
+            len(table.MathKernInfoRecords) != len(rows)):
+        raise ValueError("italic advance MathKern coverage mismatch")
+    metrics = [font["hmtx"][name] for name in order]
+    restored = deepcopy(font["MATH"])
+    old_info = restored.table.MathGlyphInfo
+    old_corrections = dict(zip(
+        old_info.MathItalicsCorrectionInfo.Coverage.glyphs,
+        old_info.MathItalicsCorrectionInfo.ItalicsCorrection,
+    ))
+    for row, record in zip(rows, table.MathKernInfoRecords):
+        name, gid = row["glyph"], row["gid"]
+        value = row["italic"]
+        kern = record.BottomRightMathKern
+        if (order[gid] != name or value <= 0 or
+                row["advance"] != row["width"] + value or
+                row["bottom_right"] != -value or
+                metrics[gid] != (row["advance"], row["lsb"]) or
+                corrections[name].Value != 0 or
+                corrections[name].DeviceTable is not None):
+            raise ValueError("italic advance equation mismatch: " + name)
+        if (any(getattr(record, corner) is not None for corner in (
+                "TopRightMathKern", "TopLeftMathKern", "BottomLeftMathKern"
+            )) or kern is None or kern.HeightCount != 0 or
+                kern.CorrectionHeight or len(kern.KernValue) != 1 or
+                kern.KernValue[0].Value != -value or
+                kern.KernValue[0].DeviceTable is not None):
+            raise ValueError("italic advance corner mismatch: " + name)
+        metrics[gid] = (row["width"], row["lsb"])
+        old_corrections[name].Value = value
+    old_info.MathKernInfo = None
+    actual = {tag: hashlib.sha256(font.getTableData(tag)).hexdigest()
+              for tag in ("GPOS", "GSUB", "GDEF", "cmap")}
+    actual["MATH"] = hashlib.sha256(restored.compile(font)).hexdigest()
+    actual["metrics"] = hashlib.sha256(
+        json.dumps(metrics).encode("ascii")
+    ).hexdigest()
+    if actual != plan["invariants"]:
+        raise ValueError("italic advance changed protected font data")
 
 
 def average_width_errors(font):
@@ -347,7 +416,8 @@ def _one(font, edition):
 
 
 def check_pair(
-    otf_path, ttf_path, edition, windows_policy=None, input_manifest=None
+    otf_path, ttf_path, edition, windows_policy=None, input_manifest=None,
+    italic_plan=None,
 ):
     with TTFont(otf_path) as otf, TTFont(ttf_path) as ttf:
         if "CFF " not in otf or "glyf" not in ttf:
@@ -355,6 +425,8 @@ def check_pair(
         for font in (otf, ttf):
             _one(font, edition)
         validate_operator_growth(otf)
+        if italic_plan is not None:
+            validate_italic_advances(otf, italic_plan)
         a, b = otf.getGlyphOrder(), ttf.getGlyphOrder()
         if len(a) != len(b):
             raise ValueError("OTF/TTF glyph count mismatch")

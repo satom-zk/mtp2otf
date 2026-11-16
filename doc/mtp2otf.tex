@@ -17,7 +17,7 @@
 \clubpenalty=10000
 \widowpenalty=10000
 \newcommand{\file}[1]{\texttt{\detokenize{#1}}}
-\title{mtp2otf v1.5\\\large Build guide and technical reference}
+\title{mtp2otf v1.6\\\large Build guide and technical reference}
 \author{}
 \date{}
 \begin{document}
@@ -111,9 +111,11 @@ files in place. Do not run concurrent builds of the same edition.
 Install the TTF and select \file{MTPro2 Math} or
 \file{MTPro2 Math Lite} as the equation font. For the equation text,
 enable \emph{Kerning for fonts} at 1~pt and above in the Font dialog.
-In Microsoft 365 Word for Windows, as tested on 22 October 2026,
-italic correction is not applied to ordinary character spacing, so spacing
-may differ slightly from the original Type~1 output.
+Ordinary mathematical characters include the source italic correction
+in their advances, so their spacing does not depend on Word adding it
+between letters. Ordinary pair kerning remains separate. Script placement
+and the width of a completed formula still depend on the equation engine;
+see Appendix~\ref{sec:scalars}.
 
 Use Word's equation editor for mathematical alphabets, accents, delimiters
 and operators. It does not expose the same OpenType feature controls as
@@ -173,6 +175,9 @@ Issues: \url{https://github.com/satom-zk/mtp2otf/issues}
   contains six finite designs. Ordinary text/display selection is unchanged.
   Reorganized character variants and stylistic sets, separated independent
   symbol choices, and added feature labels and numbered-choice names.
+\item[v1.6] Included italic correction in ordinary mathematical advances
+  and added compensating right-lower MATH kerns. Preserved source pair
+  kerning, accent attachment and dedicated operator metrics.
 \end{description}
 
 \newpage
@@ -454,22 +459,74 @@ expression, application or size request.
 
 \section{Metrics and MATH constants}\label{sec:scalars}
 \subsection{Glyph metrics}
-The output uses 1000 units per em. For an untransformed MTPro2 glyph,
-the TFM width supplies its advance and the TFM italic correction supplies
-its MATH italic correction.
-Ordinary GPOS pair adjustments store the TFM pair kern without an added italic-correction term.
-Skewchar pairs are excluded from
-ordinary kerning; scripts, primes and accents have separate positioning
-data. Top-accent attachment for source math alphabets is based on
+The output uses 1000 units per em. For ordinary mathematical characters,
+let $W$ and $I$ be the separately rounded integer source width and italic
+correction before the final advance conversion. The final values are
+\[
+  \text{advance}=W+I,\qquad
+  \text{MATH IC}=0,\qquad
+  \text{BottomRight MathKern}=-I.
+\]
+The right-lower kern is constant at every height; the other three corners
+are unset. Glyphs with zero correction retain their metrics without a
+redundant zero-kern record. The sum uses the existing integers, rather
+than rounding the raw TFM sum again.
+
+This policy covers the mathematical alphabets, including Script, Fraktur
+and Blackboard, their optical sizes and alternate designs. It also covers
+ordinary nabla, bold nabla and partial differential, and the AMS yen
+alternative where the edition supplies them. Each physical glyph uses its
+own source correction. The correction is not inferred from whether the
+outline looks italic or from its Unicode category alone.
+
+The source TeX spacing for an ordinary character includes its italic
+correction. Storing that effective width as the advance makes it available
+to engines that do not add the correction between ordinary letters.
+The superscript reference $W+I$ is retained; the subscript reference
+returns to $W$ when the engine applies the right-lower kern.
+Dedicated integrals, sums and products retain their separate metrics and
+italic corrections, including the corrections used to position limits.
+Their existing conversion may already include source italic correction
+in the advance. Delimiters, assemblies, accents and primes retain their
+own construction and placement rules.
+
+Ordinary GPOS pair adjustments store the TFM pair kern without an added
+italic-correction term. Skewchar pairs are excluded from ordinary
+kerning. Top-accent attachment for source math alphabets is based on
 \[
   \frac{\operatorname{CHARWD}+\operatorname{CHARIC}}{2}
   + \operatorname{skewkern}.
 \]
-For untransformed source alphabets, the calculation uses the exact TFM
-fixed-point values and is rounded once to output units. Combining accents
-and synthesized forms use the corresponding coordinate transformations
-and geometric attachment positions. Text, script and scriptscript designs use the source
-optical sizes.
+For untransformed source alphabets, this calculation uses the exact TFM
+fixed-point values and is rounded once to output units. Its absolute
+coordinate is retained when the advance is changed; it is not recomputed
+from the new advance or zero MATH IC. Combining accents and synthesized
+forms use the corresponding coordinate transformations and geometric
+attachment positions. Primes retain their dedicated conversion.
+Text, script and scriptscript designs use the source optical sizes.
+
+\paragraph{Engine-dependent limits.}
+LuaHBTeX~1.24 can omit MathKern when a subscript starts with a fraction,
+radical, explicit box or unsupported structure, or uses a font without
+MATH support. An explicit style at the start or an empty subscript can
+also change the path used by the engine. Such a subscript may move right
+by the original $I$; a single visible letter does not guarantee that the
+kern is used. Converting an ordinary character into an operator with
+\file{\mathop} also cannot recover its former limit correction.
+These cases do not change the dedicated operator data or call for an
+additional pair-kerning adjustment.
+
+Preserving the subscript origin does not always preserve the completed
+box width. An engine that includes the base advance in the maximum of
+component widths changes that term from $W$ to $W+I$. For a subscript
+of width $S$ and trailing script space $s$, the width is preserved when
+$S+s\ge I$. A narrow subscript on a large-correction glyph can therefore
+increase the box width; this is not restricted to Script alphabets.
+For example, a 10\,pt Script T with a dot subscript gives a 0.365\,pt
+increase under this maximum-width rule, although the subscript origin is
+unchanged. This is a reference calculation, not a Word measurement.
+Similarly, retaining accent attachment coordinates does not guarantee
+that an engine selects the same width of stretching accent.
 
 \subsection{Constants}
 The following assignments define the 56 MATH constants and the common

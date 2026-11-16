@@ -25,7 +25,12 @@ import source_glyphs
 import substitution
 from diagnostics import verify_contract, write_contract
 from mapping import load_alternates
-from validation import compound_records, validate_compounds
+from validation import (
+    compound_records,
+    italic_invariants,
+    validate_compounds,
+    validate_italic_advances,
+)
 
 
 @contextmanager
@@ -242,16 +247,26 @@ def process(native_otf, final_otf, *, work, catalog, snapshot, alternate_path):
                 reports["closure"] = prune(font)
             with stage("final compound provenance"):
                 validate_compounds(font, compounds, require_parts=False)
+            with stage("ordinary italic advances and right-lower kerns"):
+                italic = math_metrics.italic_advance_plan(
+                    font, catalog, inventory, alphabet, reports
+                )
+                italic["invariants"] = italic_invariants(font)
+                font_geometry.set_italic_advances(font, italic["changes"])
+                math_tables.install_italic_kerns(font, italic["changes"])
+                validate_italic_advances(font, italic)
+                reports["italic-advances"] = italic
             with stage("final average width and Windows ANSI policy"):
                 font_geometry.update_average_width(font)
                 font_geometry.preserve_windows_ansi_compatibility(font)
             reports["AB"] = diagnostics.alphabet_report(alphabet)
             reports["source_usage"] = catalog.source_usage()
             write_contract(Path(work) / "construction-results.json", reports)
-            _save_final(font, final_otf)
+            _save_final(font, final_otf, italic)
+    return italic
 
 
-def _save_final(font, final_otf):
+def _save_final(font, final_otf, italic):
     """I/O helper of process; never called by an editing function."""
     with stage("final OTF serialization"):
         fd, name = tempfile.mkstemp(
@@ -261,6 +276,8 @@ def _save_final(font, final_otf):
         temporary = Path(name)
         try:
             font.save(temporary)
+            with TTFont(temporary) as saved:
+                validate_italic_advances(saved, italic)
             with temporary.open("rb") as stream:
                 os.fsync(stream.fileno())
             os.replace(temporary, final_otf)

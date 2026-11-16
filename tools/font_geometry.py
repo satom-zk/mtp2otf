@@ -11,6 +11,7 @@ from fractions import Fraction
 from math import ceil
 
 from fontTools.misc.transform import Transform
+from fontTools.misc.psCharStrings import T2WidthExtractor
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.recordingPen import RecordingPen
 from fontTools.pens.t2CharStringPen import T2CharStringPen
@@ -27,6 +28,43 @@ def _mvr(v):
     r.Value = int(v)
     r.DeviceTable = None
     return r
+
+
+def set_italic_advances(font, changes):
+    """Change only the Type 2 width operand and its hmtx advance."""
+    chars = font["CFF "].cff.topDictIndex[0].CharStrings
+    width_ops = {
+        "hstem": 0, "vstem": 0, "hstemhm": 0, "vstemhm": 0,
+        "hintmask": 0, "cntrmask": 0, "rmoveto": 0, "endchar": 0,
+        "hmoveto": 1, "vmoveto": 1,
+    }
+    for row in changes:
+        name = row["glyph"]
+        char = chars[name]
+        char.decompile()
+        program = char.program
+        first = next((i for i, token in enumerate(program)
+                      if not isinstance(token, (int, float))), None)
+        if first is None or program[first] not in width_ops:
+            raise ValueError("unsupported CFF width expression: " + name)
+        private = char.private
+        reader = T2WidthExtractor(
+            getattr(private, "Subrs", []), char.globalSubrs,
+            private.nominalWidthX, private.defaultWidthX,
+        )
+        reader.execute(char)
+        if (reader.width != row["width"] or
+                font["hmtx"][name] != (row["width"], row["lsb"])):
+            raise ValueError("stale italic advance input: " + name)
+        explicit = bool(width_ops[program[first]] ^ (first % 2))
+        old_width = (program[0] + private.nominalWidthX if explicit
+                     else private.defaultWidthX)
+        if old_width != reader.width:
+            raise ValueError("CFF width operand mismatch: " + name)
+        operand = row["advance"] - private.nominalWidthX
+        char.program = [operand] + program[1 if explicit else 0:]
+        char.bytecode = None
+        font["hmtx"][name] = (row["advance"], row["lsb"])
 
 
 def _cmap(font):

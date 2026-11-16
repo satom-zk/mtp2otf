@@ -14,8 +14,8 @@ EDITIONS = {
     "lite": ("MTPro2 Math Lite", "MTPro2MathLite"),
 }
 # head.fontRevision is a 16.16 fixed-point field.
-FONT_REVISION = round(1.5 * 65536) / 65536
-FONT_VERSION = "Version 1.5"
+FONT_REVISION = round(1.6 * 65536) / 65536
+FONT_VERSION = "Version 1.6"
 
 # Shared CFF hint values for the Full and Lite outputs. Set each
 # standard width before its stem snaps: FontForge couples them.

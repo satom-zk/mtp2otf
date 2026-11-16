@@ -123,7 +123,7 @@
 \begin{document}
 
 {\LARGE MTPro2 Math}\par
-{\large Font guide}\hfill v1.5\par
+{\large Font guide}\hfill v1.6\par
 \medskip
 Use the generated font with LuaLaTeX and \code{unicode-math}:
 \begin{verbatim}
@@ -152,6 +152,12 @@ $\symup{\alpha\beta\Gamma\Omega}$,
 $\symit{\alpha\beta\Gamma\Omega}$,
 $\symbfup{\alpha\beta\Gamma\Omega}$ and
 $\symbfit{\alpha\beta\Gamma\Omega}$.
+
+For letters in subscripts, these math-font selectors also retain access
+to the font's script-positioning data. A text-font selection such as
+\code{\mathrm} may use a different font and prevent LuaTeX from using
+that data. See the glyph-metrics discussion in \code{mtp2otf.pdf} for
+this and other engine-dependent limits.
 
 Character variants (cv) select local letter or symbol forms; stylistic
 sets (ss) select related designs across a group of characters. Both can

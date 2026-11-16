@@ -8,6 +8,7 @@ intentionally unencoded.
 import hashlib
 import json
 import re
+import unicodedata
 from pathlib import Path
 from typing import Dict
 
@@ -1600,6 +1601,38 @@ def alphabet_spec(edition):
         if edition == "full"
         else [],
     )
+
+
+# Ordinary symbols share the alphabet advance policy. Their existing
+# substitutions select the optical and AMS alternatives.
+ITALIC_ADVANCE_SYMBOLS = (0x2207, 0x1D6C1, 0x1D6DB, 0x00A5)
+ITALIC_ADVANCE_FEATURES = frozenset((
+    "ssty", "dtls", "cv01", "cv02", "cv03", "cv18",
+    "ss01", "ss02", "ss03", "ss04", "ss05", "ss06",
+))
+
+
+def italic_advance_roots(edition):
+    """Return semantic entrances and reserved alphabet identities."""
+    cps = set(range(48, 58)) | set(range(65, 91)) | set(range(97, 123))
+    cps.update(cp for cp, _ in MIT.values() if cp is not None and (
+        unicodedata.category(chr(cp))[0] in "LN" or cp == 0x2118
+    ))
+    cps.add(0x03DD)
+    cps.update(ITALIC_ADVANCE_SYMBOLS)
+    spec = alphabet_spec(edition)
+    kinds = ["bold"]
+    if edition == "full":
+        kinds += ["bb", "script", "bscript", "frak", "bfrak"]
+    for kind in kinds:
+        cps.update(cp for cp, _ in alpha_map(kind).values() if cp)
+    cps.update(cp for _, cp in spec["bold_italic"])
+    cps.update(cp for cp, _, _ in spec["bold_greek"])
+    cps.update(cp for cp, _ in spec["blackboard_special"])
+    if spec["digamma"]:
+        cps.add(spec["digamma"][2])
+    internal = {letter + ".frak" for _, letter in spec["fraktur_reserved"]}
+    return cps, internal
 
 
 def final_source_requests(edition, spec, ledger):

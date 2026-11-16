@@ -212,7 +212,7 @@ def build_condition(
             )
     stage("OpenType postprocessing")
     log.flush()
-    write_otf(
+    italic_plan = write_otf(
         otf,
         final_otf,
         work=work,
@@ -246,7 +246,8 @@ def build_condition(
     )
     stage("final serialized pair check")
     log.flush()
-    check_pair(final_otf, final_ttf, edition, windows_path, policy_path)
+    check_pair(final_otf, final_ttf, edition, windows_path, policy_path,
+               italic_plan=italic_plan)
     checked_sha = {
         font: hashlib.sha256(font.read_bytes()).hexdigest()
         for font in (final_otf, final_ttf)
