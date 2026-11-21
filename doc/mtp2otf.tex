@@ -308,18 +308,20 @@ empty & spaces \\
 
 A glyph from a source slot belongs to the first of \code{vshift},
 \code{hshift}, \code{scale} and \code{keep} that applies.  Shifts are
-not rounded; the OpenType font keeps half units, to 0.01 unit.
+rounded only where a rule says so (section~\ref{sec:vshift}); the
+OpenType font keeps half units, to 0.01 unit.
 
-The font covers what standard OpenType math uses.  Some MTPro2 glyphs
-with a standard equivalent are left out, such as the fixed wide accents
+The font covers what standard OpenType math uses, not every form, size
+and input path of MTPro2.  Some MTPro2 glyphs with a standard
+equivalent are left out, such as the fixed wide accents
 \code{\string\what}, the raised dots \code{\string\dotup} and
 \code{\string\smallint}; so are the bold symbols and the heavy fonts
 (appendix~\ref{app:included}).
 
-\subsection{Metrics}
+\subsection{Metrics}\label{sec:metrics}
 
-TFM values are read as exact fractions and rounded once, ties to even.
-With $W$ the width and $I$ the italic correction:
+With $W$ the TFM width and $I$ the italic correction of a glyph that
+keeps the box of its source slot:
 
 \begin{center}
 \begin{tabular}{llll}
@@ -328,7 +330,7 @@ Glyph & Advance & Italic correction & Bottom-right kern \\
 \midrule
 $I = 0$ & $W$ & none & none \\
 $I > 0$, role with optical sizes & $W + I$ & none & $-I$ \\
-$I > 0$, extension and operator fonts & $W + I$ & $I$ & none \\
+$I > 0$, role without optical sizes & $W + I$ & $I$ & none \\
 constructed, donor & own & none & none \\
 \bottomrule
 \end{tabular}
@@ -340,21 +342,22 @@ it puts the correction after a character without a subscript
 \cite[\S755]{tex-program} and sets a superscript that much to the right
 of the subscript \cite[\S756]{tex-program}.  In OpenType this offset
 can be given by math kerns at the corners instead of the italic
-correction \cite[p.~20]{vieth}.  For the fonts with optical sizes,
-$I$ therefore goes into the advance and the bottom-right kern $-I$
-brings the subscript back, the conversion Hagen and Sundqvist describe
-for ConTeXt \cite[\S4.2]{hagen-sundqvist}.  No glyph has both an
-italic correction and a math kern; they note that both on one glyph
-would cause trouble \cite[\S4]{hagen-sundqvist}.  In the extension and operator
-fonts,
-which hold the big operators, $I$ is also kept as italic correction:
-OpenType places the limits of a big operator by it
-\cite{opentype-math}, and since almost all engines apply no math kern
-to big operators, their scripts depend on the advance and
-the italic correction, the subscript moving inwards by $I$
-\cite{noto-math}, as in \TeX\ \cite[\S\S749--750]{tex-program}.  The
-top accent attachment of a source
-glyph is where \TeX\ centres an accent \cite[\S738]{tex-program},
+correction \cite[p.~20]{vieth}.  For the roles with optical sizes, $I$
+therefore goes into the advance and the bottom-right kern $-I$ brings
+the subscript back, the conversion Hagen and Sundqvist describe for
+ConTeXt \cite[\S4.2]{hagen-sundqvist}.  No glyph has both an italic
+correction and a math kern; they note that both on one glyph would
+cause trouble \cite[\S4]{hagen-sundqvist}.  The roles without optical
+sizes are the extension and operator fonts, which hold the big
+operators; there $I$ is also kept as italic correction.  OpenType
+places the limits of a big operator by it \cite{opentype-math}, and
+since almost all engines apply no math kern to big operators, their
+scripts depend on the advance and the italic correction, the subscript
+moving inwards by $I$ \cite{noto-math}, as in \TeX\
+\cite[\S\S749--750]{tex-program}.
+
+The top accent attachment of a source glyph is where \TeX\ centres an
+accent \cite[\S738]{tex-program},
 \[
   \mathrm{round}\bigl(1000\,(w + i + 2k)/2^{21}\bigr),
 \]
@@ -365,8 +368,10 @@ its base exceeds the x-height of the accent's font
 \cite[\S738]{tex-program}, which differs between the three sizes;
 OpenType has one AccentBaseHeight for all sizes \cite{opentype-math}.
 Script and scriptscript accents are therefore lowered by the difference
-between their x-height and AccentBaseHeight.  TFM kerns
-become GPOS kerns.  Appendix~\ref{app:metrics} has the details.
+between their x-height and AccentBaseHeight.
+
+TFM kerns become GPOS kerns.  Appendix~\ref{app:metrics} has the
+details.
 
 \subsection{MATH constants}
 
@@ -562,10 +567,10 @@ U+23DE & \textbackslash{}overbrace\{...\} & default & horizontal & yes \\
 U+23DE & \textbackslash{}overbrace\{...\} & \feat{cv09=1} & horizontal & yes \\
 U+23DE & \textbackslash{}overbrace\{...\} & \feat{cv09=2} & horizontal & yes \\
 U+23DF & \textbackslash{}underbrace\{...\} & default & horizontal & yes \\
-U+23DF & \textbackslash{}underbrace\{...\} & \feat{cv09=1} & horizontal & yes
-\\
-U+23DF & \textbackslash{}underbrace\{...\} & \feat{cv09=2} & horizontal & yes
-\\
+U+23DF & \textbackslash{}underbrace\{...\} & \feat{cv09=1} & horizontal
+& yes \\
+U+23DF & \textbackslash{}underbrace\{...\} & \feat{cv09=2} & horizontal
+& yes \\
 U+27E8 & \textbackslash{}langle & default & vertical & no \\
 U+27E9 & \textbackslash{}rangle & default & vertical & no \\
 U+27EE & \textbackslash{}lgroup & default & vertical & yes \\
@@ -582,10 +587,9 @@ U+2A0F & \textbackslash{}fint & default & vertical & no \\
 \end{longtable}\endgroup
 
 The sizes follow the TFM chains of next larger characters and the
-extensible recipes; sizes beyond them (the xl and xxxl operators, the
-large series of \file{mt2exe}, \file{mt2exf} and \file{mt2exg}) are
-added.  The values of each size and part are in \file{variants.tsv} and
-\file{parts.tsv}.
+extensible recipes, with further sizes added
+(appendix~\ref{app:growing}).  The values of each size and part are in
+\file{variants.tsv} and \file{parts.tsv}.
 
 \paragraph{Braces.} The default braces are the \emph{morphed} design,
 which grows most smoothly; \file{mtpro2.sty} defaults to the Curly
@@ -596,15 +600,16 @@ braces, which take precedence.
 \paragraph{Delimiters in scripts.} \TeX\ tries the normal glyph of the
 next larger size before the large sizes.  Each script and scriptscript
 delimiter and radical has its own series doing the same: its own glyph,
-then the larger sizes' glyphs scaled down, then the text series.
+then the glyphs of the larger optical sizes, enlarged in the font so
+that they appear at their own size, then the text series.
 
 \paragraph{Angle brackets and bars.} The sources give the angle brackets
 four large sizes and the bars only an assembly.  Three angle sizes are
-interpolated between source sizes, and bars of all eight sizes are
-constructed with the top and bottom of the angle bracket of the same
-size.  Matching both ends, not only the height, keeps the choice of size
-equal in script styles, where Lua\TeX\ rounds height and depth
-separately.
+interpolated between source sizes, and the bars of the seven sizes above
+the first are constructed with the top and bottom of the angle bracket
+of the same size.  Matching both ends, not only the height, keeps the
+choice of size equal in script styles, where Lua\TeX\ rounds height and
+depth separately.
 
 \paragraph{Vectors.} The extensible vectors \U{20D7} and \U{20D6} are
 assembled from a start, a shaft and the arrow head, keeping the source
@@ -616,9 +621,7 @@ arrow.
 The character map follows the slot tables of appendix~\ref{app:slots}.
 Forms that Unicode does not encode, such as curly script and the bold
 and holey blackboard letters, are in the Private Use Area
-(appendix~\ref{app:pua}).  The symbols slot 15 is both \U{2219} and
-\U{2022}, slot 63 both \U{22A5} and \U{27C2}, so that every
-\code{unicode-math} command for them finds a glyph.
+(appendix~\ref{app:pua}).
 
 The inputs below are the standard Unicode characters selected by the
 mathematical alphabet or symbol command. Features also follow the
@@ -638,19 +641,19 @@ Feature & Design & Standard inputs & Edition \\ \midrule \endhead
 \texttt{cv03} & Alternate Delta & \texttt{U+03B4}; \texttt{U+1D6FF} & F/L \\*
  & Bold forms & \texttt{U+1D6C5}; \texttt{U+1D739} & F \\
 \texttt{cv04} & Alternate Hbar & \texttt{U+210F} & F/L \\
-\texttt{cv05} & Alternate Conjunction & \texttt{U+2227}; \texttt{U+22C0} & F/L
-\\
+\texttt{cv05} & Alternate Conjunction & \texttt{U+2227}; \texttt{U+22C0}
+& F/L \\
 \texttt{cv06} & Straight Braces & \texttt{U+007B}; \texttt{U+007D} & F/L \\
-\texttt{cv07} & Extended Parentheses & \texttt{U+0028}; \texttt{U+0029} & F/L
-\\
-\texttt{cv08} & Extended Curly Braces & \texttt{U+007B}; \texttt{U+007D} & F/L
-\\
+\texttt{cv07} & Extended Parentheses & \texttt{U+0028}; \texttt{U+0029}
+& F/L \\
+\texttt{cv08} & Extended Curly Braces & \texttt{U+007B}; \texttt{U+007D}
+& F/L \\
 \texttt{cv09} & Horizontal Brace Forms:\newline 1~=~Plain\newline 2~=~Curly &
 \texttt{U+23DE}; \texttt{U+23DF} & F/L \\
 \texttt{cv10} & Proper Inclusion Forms & \texttt{U+228A}; \texttt{U+228B};
 \texttt{U+2ACB}; \texttt{U+2ACC} & F \\
-\texttt{cv11} & Unequal Comparison Forms & \texttt{U+2268}; \texttt{U+2269} & F
-\\
+\texttt{cv11} & Unequal Comparison Forms & \texttt{U+2268}; \texttt{U+2269}
+& F \\
 \texttt{cv12} & Negated Comparison Forms:\newline 1~=~Slanted equality\newline
 2~=~Double equality & \texttt{U+2270}; \texttt{U+2271} & F \\
 \texttt{cv13} & Negated Inclusion Forms:\newline 1~=~Alternate
@@ -665,8 +668,8 @@ inclusion\newline 2~=~Double equality & \texttt{U+2288}; \texttt{U+2289} & F \\
 \texttt{ss02} & Script Alternates & Regular and bold Script alternatives;
 existing Curly alternatives & F \\
 \texttt{ss03} & Curly Script Alternates & Regular Script alphabet & F \\
-\texttt{ss04} & Fraktur Alternates & Fraktur alternate inputs listed below & F
-\\
+\texttt{ss04} & Fraktur Alternates & Fraktur alternate inputs listed below
+& F \\
 \texttt{ss05} & Heavy Blackboard & Upright Blackboard Latin and digits & F \\
 \texttt{ss06} & Holey Blackboard & Upright Blackboard Latin and digits;
 \texttt{U+213C--213F}; \texttt{U+2145--2149} & F \\
@@ -676,19 +679,19 @@ existing Curly alternatives & F \\
 \texttt{ss10} & Shaded Card Suits & \texttt{U+2660}; \texttt{U+2663} & F/L \\
 \end{longtable}\endgroup
 
-\feat{ss05} and \file{ss06} together select the heavier Holey upright
+\feat{ss05} and \feat{ss06} together select the heavier Holey upright
 Blackboard design. \feat{ss05} leaves the Greek and standard italic
-Blackboard characters unchanged. \file{ss06} selects their corresponding
+Blackboard characters unchanged. \feat{ss06} selects their corresponding
 Holey designs.
 
-\file{ss01} and \file{ss02} can be combined. \file{ss03} selects the Curly
-alternate series without requiring \file{ss01}; it overrides the regular
-Script choices of \file{ss01} and \file{ss02}. \file{ss04} remains independent.
+\feat{ss01} and \feat{ss02} can be combined. \feat{ss03} selects the Curly
+alternate series without requiring \feat{ss01}; it overrides the regular
+Script choices of \feat{ss01} and \feat{ss02}. \feat{ss04} remains independent.
 
-For \file{cv09}, \file{cv12} and \file{cv13}, choose one numbered
+For \feat{cv09}, \feat{cv12} and \feat{cv13}, choose one numbered
 value per tag. Value 0 disables that feature; it does not cancel another
-active feature. Negated comparisons (\file{cv12}) and inclusions
-(\file{cv13}) can use different choices. \file{cv14} affects only U+2241.
+active feature. Negated comparisons (\feat{cv12}) and inclusions
+(\feat{cv13}) can use different choices. \feat{cv14} affects only U+2241.
 
 
 \begingroup\raggedright\textbf{Script alternate inputs:} \texttt{U+2110};
@@ -703,24 +706,26 @@ active feature. Negated comparisons (\file{cv12}) and inclusions
 \texttt{U+1D59D--U+1D59E}.\par\endgroup
 
 
-Substitutions are made in this order: \feat{ccmp}, \feat{cv01} to
-\feat{cv19}, \feat{ss01} to \feat{ss10}, \feat{dtls}, \feat{ssty}.
-GPOS has only kerning.  In GDEF, the combining accents and the wide
-bars are marks and all other glyphs base glyphs.
+The order of the substitutions, GPOS and the GDEF classes are in
+appendix~\ref{app:layout}.
 
 \subsection{Hinting and TrueType}
 
 The OpenType fonts keep the hints of the Type~1 fonts: each source's
 Private dictionary and each glyph's stems, transformed with the outline.
-The CFF is therefore CID-keyed, with a font dictionary per source and
-transformation, and subroutinized.  Constructed glyphs have no hints.
+The CFF is therefore CID-keyed, with a font dictionary for each source
+and each scale or vertical shift of it, and subroutinized.  Constructed
+glyphs have no hints: there is nothing in the sources to copy for new
+shapes, and glyphs put together from several source glyphs were drawn
+by \TeX\ as separate glyphs with their own dictionaries.
 
 The TrueType fonts have the same glyphs and tables, with quadratic
-outlines within 0.6 unit and no hints: TrueType hints are programs with
-no counterpart in Type~1 hints.  Their clipping values
-(\code{usWinAscent} 2953, \code{usWinDescent} 2954) are constants that
-work in Word; the OpenType values, covering every outline, are too large
-for Word.
+outlines and no hints: TrueType hints are programs that move points,
+with no correspondence to Type~1 stems and zones.  Their clipping
+values (\code{usWinAscent}, \code{usWinDescent}) are constants that work
+in Word; the OpenType values, covering every outline, are too large for
+Word.  The details are in appendices~\ref{app:vmetrics},
+\ref{sec:hints} and~\ref{app:truetype}.
 
 \subsection{Differences from MTPro2 with pdf\LaTeX}\label{sec:differences}
 
@@ -903,29 +908,26 @@ From \file{mtpro2.sty} (and for Full the \file{.fd} files):
 
 \subsubsection{Donor}
 
-The donor gives the 262 characters of appendix~\ref{app:donor} and the
-dotless j (\U{0237}): its own \U{0237} if it has one, otherwise its j
-without the dot.  The j must then have exactly two contours, exactly one
-of which (the body) crosses the baseline, and the other (the dot) must
-lie wholly above the body; otherwise the build stops.  Donor glyphs are
-scaled from the donor's units per em to 1000, advance widths rounded.
-Quadratic outlines are converted to the same cubic curves, and
-composite glyphs are decomposed.
+The dotless j (\U{0237}) is the donor's own \U{0237} if it has one,
+otherwise its j without the dot.  The j must then have exactly two
+contours, exactly one of which (the body) crosses the baseline, and the
+other (the dot) must lie wholly above the body; otherwise the build
+stops.  Donor glyphs are scaled from the donor's units per em to 1000,
+advance widths rounded. Quadratic outlines are converted to the same
+cubic curves, and composite glyphs are decomposed.
 
 The Lite edition has no ð (\U{00F0}): Full takes it from the AMS
 symbols (\code{\string\eth}), which Lite lacks, and taking it from the
 donor in Lite alone would give the same character two designs.
 
 The bold upright letters and digits (\U{1D400}--\U{1D433},
-\U{1D7CE}--\U{1D7D7}) are MTPro2's own \code{\string\mbf}, slots 65--90,
-97--122 and 48--57 of \file{mt2mbt}, \file{mbs} and \file{mbf}; there is
-no bold donor.  The digits \U{0030}--\U{0039} are those of
-\file{mt2mit}.
+\U{1D7CE}--\U{1D7D7}) are \code{\string\mbf}, slots 65--90, 97--122 and
+48--57 of \file{mt2mbt}, \file{mbs} and \file{mbf}.  The digits
+\U{0030}--\U{0039} are those of \file{mt2mit}.
 
 \subsubsection{What is included}\label{app:included}
 
-The font covers what standard OpenType math uses; every form, size and
-input path of MTPro2 is not the aim.  Not included:
+Not included:
 
 \begin{center}
 \begin{tabularx}{\textwidth}{Xll}
@@ -955,10 +957,10 @@ The wide bars \code{\string\wbar} and \code{\string\wwbar} (sy:120,
 (\U{E24E}, \U{E24A}).
 
 \subsection{Glyphs and outlines}
-\subsubsection{Principle}
+\subsubsection{Principle}\label{sec:principle}
 
-A glyph that is not meant to change keeps the drawing of its source.
-Outlines are compared by geometry: a straight line drawn as a cubic
+A glyph keeps the drawing of its source (section~\ref{sec:groups}) if
+its outline has the same geometry: a straight line drawn as a cubic
 curve, an open contour closed and a segment of length zero are the
 same.  Converting Type~1 to CFF changes no coordinate, advance or hint.
 
@@ -1025,26 +1027,13 @@ nearest integer, ties to even.
 
 \subsubsection{Advance width and italic correction}
 
-$W$ is the TFM width, $I$ the italic correction, both multiplied by the
-scale.  For a glyph that keeps the box of its source slot:
-
-\begin{center}
-\begin{tabular}{llll}
-\toprule
-Glyph & Advance & Italic correction & Bottom-right kern \\
-\midrule
-$I = 0$ & $W$ & none & none \\
-$I > 0$, role with optical sizes & $W + I$ & none & $-I$ (one value) \\
-$I > 0$, extension and large operator fonts & $W + I$ & $I$ & none \\
-constructed & section~\ref{sec:constructed} & 0 & none \\
-donor & the donor's & 0 & none \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-The advance is rounded after the sum.  An italic correction of 0 is not
-recorded.  The TFM records of \slot{exa}{182}, 183 and 184 (the first
-morphed braces) are broken; those of slots 8, 9 and 176 are used.
+The rules are the table of section~\ref{sec:metrics}.  $W$ and $I$ are
+multiplied by the scale of the glyph, and the advance $W + I$ is
+rounded after the sum.  The bottom-right kern is one value, without
+height steps.  An italic correction of 0 is not recorded.  Constructed
+glyphs have the advances of section~\ref{sec:constructed}, donor glyphs
+the donor's.  The TFM records of \slot{exa}{182}, 183 and 184 (the
+first morphed braces) are broken; those of slots 8, 9 and 176 are used.
 Glyphs that change their box (accents, parts, primes) follow their own
 rules.
 
@@ -1118,7 +1107,7 @@ right are left out.  Every glyph made from a slot gets the kerns of that
 slot.  Ligature and boundary programs are not supported; a TFM with
 them is an input error.
 
-\subsection{Growing symbols}
+\subsection{Growing symbols}\label{app:growing}
 \subsubsection{Series}
 
 \begin{itemize}
@@ -1146,19 +1135,16 @@ steps) and the morphed braces are given explicitly.
 
 The default vertical braces are the \emph{morphed} design: left
 \slot{exa}{182}, 184, 186, 188, right 183, 185, 187, 189, then the
-assembly.  This differs on purpose from the default of
-\file{mtpro2.sty} (the Curly design, 8, 110, 26, 40): Word cannot
-switch series, so the default is the design that grows most smoothly.
-The Curly series (with the large sizes) is selected by \feat{cv08}, the
-straight one by \feat{cv06}, which takes precedence.  The TFM chain of
+assembly (section~\ref{sec:stretch}).  The Curly series of
+\file{mtpro2.sty} starts at 8, 110, 26, 40.  The TFM chain of
 the morphed braces is broken (182 leads nowhere and 183 to the left
 assembly), so it is not followed.
 
 \subsubsection{Delimiters in script sizes}
 
-\TeX\ tries the normal glyph of the next larger size before the large
-sizes of \file{mt2exa}.  Each S and SS glyph of a vertical delimiter or
-radical (not of the large operators) is the root of its own series:
+Each S and SS glyph of a vertical delimiter or radical (not of the
+large operators) is the root of its own series
+(section~\ref{sec:stretch}):
 \begin{itemize}
 \item S: the S glyph; the T glyph scaled by $1/r_1$; the steps of the
   T series larger than that; the T assembly.
@@ -1228,7 +1214,6 @@ mirror image, with parts head, shaft, start; the shaft is shared.
 \item \emph{ExtendedShapeCoverage}: the steps without code points of
   vertical series other than roots, the parts of vertical assemblies,
   and the nine text integrals \U{222B}--\U{2233}.
-\item MinConnectorOverlap 20.
 \end{itemize}
 
 \subsection{Character set}
@@ -1247,7 +1232,7 @@ mirror image, with parts head, shaft, start; the shaft is shared.
   as the digits and the punctuation space \U{2008} as the period.
 \end{itemize}
 
-\subsection{Layout}
+\subsection{Layout}\label{app:layout}
 
 \subsubsection{Selectors and features}
 
@@ -1278,7 +1263,7 @@ glyphs with a code point of general category Mn, \code{\string\wbar}
 and \code{\string\wwbar}, and their S and SS forms; all other
 glyphs are base glyphs (class 1).  All lookups have flag 0.
 
-\subsection{Vertical metrics}
+\subsection{Vertical metrics}\label{app:vmetrics}
 
 \begin{center}
 \begin{tabular}{lll}
@@ -1296,20 +1281,16 @@ x-height, cap height & AccentBaseHeight, FlattenedAccentBaseHeight & same \\
 
 The line spacing is that of Latin Modern Math \cite{lm-math}; it is
 not derived from the TFM.
-The Windows values of the TrueType fonts are constants known to work
-with Word; Word fails with values as large as those of the OpenType
-fonts.  They do not cover the tallest glyphs (the largest operators and
-delimiters); that does not cut them off in Word.
+The Windows values of the TrueType fonts do not cover the tallest
+glyphs (the largest operators and delimiters); that does not cut them
+off in Word.
 
 \subsection{Hinting}\label{sec:hints}
 
-The OpenType fonts keep the hints of the Type~1 fonts: each source
-font's Private dictionary and each glyph's stems.  The CFF is therefore
-CID-keyed, with one font dictionary per Private dictionary used
-(listed by the build in \file{dictionaries.tsv}), selected by an
-\code{FDSelect} of format 3.  The
-charstrings are subroutinized; the charstrings expanded, the
-Private dictionaries (other than \code{defaultWidthX},
+The CFF has one font dictionary per Private dictionary used (listed by
+the build in \file{dictionaries.tsv}), selected by an \code{FDSelect} of
+format 3.  The charstrings are subroutinized; the charstrings expanded,
+the Private dictionaries (other than \code{defaultWidthX},
 \code{nominalWidthX} and \code{Subrs}) and the dictionary of each glyph
 are the same before and after.  Advances in the charstrings agree with
 \code{hmtx}.
@@ -1341,12 +1322,6 @@ scaled and moved.  Copies use the dictionary of their original.  Values
 of the sources are copied as they are, including BlueScale values that
 Type~1 checkers call too large.
 
-Constructed glyphs have no hints: there is nothing in the sources to
-copy for new shapes, and glyphs put together from several source
-glyphs were drawn by \TeX\ as separate glyphs with their own
-dictionaries.  The TrueType fonts have no hints: TrueType hints are
-programs that move points, with no correspondence to Type~1 stems and
-zones.
 
 \subsection{Glyph names and order}\label{sec:names}
 
@@ -1372,9 +1347,8 @@ Order: \code{.notdef}; glyphs with code points by primary code point;
 glyphs without, by the primary code point of their base and then by
 suffix.
 
-\subsection{TrueType}
+\subsection{TrueType}\label{app:truetype}
 
-The TrueType fonts have the same glyphs, metrics and layout tables.
 Outlines are converted to quadratic curves within 0.6 unit and their
 direction reversed; coordinates are integers.  Left side bearings are
 the left of the ink; \code{maxp} has one zone; \code{post} is format~3.
@@ -1442,8 +1416,8 @@ appendix~\ref{app:constructed}.
 \item The package files are read; the role declarations give the font
   files and scales.
 \item Check: the PFB and TFM files.
-\item The sources are read: Type~1 through \code{tx -cff +b}, which
-  changes no coordinate, advance or hint.
+\item The sources are read: Type~1 through \code{tx -cff +b}
+  (appendix~\ref{sec:principle}).
 \item The \code{chain} entries of the series are expanded along the TFM
   chains.
 \item Check: the contents.
@@ -1525,8 +1499,7 @@ shortest decimal that reads back as the same value (such as
   only appear in \file{parts.tsv} alone.
 \item[\file{parts.tsv}] \code{index} counts from 0; \code{extender} is
   \code{yes} for an extender; \code{start} and \code{end} are the
-  connector lengths and \code{full} the FullAdvance.  Assemblies have
-  italic correction 0.
+  connector lengths and \code{full} the FullAdvance.
 \item[\file{features.tsv}] the inputs of a ligature and the outputs of
   an alternate substitution are separated by spaces.
 \item[\file{dictionaries.tsv}] \code{source} is the source file
