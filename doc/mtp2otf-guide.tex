@@ -90,7 +90,8 @@
 \clubpenalty=10000
 \widowpenalty=10000
 \newcommand{\codesize}{\fontsize{10.5pt}{12pt}\selectfont}
-\newcommand{\code}[1]{{\codesize\texttt{\detokenize{#1}}}}
+% Verbatim, so that no space follows a command name.
+\NewDocumentCommand{\code}{v}{{\codesize\texttt{#1}}}
 \AddToHook{env/verbatim/begin}{\codesize}
 \newcommand{\sample}[2]{\begingroup\mathversion{#1}$#2$\endgroup}
 \newcommand{\bbline}{\symbb{ABGMXYZ\;abcxyz\;0123456789}}
@@ -123,7 +124,7 @@
 \begin{document}
 
 {\LARGE MTPro2 Math}\par
-{\large Font guide}\hfill v1.6\par
+{\large Font guide}\hfill v1.7\par
 \medskip
 Use the generated font with LuaLaTeX and \code{unicode-math}:
 \begin{verbatim}
@@ -131,8 +132,12 @@ Use the generated font with LuaLaTeX and \code{unicode-math}:
 \setmathfont{MTPro2Math.otf}
 \end{verbatim}
 Use \code{MTPro2MathLite.otf} for Lite. The examples in this guide use Full.
-No \code{mtpro2.sty} is needed. Building the font, installing the TTF on
-Windows and using it in Word are described in \code{mtp2otf.pdf}.
+No \code{mtpro2.sty} is needed. If the font is not installed, give its
+directory with the \code{Path} option, as in \code{[Path=../out/]}.
+Use LuaTeX's default font processing, not \code{Renderer=HarfBuzz}.
+Word is described in Section~\ref{sec:word}; building the fonts in
+\code{mtp2otf.pdf}. The font can also be used with
+\code{lua-unicode-math}.
 
 \section{Letters and Greek}
 Ordinary letters are mathematical italic. Use \code{\symup},
@@ -156,8 +161,8 @@ $\symbfit{\alpha\beta\Gamma\Omega}$.
 For letters in subscripts, these math-font selectors also retain access
 to the font's script-positioning data. A text-font selection such as
 \code{\mathrm} may use a different font and prevent LuaTeX from using
-that data. See the glyph-metrics discussion in \code{mtp2otf.pdf} for
-this and other engine-dependent limits.
+that data. See Section~\ref{sec:differences} for this and other
+engine-dependent limits.
 
 Character variants (cv) select local letter or symbol forms; stylistic
 sets (ss) select related designs across a group of characters. Both can
@@ -350,10 +355,10 @@ also applies to other operators in display style, such as \code{\sum} and
 \code{\prod}. Stylistic sets such as \code{ss07} choose the design
 family independently of the size request.
 
-Larger designs are available in both Full and Lite. The supported series
-and their number of sizes are listed in \code{mtp2otf.pdf}, Appendix B.
-The command above is specific to LuaTeX; Word controls operator growth
-through its own equation settings.
+Larger designs are available in both Full and Lite. The growing symbols
+are listed in \code{mtp2otf.pdf}. The command above is specific to
+LuaTeX; Word controls operator growth through its own equation settings.
+
 
 \subsection*{Scripts, fractions and radicals}
 Subscripts and superscripts select the source's optical sizes automatically:
@@ -412,8 +417,8 @@ Use paired delimiters, or end with \code{\right.} for a one-sided brace:
 \left\{ ... \right.
 \end{verbatim}
 
-The large series reaches 28.8\,em before continuing with the ordinary
-assembly. \code{cv06} takes precedence over \code{cv08}; choose one brace
+The large series continues through very large ready-made sizes before
+the ordinary assembly. \code{cv06} takes precedence over \code{cv08}; choose one brace
 style. Parenthesis selection remains independent.
 
 \newpage
@@ -548,6 +553,11 @@ The usual symbol commands include \code{\ell}, \code{\partial},
 \[
   \ell\qquad\partial\qquad\nabla\qquad\infty\qquad\dagger\qquad\ddagger
 \]
+Upright Latin letters, including accented letters such as \code{é},
+come from the Roman font chosen at build time (by default Nimbus Roman).
+In math, \code{\symup{é}} selects them. A character without a math
+command can be entered as \code{\Umathchar 0 \symoperators "00E9\relax}.
+
 Mathematical sans-serif and monospace alphabets, a complete bold-symbol
 version, and a compatibility package for MTPro2-specific macros are
 not included.
@@ -576,69 +586,56 @@ Default & \sample{normal}{\mathyen\quad\registeredmark}\\
 \end{verbatim}
 
 \newpage
-\section{Three math sizes}
-Each group repeats an expression at normal size, in a superscript and in
-an exponent of a superscript. The exponent construction is used here
-only to compare the three optical sizes.
+\section{Microsoft Word}\label{sec:word}
+Install the TTF and choose it as the equation font, as described in
+Word's own documentation. Word lists the font as \code{MTPro2 Math} or
+\code{MTPro2 Math Lite}. Do not use the OTF in Word: it declares a much
+larger clipping area, with which Word fails, for example when saving as
+PDF.
 
-\[
-  A,\ldots,Z\quad a,\ldots,z\quad\Gamma,\Omega\quad\alpha_i,\omega^j
-\]
-\[
-  2^{A,\ldots,Z\quad a,\ldots,z\quad\Gamma,\Omega\quad\alpha_i,\omega^j}
-\]
-\[
-  2^{2^{A,\ldots,Z\quad a,\ldots,z\quad\Gamma,\Omega\quad\alpha_i,\omega^j}}
-\]
+For the equation text, enable \emph{Kerning for fonts} at 1~pt and above
+in the Font dialog. Otherwise letters are set without the font's pair
+kerning. Ordinary mathematical characters include the source italic
+correction in their advances, so their spacing does not depend on Word
+adding it between letters.
 
-\[
-  (f\circ g)'(x)=f'(g(x))\,g'(x)
-\]
-\[
-  2^{(f\circ g)'(x)=f'(g(x))\,g'(x)}
-\]
-\[
-  2^{2^{(f\circ g)'(x)=f'(g(x))\,g'(x)}}
-\]
+Use Word's equation editor for alphabets, accents, delimiters and
+operators. Word does not let you choose character variants or stylistic
+sets, so equations use the default designs. For this reason the default
+braces are the morphed design, which grows most smoothly.
 
-\[
-  \sum_{k=1}^{n}\frac{1}{k(k+1)}=\frac{n}{n+1}
-\]
-\[
-  2^{\sum_{k=1}^{n}\frac{1}{k(k+1)}=\frac{n}{n+1}}
-\]
-\[
-  2^{2^{\sum_{k=1}^{n}\frac{1}{k(k+1)}=\frac{n}{n+1}}}
-\]
+\section{Differences from MTPro2 with pdf\LaTeX}\label{sec:differences}
+The font follows the Type~1 fonts and \code{mtpro2.sty} as closely as
+OpenType MATH allows. These differences remain:
+\begin{itemize}
+\item OpenType MATH has fewer script shifts than \TeX. Superscripts in
+  display style, and subscripts without a superscript, are set lower.
+\item One math axis serves all sizes. In script and scriptscript style,
+  fraction bars and delimiter centers are slightly below the minus and
+  equals signs.
+\item In script sizes, accents over bases lower than the x-height are
+  set lower. Accents follow the outline of the base rather than its
+  \TeX\ box, so they are higher over letters that extend beyond the box,
+  such as italic A.
+\item Wide accents grow from the fixed accent, which is used over narrow
+  bases; in scripts they are reduced with the script size.
+\item Limits of display operators such as \code{\sum} and \code{\prod}
+  are closer to the operator.
+\item Some delimiter sizes differ slightly; \code{\dbinom} uses a
+  smaller parenthesis.
+\item LuaTeX does not apply pair kerning in script and scriptscript
+  style. LuaTeX can omit the subscript kern when a subscript starts with
+  a fraction, radical or explicit box, and a narrow subscript can widen
+  the completed formula. An ordinary letter turned into an operator with
+  \code{\mathop} loses its limit correction.
+\end{itemize}
 
-\[
-  \int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}
-\]
-\[
-  2^{\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}}
-\]
-\[
-  2^{2^{\int_{-\infty}^{\infty}e^{-x^2}\,dx=\sqrt{\pi}}}
-\]
-
-\[
-  \omega=v\,dx+w\,dy,\qquad d\omega=\left(\frac{\partial w}{\partial x}-\frac{\partial v}{\partial y}\right)\,dx\wedge dy
-\]
-\[
-  2^{\omega=v\,dx+w\,dy,\qquad d\omega=\left(\frac{\partial w}{\partial x}-\frac{\partial v}{\partial y}\right)\,dx\wedge dy}
-\]
-\[
-  2^{2^{\omega=v\,dx+w\,dy,\qquad d\omega=\left(\frac{\partial w}{\partial x}-\frac{\partial v}{\partial y}\right)\,dx\wedge dy}}
-\]
-
-\[
-  R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}
-\]
-\[
-  2^{R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}}
-\]
-\[
-  2^{2^{R_{ijkl}=-R_{jikl}=-R_{ijlk}=R_{klij}}}
-\]
+\section{License}
+The fonts contain the outlines of the MathTime Professional~2 fonts,
+\textcopyright\ Publish or Perish, Inc. They are an unofficial conversion
+for the licensee's own use. Like the Type~1 fonts, they may be embedded in
+documents for transfer, display and printout; the font files themselves
+must not be redistributed. mtp2otf and this guide are under the BSD Zero
+Clause License. MathTime is a trademark of Publish or Perish, Inc.
 
 \end{document}

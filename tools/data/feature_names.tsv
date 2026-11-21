@@ -1,0 +1,30 @@
+feature	name	description	options
+cv01	Swash z	Use swash mathematical italic z.	
+cv02	Alternate Beta	Use alternate beta in the available styles and weights.	
+cv03	Alternate Delta	Use alternate delta in the available styles and weights.	
+cv04	Alternate Hbar	Use the original hslash form for hbar.	
+cv05	Alternate Conjunction	Use alternate small and large conjunction signs.	
+cv06	Straight Braces	Select straight braces; overrides extended Curly braces.	
+cv07	Extended Parentheses	Enable the additional large ready-made parentheses.	
+cv08	Extended Curly Braces	Enable the additional large ready-made Curly braces.	
+cv09	Horizontal Brace Forms	Select the design of overbraces and underbraces.	Plain;Curly
+cv10	Proper Inclusion Forms	Use alternate proper subset and superset signs.	
+cv11	Unequal Comparison Forms	Use alternate less-than and greater-than but not equal signs.	
+cv12	Negated Comparison Forms	Select negated comparisons independently of negated inclusions.	Slanted equality;Double equality
+cv13	Negated Inclusion Forms	Select the AMS alternate or double-equality negated inclusions.	Alternate inclusion;Double equality
+cv14	Not-Similar Form	Use the alternate not-similar sign.	
+cv15	Proportional-To Form	Use the alternate proportional-to sign.	
+cv16	Smile and Frown Forms	Use the smaller smile and frown signs.	
+cv17	Empty-Set Form	Use the alternate empty-set sign.	
+cv18	Yen Form	Use the original AMS yen sign.	
+cv19	Registered Form	Use the original AMS registered sign.	
+ss01	Curly Script		
+ss02	Script Alternates		
+ss03	Curly Script Alternates		
+ss04	Fraktur Alternates		
+ss05	Heavy Blackboard		
+ss06	Holey Blackboard		
+ss07	Slanted Large Operators		
+ss08	Short Bar Relations		
+ss09	Thick Tilde Relations		
+ss10	Shaded Card Suits		

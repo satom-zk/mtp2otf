@@ -1,49 +1,77 @@
-mtp2otf v1.6
+mtp2otf 1.7
 ===========
-Convert MathTime™ Professional 2 Type 1 fonts to OpenType MATH.
+Convert MathTime(TM) Professional 2 Type 1 fonts to OpenType MATH.
 Use TTF on Windows and OTF with LuaLaTeX.
-See doc/mtp2otf-guide.pdf for input examples and feature choices.
-See doc/mtp2otf.pdf for spacing and engine-specific script limits.
 
 Full provides cv01-cv19 and ss01-ss10. Lite provides cv01-cv09, ss07
 and ss10, with the same meanings. All selectors are off by default.
 
+doc/mtp2otf-guide.pdf describes how to use the fonts, and
+doc/mtp2otf.pdf how to build them and the design of the font.
+
 Requirements
 ------------
-POSIX shell, Python 3.10+ with fontTools, FontForge with Python 3.10+
-support, and tftopl (TeX Live). Commands must be on PATH.
+POSIX shell, Python 3.10+ with fontTools, and tx from the Adobe Font
+Development Kit for OpenType (AFDKO). Commands must be on PATH.
+Debian and Ubuntu install tx in /usr/libexec/afdko; run, for example,
+PATH="/usr/libexec/afdko:$PATH" ./build.sh
 
 Inputs
 ------
-Create mtpro2/ and donors/ beside build.sh and supply fonts separately.
+Create mtpro2/ and donor/ beside build.sh and supply fonts separately.
 mtpro2/: MTPro2 PFB/TFM files and mtpro2.sty. Full also needs
-umt2ms.fd, umt2mf.fd, umt2bb.fd and umt2hrb.fd.
-donors/: NimbusRoman-Regular.otf and NimbusRoman-Bold.otf from
-Artifex urw-base35, or a compatible static Roman pair selected below.
-The build lists missing files.
+umt2ms.fd, umt2mf.fd, umt2bb.fd and umt2hrb.fd. Checked with
+mtpro2.sty 2009/4/27 v2.3; other releases are untested.
+donor/: NimbusRoman-Regular.otf from Artifex urw-base35, or another
+static upright Roman font given with -d. TeX Gyre Termes, URW Times
+and Monotype Times New Roman have also been tried.
 
 Build
 -----
-  ./build.sh
-  ./build.sh --edition=lite
-  ./build.sh --donor-coverage=extended
-  ./build.sh --roman-regular=/path/to/Regular.otf \
-             --roman-bold=/path/to/Bold.otf
-  ./build.sh --help
+  ./build.sh                 Full
+  ./build.sh -l              Lite
+  ./build.sh -d FILE         use FILE as the Roman donor
+  ./build.sh -h              usage
+  ./build.sh -V              version
 
-Defaults: Full, minimal donor coverage. Output in out/:
+Output in out/:
   Full: MTPro2Math.otf, MTPro2Math.ttf
   Lite: MTPro2MathLite.otf, MTPro2MathLite.ttf
 
-Diagnostics: stderr and build/<edition>/build.log. Check the exit status.
+Before building, every input file, glyph slot, fontdimen and donor
+character the build uses is checked; any shortage stops the build with
+a list of what is missing. The build is silent when it succeeds.
+Errors go to stderr; the exit status is 0 on success, 1 for a problem
+with the inputs or the environment and 2 for a usage error.
+
+build/<edition>/ (full or lite) holds build.log, which records the
+inputs and outputs, and tab-separated tables of the values the build
+computed from the inputs: constants.tsv, glyphs.tsv, variants.tsv,
+parts.tsv, features.tsv, kerns.tsv and dictionaries.tsv. See
+doc/mtp2otf.pdf for their columns.
+
+The fonts are for the licensee's own use; do not redistribute them.
+They may be embedded in documents.
+
+Documentation
+-------------
+Build the fonts first; then, in doc/,
+  lualatex mtp2otf-guide.tex (twice)
+  lualatex mtp2otf.tex       (twice)
+The documents use Nimbus Roman and Nimbus Mono PS as installed fonts
+and ../out/MTPro2Math.otf.
 
 Files
 -----
-  build.sh, tools/         Converter and mapping data.
-  doc/mtp2otf.pdf          Build guide and technical reference.
-  doc/mtp2otf-guide.pdf    Font usage, feature choices and examples.
-  doc/*.tex                Document sources.
-  LICENSE                  0BSD for project code and documentation.
+  build.sh                   Entry point; runs tools/mtp2otf.py.
+  VERSION                    Version number.
+  tools/                     Converter: sources/ (reading the inputs),
+                             design/ (reading the design data), plan/
+                             (computing the font), emit/ (writing the
+                             fonts and the tables).
+  tools/data/                Design data (tab-separated tables).
+  doc/                       Documentation (LaTeX sources and PDF).
+  LICENSE                    0BSD for project code and documentation.
 
 Font and dependency licenses apply separately.
 Repository: https://github.com/satom-zk/mtp2otf
